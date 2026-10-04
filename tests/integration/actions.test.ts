@@ -1470,6 +1470,9 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
         { executor_principal_id: fixture.charlie.principalId },
         { tool_id: 'unapproved.tool' },
         { tool_version: '2' },
+        { schema_version: 2 },
+        { parameters: { text: action.parameters.text, format: 'future-html' } },
+        { parameters: { text: { kind: 'future.rich-text', blocks: [] } } },
       ]) {
         const changed = await app.inject({
           method: 'PATCH',
@@ -1495,6 +1498,27 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
           tool_version: '1',
         });
       }
+      const incompatibleMedia = await app.inject({
+        method: 'PATCH',
+        url: `/v1/actions/${action.id}`,
+        headers: {
+          ...headers,
+          'idempotency-key': key(),
+          'if-match': `"${approved.json<C['Action']>().version}"`,
+          'content-type': 'application/vnd.imbox.action.v2+json',
+        },
+        payload: JSON.stringify({
+          parameters: action.parameters,
+          resource_versions: action.resource_versions,
+        }),
+      });
+      expect(incompatibleMedia.statusCode).toBe(400);
+      expect(await actions.getAction(fixture.alice, action.id)).toMatchObject({
+        version: approved.json<C['Action']>().version,
+        status: 'ready',
+        parameters: action.parameters,
+        fingerprint: action.fingerprint,
+      });
       for (const command of ['claim', 'dispatch', 'record-outcome', 'receipts'])
         expect(
           (
@@ -1507,6 +1531,9 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
           ).statusCode,
         ).toBe(404);
       expect(sideEffects).toBe(0);
+      expect((await runner().runOnce(fixture.tenantId, action.id)).status).toBe('succeeded');
+      expect(deliveredTexts).toEqual([action.parameters.text]);
+      expect(sideEffects).toBe(1);
     } finally {
       await app.close();
     }

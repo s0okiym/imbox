@@ -23,10 +23,12 @@ const types = {
   '.svg': 'image/svg+xml',
   '.json': 'application/json',
 };
+let backendPort = 4110;
+const connections = new Set();
 function forwarding(req) {
   return proxyRequest({
     hostname: '127.0.0.1',
-    port: 4110,
+    port: backendPort,
     method: req.method,
     path: req.url,
     headers: req.headers,
@@ -34,6 +36,19 @@ function forwarding(req) {
 }
 const server = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://127.0.0.1').pathname;
+  if (path === '/_compat/backend' && req.method === 'POST') {
+    const target = req.headers['x-imbox-test-backend'];
+    if (!['current', 'historical'].includes(target)) {
+      res.writeHead(400);
+      res.end();
+      return;
+    }
+    backendPort = target === 'current' ? 4110 : 4111;
+    for (const connection of connections) connection.destroy();
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ backend: target }));
+    return;
+  }
   if (path.startsWith('/v1/') || path === '/healthz' || path === '/readyz') {
     const upstream = forwarding(req);
     upstream.on('response', (reply) => {
@@ -90,7 +105,11 @@ server.on('upgrade', (req, socket, head) => {
     if (head.length) target.write(head);
     socket.on('error', () => target.destroy());
     target.on('error', () => socket.destroy());
-    socket.on('close', () => target.destroy());
+    connections.add(socket);
+    socket.on('close', () => {
+      connections.delete(socket);
+      target.destroy();
+    });
     target.on('close', () => socket.destroy());
     socket.pipe(target);
     target.pipe(socket);

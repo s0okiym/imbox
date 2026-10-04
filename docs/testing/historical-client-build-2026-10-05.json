@@ -8,6 +8,7 @@
     "manifest.webmanifest": "e3f508540361b5c003d1dbacc2aca4938b4bd0ff434b3ba1d96a9df106709eaa",
     "sw.js": "1c90312a92379073c805bf5438b4fabf191a4267a9e283dcd34f6106ef2bfafe"
   },
-  "server_parent": "91c2542",
-  "scope": "Historical/current production static clients with current API and WebSocket; local test-only same-origin proxy; service workers disabled."
+  "apiEntrySha256": "bc275753944f8ba55439dc10c90110eff37afaec38e28a92b66ee0711b1d5bff",
+  "server_parent": "83249da",
+  "scope": "Historical API/Web and current API/Web, current schema and worker, local forced WebSocket cutover and rollback. Service workers disabled."
 }

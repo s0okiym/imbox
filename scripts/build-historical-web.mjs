@@ -23,6 +23,7 @@ const run = (args) =>
 run(['install', '--frozen-lockfile', '--offline']);
 run(['--filter', '@imbox/contracts', 'build']);
 run(['--filter', '@imbox/web', 'build']);
+run(['--filter', '@imbox/api...', '-r', '--if-present', 'build']);
 const dist = join(directory, 'apps/web/dist');
 const files = {};
 function visit(path) {
@@ -37,6 +38,16 @@ function visit(path) {
 visit(dist);
 writeFileSync(
   join(directory, 'client-build.json'),
-  JSON.stringify({ commit, files }, null, 2) + '\n',
+  JSON.stringify(
+    {
+      commit,
+      files,
+      apiEntrySha256: createHash('sha256')
+        .update(readFileSync(join(directory, 'apps/api/dist/main.js')))
+        .digest('hex'),
+    },
+    null,
+    2,
+  ) + '\n',
 );
 console.log(`Historical web built from ${commit}; ${Object.keys(files).length} hashed files`);

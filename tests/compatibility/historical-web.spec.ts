@@ -126,3 +126,75 @@ test('historical compiled client and current client exchange live messages and s
     await currentContext.close();
   }
 });
+
+test('historical and current clients keep their sessions and messages across API cutover and rollback', async ({
+  browser,
+}) => {
+  const oldContext = await browser.newContext({ serviceWorkers: 'block' });
+  const currentContext = await browser.newContext({ serviceWorkers: 'block' });
+  const old = await oldContext.newPage(),
+    current = await currentContext.newPage();
+  const errors: string[] = [];
+  old.on('pageerror', (error) => errors.push(error.name));
+  current.on('pageerror', (error) => errors.push(error.name));
+  async function switchTo(backend: 'historical' | 'current') {
+    const response = await currentContext.request.post('http://127.0.0.1:4173/_compat/backend', {
+      headers: { 'x-imbox-test-backend': backend },
+    });
+    expect(response.status()).toBe(200);
+    expect(await response.json()).toEqual({ backend });
+  }
+  try {
+    await oldContext.addCookies([
+      { name: 'imbox_compat_client', value: commit, url: 'http://127.0.0.1:4173', httpOnly: true },
+    ]);
+    await switchTo('historical');
+    await login(old, 'Alice');
+    await login(current, 'Bob');
+    const title = `API cutover ${Date.now()}`;
+    await old.getByRole('button', { name: '新建会话', exact: true }).first().click();
+    const dialog = old.getByRole('dialog');
+    await dialog.getByLabel('会话名称', { exact: true }).fill(title);
+    await dialog.getByRole('checkbox', { name: /Bob/ }).check();
+    await dialog.getByRole('button', { name: '创建会话', exact: true }).click();
+    await expect(old.getByRole('heading', { name: title, exact: true, level: 1 })).toBeVisible();
+    await current
+      .getByRole('navigation', { name: '会话列表' })
+      .getByRole('button', { name: new RegExp(title) })
+      .click();
+    await send(old, '旧服务端确认的消息');
+    await expect(
+      current.getByLabel('消息记录').getByText('旧服务端确认的消息', { exact: true }),
+    ).toBeVisible();
+    await switchTo('current');
+    await send(current, '切换新服务端后继续回复');
+    await expect(
+      old.getByLabel('消息记录').getByText('切换新服务端后继续回复', { exact: true }),
+    ).toBeVisible();
+    await send(old, '历史客户端继续使用新服务端');
+    await expect(
+      current.getByLabel('消息记录').getByText('历史客户端继续使用新服务端', { exact: true }),
+    ).toBeVisible();
+    await switchTo('historical');
+    await send(current, '回退旧服务端后继续回复');
+    await expect(
+      old.getByLabel('消息记录').getByText('回退旧服务端后继续回复', { exact: true }),
+    ).toBeVisible();
+    await old.reload();
+    await current.reload();
+    for (const page of [old, current]) {
+      for (const body of [
+        '旧服务端确认的消息',
+        '切换新服务端后继续回复',
+        '历史客户端继续使用新服务端',
+        '回退旧服务端后继续回复',
+      ])
+        await expect(page.getByLabel('消息记录').getByText(body, { exact: true })).toHaveCount(1);
+    }
+    expect(errors).toEqual([]);
+  } finally {
+    await switchTo('current');
+    await oldContext.close();
+    await currentContext.close();
+  }
+});
