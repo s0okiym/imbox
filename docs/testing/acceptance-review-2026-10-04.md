@@ -17,7 +17,7 @@
 | AC-09  | verified | tasks conversation summary 仅返回显式 public_summary，关联不授予 Task ACL；knowledge 私人目标不出现在他人搜索，分页没有 total，跨租户与隐蔽成员读取拒绝。                       |
 | AC-10  | verified | runtime-knowledge 拒绝私有 Memory 披露到会话、来源范围不同和 Agent 缺少读取权限；run-tool-intents 混合来源在排队前拒绝且模型调用/副作用均为零。                                 |
 | AC-11  | verified | actions 验证无批准、过期批准、参数修改后旧批准失效且外部调用为零；machine-run-tools 验证审批后仍须人工 resume 与新租约。                                                        |
-| AC-12  | partial  | 批准后撤销 grant、身份/参与代际改变会拒绝执行；来源撤回阻止模型输出。仍需针对已批准 Action 的每种资源版本变更补齐独立组合测试。                                                 |
+| AC-12 | verified | Task 版本、固定产物来源/哈希、Grant 撤销与批准者权限变化在执行前拒绝；持久意图后释放未派发预占。真实 HTTP 效果后撤权保留 unknown，原连接核对且一次记账。见 [统一审查](action-authorization-audit-2026-10-05.md)。 |
 | AC-13  | verified | actions/run-tool-intents 对真实受控服务注入丢响应，断言 unknown、一个 POST、核对成功后不重发；action-recovery 核对仅 GET 并且记账一次。                                         |
 | AC-14 | partial | 独立 Linux Agent 进程暂停、真实租约到期和恢复后拒绝迟到输出/确认停止已通过，已分别覆盖 Run 和 Task 取消入口；Run 级取消不伪造远端确认。Task 取消/失败到后代 Run 取消请求及待执行 Action 撤销已补齐；跨主机部署故障矩阵仍待验证。见 [任务联动](task-cancellation-propagation-2026-10-05.md) 与 [进程演练](external-process-recovery-2026-10-05.md)。 |
 | AC-15 | partial | 树预算/并发/期限、依赖防环、五层/200 节点边界已有实测；新增 8 Agent 有限计划、12 并发扫描/派发、停用、四租约和共享预算联合突发验证。模型驱动互相唤醒网络、任意事件触发和跨租户长期压力仍待完成。 |
@@ -38,7 +38,7 @@
 | INV-05 | verified | 传输 ACK 不写已读，Agent ACK 不接单，completed external report 不代表平台验证；任务必须经提交和指定审核者验收，Run 结束与 Task 关闭分离。                                       |
 | INV-06 | verified | Task 会话关联不授予 Task ACL；Agent 注册不授予消息/任务访问；跨会话资源附件被拒绝，定向 Artifact share 不授予底层资源 ACL。                                                     |
 | INV-07 | verified | runtime-knowledge 检查人类与 Agent 来源权限及披露范围，action 要求独立 grant/approval；分享固定版本/收件人代际，新群成员不继承旧分享。                                          |
-| INV-08 | partial  | 未批/过期/参数变化/当前撤权均有执行前拒绝与零副作用断言；更完整的目标、执行主体和资源变更交叉矩阵仍待补验，不能将部分覆盖描述为完整证明。                                       |
+| INV-08 | verified | 版本/目标/全文/执行者/期限与当前授权逐项审查完成；实际连接配置与签名意图亦绑定，变更后拒绝旧授权或异地查询。四文件 76 项通过，范围与证据见 [统一审查](action-authorization-audit-2026-10-05.md)。 |
 | INV-09 | verified | 消息、outbox、SDK 同业务键幂等；unknown Action 不重发，只读核对、一次记账，恢复孤立行动继续保留原业务键。                                                                       |
 | INV-10 | verified | domain/action 拒绝取消 unknown 或进入普通重试；UI unknown 只提供 reconcile；runtime 取消保留未知费用，迟到真实费用可记录且不发布旧结果。                                        |
 | INV-11 | partial | 全祖先预算、四并发槽、20 步、绝对期限及五层/200 节点边界已有断言；8 Agent 有限唤醒突发联合验证精确容量和预算拒绝。模型驱动事件链与多租户长期混合压力仍待验收。 |
@@ -53,3 +53,5 @@
 后续按完整用户流程补验，优先交接包行动清单、组织生命周期与兼容性；真机、生产 IdP/TLS、灾备和参考容量使用真实环境证据。上述补验边界与当前可运行主体一并交付，遵循先完成主体、再细化的优先级。
 
 2026-10-05 产物协作与发布审查后：28 verified / 12 partial / 1 pending。仅 AC-18 根据新增完整流程证据提升；其他门槛继续独立阻断。
+
+2026-10-05 Action 授权统一审查后：30 verified / 10 partial / 1 pending。AC-12 与 INV-08 按原始 V1 行为要求通过，其余 11 项继续阻断完整准出。

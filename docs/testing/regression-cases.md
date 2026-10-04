@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 87 个测试文件、526 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 87 个测试文件、528 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -554,16 +554,18 @@
 | [it:993](../../tests/integration/actions.test.ts#L993) | controlled actions with real PostgreSQL, HTTP and independent signed journal → hands off during a committed external effect and lets the new owner reconcile without resending |
 | [it:1042](../../tests/integration/actions.test.ts#L1042) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retries confirmed no-effect attempts under the same action, fingerprint and business key |
 | [it:1060](../../tests/integration/actions.test.ts#L1060) | controlled actions with real PostgreSQL, HTTP and independent signed journal → invalidates old approval after changing parameters and refuses revoked grants before effects |
-| [it:1078](../../tests/integration/actions.test.ts#L1078) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an approved stale task version before claim and permits newly authorized work |
-| [it:1104](../../tests/integration/actions.test.ts#L1104) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rechecks the task version after durable intent and releases an unsent reservation |
-| [it:1133](../../tests/integration/actions.test.ts#L1133) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects expired leases even before takeover and retains unresolved attempts |
-| [it:1148](../../tests/integration/actions.test.ts#L1148) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive a grant or action when a disabled global identity is re-enabled |
-| [it:1169](../../tests/integration/actions.test.ts#L1169) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive old authority after task membership removal/reinvitation or epoch changes |
-| [it.each:1212](../../tests/integration/actions.test.ts#L1212) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects stale independent approver authority %s / %s |
-| [it.each:1273](../../tests/integration/actions.test.ts#L1273) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an expired %s at %s before network dispatch |
-| [it:1304](../../tests/integration/actions.test.ts#L1304) | controlled actions with real PostgreSQL, HTTP and independent signed journal → deduplicates the same receipt and preserves a conflicting late receipt as an open case |
-| [it:1328](../../tests/integration/actions.test.ts#L1328) | controlled actions with real PostgreSQL, HTTP and independent signed journal → enforces human HTTP approval contracts and never exposes internal execution/report capabilities |
-| [it:1440](../../tests/integration/actions.test.ts#L1440) | controlled actions with real PostgreSQL, HTTP and independent signed journal → finds a whole action lost across a simulated database recovery and freezes new execution |
+| [it.each:1078](../../tests/integration/actions.test.ts#L1078) | controlled actions with real PostgreSQL, HTTP and independent signed journal → revokes a fixed artifact grant %s without sending or charging |
+| [it:1107](../../tests/integration/actions.test.ts#L1107) | controlled actions with real PostgreSQL, HTTP and independent signed journal → preserves and reconciles a committed effect when its grant is revoked before the response |
+| [it:1152](../../tests/integration/actions.test.ts#L1152) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an approved stale task version before claim and permits newly authorized work |
+| [it:1178](../../tests/integration/actions.test.ts#L1178) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rechecks the task version after durable intent and releases an unsent reservation |
+| [it:1207](../../tests/integration/actions.test.ts#L1207) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects expired leases even before takeover and retains unresolved attempts |
+| [it:1222](../../tests/integration/actions.test.ts#L1222) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive a grant or action when a disabled global identity is re-enabled |
+| [it:1243](../../tests/integration/actions.test.ts#L1243) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive old authority after task membership removal/reinvitation or epoch changes |
+| [it.each:1286](../../tests/integration/actions.test.ts#L1286) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects stale independent approver authority %s / %s |
+| [it.each:1347](../../tests/integration/actions.test.ts#L1347) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an expired %s at %s before network dispatch |
+| [it:1378](../../tests/integration/actions.test.ts#L1378) | controlled actions with real PostgreSQL, HTTP and independent signed journal → deduplicates the same receipt and preserves a conflicting late receipt as an open case |
+| [it:1402](../../tests/integration/actions.test.ts#L1402) | controlled actions with real PostgreSQL, HTTP and independent signed journal → enforces human HTTP approval contracts and never exposes internal execution/report capabilities |
+| [it:1514](../../tests/integration/actions.test.ts#L1514) | controlled actions with real PostgreSQL, HTTP and independent signed journal → finds a whole action lost across a simulated database recovery and freezes new execution |
 
 ## tests/integration/agents.test.ts
 

@@ -144,10 +144,14 @@
     },
     {
       "id": "AC-12",
-      "status": "partial",
+      "status": "verified",
       "tests": [
         "tests/integration/actions.test.ts",
-        "tests/integration/runtime-knowledge.test.ts"
+        "tests/integration/runtime-knowledge.test.ts",
+        "tests/integration/action-recovery.test.ts",
+        "tests/integration/machine-run-tools.test.ts",
+        "tests/integration/run-tool-intents.test.ts",
+        "tests/e2e/runtime-actions.spec.ts"
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
@@ -155,9 +159,10 @@
         "docs/testing/action-resource-version-2026-10-05.md",
         "docs/testing/action-approver-fences-2026-10-05.md",
         "docs/testing/tool-configuration-binding-2026-10-05.md",
-        "docs/testing/recovery-connector-binding-2026-10-05.md"
+        "docs/testing/recovery-connector-binding-2026-10-05.md",
+        "docs/testing/action-authorization-audit-2026-10-05.md"
       ],
-      "notes": "批准后撤销 grant、身份/参与代际改变会拒绝执行；来源撤回阻止模型输出。仍需针对已批准 Action 的每种资源版本变更补齐独立组合测试。 2026-10-05 补验：任务标题变更不改变 epoch，旧资源版本在 claim 前及持久意图后 dispatch 均拒绝，零外部请求；HTTP 修订注入目标/执行者/工具/版本均拒绝且原绑定不变。完整联合矩阵仍未完成。 独立批准者停用/恢复/降权及批准/授权到期，均已覆盖领取前和持久意图后零外部请求（Action 41 项通过）；剩余绑定条件继续统一审查。 工具实际 URL/凭证/执行定义现绑定授权内部快照；相同逻辑 ID 下重配置拒绝旧授权与异地回执查询，配置恢复后可核对原 unknown。legacy 无绑定不隐式迁移，仍需完整升级/恢复审查。 新签名意图保存连接绑定，孤立恢复不匹配或缺失绑定时零查询并保持冻结；恢复原配置后只读核对一次。相关 Action/恢复集成 59 项通过，仍不替代生产恢复链验收。"
+      "notes": "已逐项对照当前 V1：审批绑定版本/全文/目标/执行者/期限；逻辑标识修订注入拒绝，实际连接配置另绑授权及签名意图。任务版本、产物引用/哈希/来源、Grant 撤销、独立批准者停用/恢复/降权及授权/批准期限，均有执行前拒绝与零请求证据。持久意图后拒绝释放预占；真实外部效果后撤权仍保留 unknown，原回执核对且只结算一次。四文件 76 项通过；最近浏览器与工程证据见审查，不代替其他生产门槛。"
     },
     {
       "id": "AC-13",
@@ -451,11 +456,13 @@
     },
     {
       "id": "INV-08",
-      "status": "partial",
+      "status": "verified",
       "tests": [
         "tests/integration/actions.test.ts",
         "tests/integration/run-tool-intents.test.ts",
-        "tests/e2e/runtime-actions.spec.ts"
+        "tests/e2e/runtime-actions.spec.ts",
+        "tests/integration/action-recovery.test.ts",
+        "tests/integration/machine-run-tools.test.ts"
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
@@ -463,9 +470,10 @@
         "docs/testing/action-resource-version-2026-10-05.md",
         "docs/testing/action-approver-fences-2026-10-05.md",
         "docs/testing/tool-configuration-binding-2026-10-05.md",
-        "docs/testing/recovery-connector-binding-2026-10-05.md"
+        "docs/testing/recovery-connector-binding-2026-10-05.md",
+        "docs/testing/action-authorization-audit-2026-10-05.md"
       ],
-      "notes": "未批/过期/参数变化/当前撤权均有执行前拒绝与零副作用断言；更完整的目标、执行主体和资源变更交叉矩阵仍待补验，不能将部分覆盖描述为完整证明。 2026-10-05 补验：任务标题变更不改变 epoch，旧资源版本在 claim 前及持久意图后 dispatch 均拒绝，零外部请求；HTTP 修订注入目标/执行者/工具/版本均拒绝且原绑定不变。完整联合矩阵仍未完成。 独立批准者停用/恢复/降权及批准/授权到期，均已覆盖领取前和持久意图后零外部请求（Action 41 项通过）；剩余绑定条件继续统一审查。 工具实际 URL/凭证/执行定义现绑定授权内部快照；相同逻辑 ID 下重配置拒绝旧授权与异地回执查询，配置恢复后可核对原 unknown。legacy 无绑定不隐式迁移，仍需完整升级/恢复审查。 新签名意图保存连接绑定，孤立恢复不匹配或缺失绑定时零查询并保持冻结；恢复原配置后只读核对一次。相关 Action/恢复集成 59 项通过，仍不替代生产恢复链验收。"
+      "notes": "已逐项对照当前 V1：审批绑定版本/全文/目标/执行者/期限；逻辑标识修订注入拒绝，实际连接配置另绑授权及签名意图。任务版本、产物引用/哈希/来源、Grant 撤销、独立批准者停用/恢复/降权及授权/批准期限，均有执行前拒绝与零请求证据。持久意图后拒绝释放预占；真实外部效果后撤权仍保留 unknown，原回执核对且只结算一次。四文件 76 项通过；最近浏览器与工程证据见审查，不代替其他生产门槛。"
     },
     {
       "id": "INV-09",

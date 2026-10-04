@@ -1075,6 +1075,80 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
     await expect(runner().runOnce(fixture.tenantId, action.id)).rejects.toBeDefined();
     expect(sideEffects).toBe(0);
   });
+  it.each(['before_claim', 'after_intent'] as const)(
+    'revokes a fixed artifact grant %s without sending or charging',
+    async (phase) => {
+      const file = await artifact('Revocable fixed delivery');
+      const { action, grant } = await proposed([artifactRef(file)], 'Revocable fixed delivery');
+      await approve(action);
+      const claim =
+        phase === 'after_intent'
+          ? await actions.claim(fixture.tenantId, action.id, 'revoked-grant-worker')
+          : null;
+      if (claim) await actions.persistIntent(claim);
+      await actions.revokeGrant(fixture.alice, grant.id, grant.revision, key());
+      await expect(
+        claim ? actions.dispatch(claim) : runner().runOnce(fixture.tenantId, action.id),
+      ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+      if (claim) await actions.abortPrepared(claim);
+      expect(attempts).toBe(0);
+      expect(sideEffects).toBe(0);
+      expect(
+        (
+          await withTenant(databases.db, fixture.tenantId, (tx) =>
+            sql`select reserved_microunits,spent_microunits from task_budgets where task_id=${task.id}`.execute(
+              tx,
+            ),
+          )
+        ).rows[0],
+      ).toEqual({ reserved_microunits: '0', spent_microunits: '0' });
+    },
+  );
+  it('preserves and reconciles a committed effect when its grant is revoked before the response', async () => {
+    mode = 'hold';
+    const { action, grant } = await proposed();
+    await approve(action);
+    const execution = runner().runOnce(fixture.tenantId, action.id);
+    try {
+      await Promise.race([
+        effectObserved,
+        execution.then(() => {
+          throw new Error('No observed effect');
+        }),
+      ]);
+      await actions.revokeGrant(fixture.alice, grant.id, grant.revision, key());
+    } finally {
+      heldResponse?.destroy();
+      await execution;
+    }
+    expect(await execution).toMatchObject({ status: 'unknown' });
+    await expect(runner().runOnce(fixture.tenantId, action.id)).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+    const pending = await actions.getAction(fixture.alice, action.id);
+    expect(
+      (
+        await actions.reconcile(
+          fixture.alice,
+          action.id,
+          { reason: 'Verify the effect preceding revocation' },
+          pending.version,
+          key(),
+        )
+      ).outcome,
+    ).toBe('succeeded');
+    expect(attempts).toBe(1);
+    expect(sideEffects).toBe(1);
+    expect(
+      (
+        await withTenant(databases.db, fixture.tenantId, (tx) =>
+          sql`select reserved_microunits,spent_microunits from task_budgets where task_id=${task.id}`.execute(
+            tx,
+          ),
+        )
+      ).rows[0],
+    ).toEqual({ reserved_microunits: '0', spent_microunits: '7' });
+  });
   it('rejects an approved stale task version before claim and permits newly authorized work', async () => {
     const { action } = await proposed();
     await approve(action);
