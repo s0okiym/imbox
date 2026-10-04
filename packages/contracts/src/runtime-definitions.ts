@@ -1,0 +1,141 @@
+/** Direct runtime resources are distinct from future AgentRun projection envelopes. */
+const ref = (name: string) => ({ $ref: `#/$defs/${name}` });
+const str = (maxLength: number, minLength = 1) => ({ type: 'string', minLength, maxLength });
+const obj = (properties: Record<string, unknown>, required = Object.keys(properties)) => ({
+  type: 'object',
+  properties,
+  required,
+  additionalProperties: false,
+});
+const arr = (items: unknown, maxItems: number) => ({ type: 'array', items, maxItems });
+const en = (...values: string[]) => ({ type: 'string', enum: values });
+const nullable = (schema: unknown) => ({ anyOf: [schema, { type: 'null' }] });
+const hash = { ...str(64, 64), pattern: '^[a-f0-9]{64}$' };
+const jsonObject = { type: 'object', additionalProperties: true, maxProperties: 100 };
+export const runtimeDefinitions = {
+  ModelToolDecision: {
+    anyOf: [
+      obj({ kind: { const: 'final' }, text: str(64000) }),
+      obj({ kind: { const: 'tool_intent' }, text: str(4000) }),
+    ],
+  },
+  MachineToolIntentInput: obj({ generation: ref('Version'), text: str(4000) }),
+  MachineToolExecuteInput: obj({ generation: ref('Version') }),
+  RuntimeRunPage: obj({ items: arr(ref('RuntimeRun'), 100), next_cursor: ref('Cursor') }, [
+    'items',
+  ]),
+  RuntimeRunListQuery: obj(
+    {
+      task_id: ref('Identifier'),
+      conversation_id: ref('Identifier'),
+      cursor: ref('Cursor'),
+      limit: { type: 'integer', minimum: 1, maximum: 100 },
+    },
+    [],
+  ),
+  RuntimeSourceReference: {
+    anyOf: [
+      obj({
+        type: en('message', 'task'),
+        id: ref('Identifier'),
+        version: ref('Version'),
+        required: { type: 'boolean' },
+      }),
+      obj({
+        type: en('memory', 'artifact_version'),
+        id: ref('Identifier'),
+        version: ref('Version'),
+        required: { type: 'boolean' },
+        sha256: hash,
+      }),
+    ],
+  },
+  InstallRuntimeAgentInput: obj({
+    principal_id: ref('Identifier'),
+    revision: ref('Version'),
+    mode: en('hosted', 'device', 'external'),
+    config: jsonObject,
+    capabilities: arr(str(100), 100),
+  }),
+  RuntimeAgentInstallation: obj({
+    id: ref('Identifier'),
+    principal_id: ref('Identifier'),
+    revision: ref('Version'),
+    mode: en('hosted', 'device', 'external'),
+  }),
+  CreateRuntimeRunInput: obj(
+    {
+      agent_id: ref('Identifier'),
+      agent_revision: ref('Version'),
+      task_id: ref('Identifier'),
+      conversation_id: ref('Identifier'),
+      previous_run_id: ref('Identifier'),
+      tool_grant_id: ref('Identifier'),
+      context: arr(ref('RuntimeSourceReference'), 50),
+      purpose: str(500),
+      destination: str(500),
+      budget: ref('InitialBudget'),
+    },
+    ['agent_id', 'agent_revision', 'context', 'purpose', 'destination', 'budget'],
+  ),
+  RuntimeBudget: obj({
+    currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+    limit_microunits: ref('Counter'),
+    reserved_microunits: ref('Counter'),
+    spent_microunits: ref('Counter'),
+    blocked: { type: 'boolean' },
+  }),
+  RuntimeRun: obj({
+    id: ref('Identifier'),
+    execution_location: en('hosted', 'device', 'external'),
+    report_source: en('platform_verified', 'external_report'),
+    agent_id: ref('Identifier'),
+    agent_revision: ref('Version'),
+    task_id: nullable(ref('Identifier')),
+    conversation_id: nullable(ref('Identifier')),
+    status: en(
+      'queued',
+      'running',
+      'waiting_input',
+      'waiting_approval',
+      'waiting_dependency',
+      'paused',
+      'cancelling',
+      'completed',
+      'failed',
+      'cancelled',
+      'expired',
+    ),
+    version: ref('Version'),
+    lease_generation: ref('Counter'),
+    cancellation_requested: { type: 'boolean' },
+    pause_requested: { type: 'boolean' },
+    context_manifest_id: ref('Identifier'),
+    tool_grant_id: nullable(ref('Identifier')),
+    summary: str(2000, 0),
+    output: nullable(str(64000, 0)),
+    budget: ref('RuntimeBudget'),
+    created_at: ref('UtcTimestamp'),
+    updated_at: ref('UtcTimestamp'),
+  }),
+  RuntimeContextItem: obj({
+    ordinal: { type: 'integer', minimum: 1, maximum: 50 },
+    source_type: en('message', 'task', 'memory', 'artifact_version'),
+    source_id: ref('Identifier'),
+    source_version: ref('Version'),
+    source_sha256: nullable(hash),
+    content_hash: hash,
+    required: { type: 'boolean' },
+    trust_level: en('untrusted_user_content'),
+    payload: jsonObject,
+    authorization_snapshot: jsonObject,
+  }),
+  RuntimeContextManifest: obj({
+    id: ref('Identifier'),
+    purpose: str(500),
+    destination: str(500),
+    content_hash: hash,
+    total_bytes: { type: 'integer', minimum: 0, maximum: 65536 },
+    items: arr(ref('RuntimeContextItem'), 50),
+  }),
+};

@@ -1,0 +1,6 @@
+{
+  "id": "/", "name": "Imbox", "short_name": "Imbox", "lang": "zh-CN",
+  "start_url": "/", "scope": "/", "display": "standalone",
+  "background_color": "#edf2ec", "theme_color": "#345b46",
+  "icons": [{ "src": "/imbox-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

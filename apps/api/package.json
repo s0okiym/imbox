@@ -1,0 +1,42 @@
+{
+  "name": "@imbox/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@imbox/contracts": "workspace:*",
+    "@imbox/domain": "workspace:*",
+    "@imbox/db": "workspace:*",
+    "fastify": "catalog:",
+    "ajv": "catalog:",
+    "ajv-formats": "catalog:",
+    "dotenv": "catalog:",
+    "pg": "catalog:",
+    "@imbox/application": "workspace:*",
+    "@imbox/auth": "workspace:*",
+    "@fastify/websocket": "catalog:",
+    "ws": "8.22.0",
+    "@imbox/runtime": "workspace:*",
+    "@imbox/actions": "workspace:*",
+    "@imbox/agents": "workspace:*",
+    "@imbox/resources": "workspace:*",
+    "@imbox/scheduling": "workspace:*",
+    "@imbox/knowledge": "workspace:*",
+    "@imbox/governance": "workspace:*",
+    "@imbox/notifications": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "typescript": "catalog:",
+    "tsx": "catalog:",
+    "vitest": "catalog:",
+    "@types/ws": "8.18.2"
+  }
+}

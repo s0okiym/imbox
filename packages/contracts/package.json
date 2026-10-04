@@ -1,0 +1,28 @@
+{
+  "name": "@imbox/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "development": "./src/index.ts", "default": "./dist/index.js" },
+    "./schemas": { "types": "./dist/schemas.d.ts", "development": "./src/schemas.ts", "default": "./dist/schemas.js" },
+    "./openapi.json": "./openapi/openapi.json"
+  },
+  "scripts": {
+    "generate": "node --import tsx scripts/generate.ts",
+    "check:generated": "node --import tsx scripts/generate.ts --check",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ajv": "catalog:",
+    "ajv-formats": "catalog:"
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

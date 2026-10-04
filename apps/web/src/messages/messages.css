@@ -1,0 +1,119 @@
+.message-quote {
+  border-left: 3px solid #acc59b;
+  background: #eef3e9;
+  border-radius: 0 7px 7px 0;
+  padding: 10px 13px;
+  margin: 0 0 7px;
+  max-width: 520px;
+}
+.message-quote > span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  margin-bottom: 5px;
+}
+.message-quote > p {
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 130px;
+  overflow-y: auto;
+  margin: 0;
+  line-height: 1.8;
+}
+.message-interactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  margin-top: 7px;
+}
+.message-interactions .text-button {
+  font-size: 10px;
+  color: #87927f;
+}
+.reaction-pill {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 7px;
+  background: #f0f4eb;
+  border: 1px solid #e0e7d8;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.reaction-pill span {
+  font-size: 10px;
+  color: var(--green);
+}
+.reaction-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+}
+.reaction-choices p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 8px;
+}
+.composer-quote {
+  border-left: 3px solid #b7cdab;
+  margin: 8px 12px;
+  padding: 8px 10px;
+  background: #f5f8f0;
+  font-size: 11px;
+}
+.composer-quote p {
+  margin: 5px 0;
+  color: var(--muted);
+  white-space: pre-wrap;
+  max-height: 70px;
+  overflow-y: auto;
+}
+.composer-quote button {
+  float: right;
+  color: var(--muted);
+}
+.thread-messages {
+  max-height: 48dvh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.thread-message {
+  padding: 17px 0;
+  border-bottom: 1px solid var(--line);
+}
+.thread-root {
+  background: #f5f8f0;
+  border: 1px solid #e0ead7;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 8px;
+}
+.thread-message header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.thread-message time {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--muted);
+}
+.thread-message .task-prose {
+  font-size: 13px;
+}
+.thread-message > .text-button {
+  font-size: 10px;
+}
+.thread-composer > p {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 18px 0 8px;
+}
+.thread-composer > p > button {
+  margin-left: 12px;
+  font-size: 10px;
+}

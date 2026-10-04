@@ -1,0 +1,25 @@
+{
+  "identities": [
+    {
+      "name": "imbox-development-setup",
+      "credentials": [
+        { "accessKey": "imbox_local_s3_admin", "secretKey": "imbox_local_s3_admin_secret" }
+      ],
+      "actions": ["Admin", "Read", "List", "Write", "Tagging"]
+    },
+    {
+      "name": "imbox-application",
+      "credentials": [
+        { "accessKey": "imbox_local_s3_app", "secretKey": "imbox_local_s3_app_secret" }
+      ],
+      "actions": [
+        "Read:imbox-resources-dev",
+        "Write:imbox-resources-dev",
+        "List:imbox-resources-dev",
+        "Read:imbox-resources-test",
+        "Write:imbox-resources-test",
+        "List:imbox-resources-test"
+      ]
+    }
+  ]
+}

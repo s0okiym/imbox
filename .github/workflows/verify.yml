@@ -1,0 +1,45 @@
+name: Engineering verification
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      APP_ENV: test
+      ENABLE_RESOURCES: 'true'
+      S3_BUCKET: imbox-resources-test
+      POLICY_LEDGER_DIRECTORY: .artifacts/ci-policy-ledger
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: cp .env.example .env
+      - run: pnpm infra:up
+      - run: pnpm verify
+      - run: pnpm test:catalog:check
+      - run: pnpm infra:setup:test
+      - run: pnpm db:setup:test
+      - run: pnpm test:integration
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Browser regression (redact credential headers)
+        run: |
+          set -o pipefail
+          pnpm test:e2e 2>&1 | sed -u -E 's/(cookie:|authorization:|x-csrf-token:).*/\1 [REDACTED]/Ig'
+      - name: Start pinned local model and verify actual inference
+        run: |
+          docker compose -f infra/compose.yaml --profile model up -d model
+          for attempt in $(seq 1 60); do
+            if docker compose -f infra/compose.yaml exec -T model ollama list >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          docker compose -f infra/compose.yaml exec -T model ollama pull qwen3:0.6b
+          pnpm test:model
+      # Full V1 acceptance stays separately blocked until every AC/INV has reviewed evidence.
+      - if: always()
+        run: docker compose -f infra/compose.yaml --profile model down -v

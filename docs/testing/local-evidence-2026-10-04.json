@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "source_index_sha256": "89643463edde7c23c09ee8e773d16aaa5602ad40e374ecf9269259648646d53d",
+  "source_index_command": "git ls-files -s -- . ':!docs/**' ':!README.md' | sha256sum",
+  "lock_sha256": "18543dbd50b7294533d136164f8b94777281864bc6df97e1992784cb6dbb6d55",
+  "verification": {
+    "engineering": "passed",
+    "unit": {
+      "files": 32,
+      "passed": 180
+    },
+    "integration": {
+      "files": 30,
+      "passed": 236,
+      "seconds": 186.56
+    },
+    "browser": {
+      "passed": 24,
+      "minutes_rounded": 5.0
+    },
+    "model": {
+      "passed": 1,
+      "seconds": 10.76
+    }
+  },
+  "model": {
+    "verified_at": "2026-10-04T14:34:11.747Z",
+    "provider": "ollama",
+    "model": "qwen3:0.6b",
+    "digest": "sha256:7df6b6e09427a769808717c0a93cadc4ae99ed4eb8bf5ca557c90846becea435",
+    "real_model": true,
+    "elapsed_ms": 7553,
+    "result_contains_expected_marker": true,
+    "usage": {
+      "inputTokens": 335,
+      "outputTokens": 4
+    },
+    "billing_policy": "local-unmetered"
+  },
+  "recovery": {
+    "version": 1,
+    "completed_at": "2026-10-04T14:27:39.561Z",
+    "result": "passed",
+    "method": "isolated PostgreSQL custom-format dump/restore plus restored S3 object and independent signed policy ledger",
+    "recovery_ms": 2078,
+    "observed_backup_gap_ms": 741,
+    "expected_post_backup_message_loss": 1,
+    "policy_facts_replayed": 4,
+    "derived_bodies_erased": true,
+    "permission_revocation_reapplied": true,
+    "restored_object_purged": true,
+    "outbox_reconciled": true,
+    "point_in_time_wal_recovery_verified": false,
+    "production_rpo_rto_claim": false
+  },
+  "capacity_instrumentation_short_run": {
+    "version": 2,
+    "started_at": "2026-10-04T14:34:14.428Z",
+    "finished_at": "2026-10-04T14:34:38.179Z",
+    "fixture": {
+      "historical_messages": 1000,
+      "history_conversations": 10,
+      "history_bulk_seeded": true,
+      "live_streams": 50,
+      "workspaces": 1,
+      "distinct_actors": 2,
+      "requested_connections": 50,
+      "subscribed_connections": 50,
+      "requested_message_rate": 50,
+      "duration_seconds": 5
+    },
+    "environment": {
+      "logical_cpus": 4,
+      "host_memory_gib": 7.76,
+      "node": "v24.21.0",
+      "api_processes": 1,
+      "worker_loops": 2,
+      "application_pool": 10,
+      "identity_pool": 5,
+      "worker_pool": 5,
+      "network": "host loopback; PostgreSQL Docker; shared development host"
+    },
+    "results": {
+      "notification_source_plan": {
+        "execution_ms": 0.149,
+        "messages_examined": 1,
+        "materialized_all_sources": false
+      },
+      "saved_messages": 250,
+      "committed_messages": 250,
+      "expected_recipient_deliveries": 250,
+      "observed_recipient_deliveries": 250,
+      "missing_recipient_deliveries": 0,
+      "drain_elapsed_ms": 1252,
+      "drain_deadline_ms": 60000,
+      "delivery_latency_complete": true,
+      "delivery_latency_censored": false,
+      "offered_messages": 250,
+      "achieved_save_rate": 44.219221281468236,
+      "save_http_ms": {
+        "p50": 758.25,
+        "p95": 917.71
+      },
+      "history_page_ms": {
+        "p50": 384.09,
+        "p95": 497.93
+      },
+      "commit_return_to_ws_receive_ms": {
+        "p50": 1490.79,
+        "p95": 1950.2,
+        "samples": 250
+      },
+      "duplicate_deliveries": 0,
+      "closed_during_load": 0,
+      "errors": {},
+      "maximum_pending_conversation_outbox": 78,
+      "maximum_pending_notification_events": 178,
+      "maximum_queue_age_ms": 1587.652,
+      "maximum_lock_waiters": 3,
+      "worker_failures": 0,
+      "peak_process_rss_mib": 305.0859375,
+      "event_loop_p95_ms": 22.347775,
+      "cpu_usage": {
+        "user": 13248348,
+        "system": 1998378
+      }
+    },
+    "design_environment_equivalent": false,
+    "reconnect_storm_verified": false,
+    "slow_model_and_file_contention_verified": false,
+    "production_capacity_claim": false
+  },
+  "v1_release_approved": false,
+  "acceptance_requirements_verified": 0
+}

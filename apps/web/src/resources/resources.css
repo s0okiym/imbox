@@ -1,0 +1,78 @@
+.resource-identity {
+  margin-top: 24px;
+}
+.resource-identity summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+}
+.resource-identity code {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-top: 10px;
+  font-size: 11px;
+}
+.resource-version {
+  margin: 15px 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 14px;
+}
+.resource-version.selected {
+  border-color: #aec696;
+  background: #f5f9ef;
+}
+.resource-version > button {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 15px;
+}
+.resource-version small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.resource-version .task-field {
+  margin-bottom: 0;
+}
+.resource-version .task-field input {
+  font-size: 10px;
+}
+.resource-scope {
+  margin: 10px 0 20px;
+}
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.resource-attachment {
+  color: var(--green);
+  background: #eef3e8;
+  border: 1px solid #d8e5cc;
+  border-radius: 7px;
+  padding: 8px 12px;
+  font-size: 11px;
+}
+.composer-attachments {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 10px 10px;
+}
+.composer-attachments > span {
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+  border-radius: 6px;
+  background: #edf3e7;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.composer-attachments button {
+  color: var(--muted);
+}

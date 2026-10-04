@@ -1,0 +1,810 @@
+# 回归用例静态索引
+
+由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
+
+共 77 个测试文件、420 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+
+## apps/api/src/coalesced-read.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:3](../../apps/api/src/coalesced-read.test.ts#L3) | shares overlapping reads but rechecks authority on the next completed read |
+| [it:25](../../apps/api/src/coalesced-read.test.ts#L25) | separates identities and bounds retained in-flight keys |
+
+## apps/api/tests/app.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:11](../../apps/api/tests/app.test.ts#L11) | API composition and response boundary → serves liveness independently of the database and exposes readiness failure |
+| [it:25](../../apps/api/tests/app.test.ts#L25) | API composition and response boundary → uses JSON Schema 2020-12 and rejects extra request properties |
+| [it:52](../../apps/api/tests/app.test.ts#L52) | API composition and response boundary → rejects a response that leaks a field beyond its schema |
+
+## apps/web/src/api.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:6](../../apps/web/src/api.test.ts#L6) | same-origin API commands → binds a reply to its displayed string version and reactions are explicit set/remove commands |
+| [it:30](../../apps/web/src/api.test.ts#L30) | same-origin API commands → retries an attachment message with the same fixed identifiers instead of uploading again |
+| [it:48](../../apps/web/src/api.test.ts#L48) | same-origin API commands → preserves a stable send identity, tenant boundary and CSRF on retries |
+| [it:77](../../apps/web/src/api.test.ts#L77) | same-origin API commands → edits bind the precise string version using a quoted If-Match |
+| [it:88](../../apps/web/src/api.test.ts#L88) | same-origin API commands → development login sends only the chosen principal and keeps tenant in its header |
+| [it:99](../../apps/web/src/api.test.ts#L99) | same-origin API commands → distinguishes access loss and conflicts without displaying server internals |
+
+## apps/web/src/app-location.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:6](../../apps/web/src/app-location.test.ts#L6) | round trips explicit resource locations without putting credentials or private text in URLs |
+| [it:18](../../apps/web/src/app-location.test.ts#L18) | does not accept forged scope or authority fields from a URL |
+
+## apps/web/src/conversation-sync.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:133](../../apps/web/src/conversation-sync.test.ts#L133) | ordered snapshot and WebSocket synchronization → preserves the recent snapshot history boundary for explicit older-message loading |
+| [it:141](../../apps/web/src/conversation-sync.test.ts#L141) | ordered snapshot and WebSocket synchronization → does not expose a partial snapshot or subscribe before the last stable page |
+| [it:163](../../apps/web/src/conversation-sync.test.ts#L163) | ordered snapshot and WebSocket synchronization → ACKs only after applying the event and answers heartbeat without marking read |
+| [it:181](../../apps/web/src/conversation-sync.test.ts#L181) | ordered snapshot and WebSocket synchronization → clears the view before restarting snapshot on authorization resync |
+| [it:195](../../apps/web/src/conversation-sync.test.ts#L195) | ordered snapshot and WebSocket synchronization → stops and clears content on revoked access, without acknowledging the revocation as read |
+| [it:209](../../apps/web/src/conversation-sync.test.ts#L209) | ordered snapshot and WebSocket synchronization → uses the last applied opaque cursor for HTTP catchup after disconnect |
+| [it:232](../../apps/web/src/conversation-sync.test.ts#L232) | ordered snapshot and WebSocket synchronization → closes a silently stalled socket after 45 seconds without server frames |
+| [it:248](../../apps/web/src/conversation-sync.test.ts#L248) | narrow browser projection parser → accepts a valid long Unicode message above the smaller client control-frame limit |
+| [it:262](../../apps/web/src/conversation-sync.test.ts#L262) | narrow browser projection parser → never coerces malformed actor kinds, statuses or control reasons into valid strings |
+| [it:288](../../apps/web/src/conversation-sync.test.ts#L288) | narrow browser projection parser → rejects unsupported schema and mismatched projection identities |
+| [it:297](../../apps/web/src/conversation-sync.test.ts#L297) | narrow browser projection parser → removes body content whenever the authoritative envelope says remove |
+
+## apps/web/src/execution/execution-api.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:5](../../apps/web/src/execution/execution-api.test.ts#L5) | runtime and action HTTP boundaries → binds approval to exact integer-string versions and reuses a caller command key after a lost response |
+| [it:34](../../apps/web/src/execution/execution-api.test.ts#L34) | runtime and action HTTP boundaries → routes unknown lookup through reconcile and has no worker execution methods |
+| [it:50](../../apps/web/src/execution/execution-api.test.ts#L50) | runtime and action HTTP boundaries → keeps listing cursors opaque and binds history to exactly one scope |
+| [it:69](../../apps/web/src/execution/execution-api.test.ts#L69) | runtime and action HTTP boundaries → uses the cursor-only schedule contract and versioned disable without a cancellation body |
+
+## apps/web/src/execution/execution-state.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:30](../../apps/web/src/execution/execution-state.test.ts#L30) | execution controls preserve authority and uncertainty → waits for actual pause and cancellation acknowledgement and never resumes terminal runs |
+| [it:37](../../apps/web/src/execution/execution-state.test.ts#L37) | execution controls preserve authority and uncertainty → only nominated humans can decide an unexpired exact approval binding under its current grant |
+| [it:63](../../apps/web/src/execution/execution-state.test.ts#L63) | execution controls preserve authority and uncertainty → an unknown result has only lookup controls even for its original requester |
+| [it:83](../../apps/web/src/execution/execution-state.test.ts#L83) | execution controls preserve authority and uncertainty → reports capacity and expiry without exposing internal error text |
+
+## apps/web/src/governance/governance-api.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:18](../../apps/web/src/governance/governance-api.test.ts#L18) | complete export verification → accepts correct byte hash and rejects truncated, interrupted, corrupt and duplicate footers |
+| [it:29](../../apps/web/src/governance/governance-api.test.ts#L29) | complete export verification → uses the authenticated same-origin resource path and never an export-controlled URL |
+
+## apps/web/src/knowledge/knowledge-api.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:5](../../apps/web/src/knowledge/knowledge-api.test.ts#L5) | keeps source versions and hashes unchanged when a human updates confirmation after response loss |
+| [it:38](../../apps/web/src/knowledge/knowledge-api.test.ts#L38) | encodes literal search and opaque cursors and only deletes the selected memory |
+
+## apps/web/src/message-state.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:42](../../apps/web/src/message-state.test.ts#L42) | message view boundaries → cannot retain old body content after the authorization generation changes |
+| [it:51](../../apps/web/src/message-state.test.ts#L51) | message view boundaries → never merges an account, tenant or scope into another view |
+| [it:69](../../apps/web/src/message-state.test.ts#L69) | message view boundaries → a newer redaction revision wins even with a lower entity version |
+| [it:85](../../apps/web/src/message-state.test.ts#L85) | message view boundaries → orders large sequence values without converting them to floating point |
+| [it:93](../../apps/web/src/message-state.test.ts#L93) | message view boundaries → a successful concurrent send survives an earlier polling snapshot |
+| [it:109](../../apps/web/src/message-state.test.ts#L109) | message view boundaries → response-loss retry and late network failure cannot create duplicate bubbles |
+| [it:134](../../apps/web/src/message-state.test.ts#L134) | Chinese composition and Enter shortcuts → does not send when any IME composition signal is active |
+| [it:143](../../apps/web/src/message-state.test.ts#L143) | Chinese composition and Enter shortcuts → preserves Shift+Enter and sends only a normal Enter |
+
+## apps/web/src/messages/message-interactions.test.tsx
+
+| 声明 | 用例 |
+|---|---|
+| [it:5](../../apps/web/src/messages/message-interactions.test.tsx#L5) | fixed message references → never renders an unavailable source body even if a malformed response still includes it |
+| [it:20](../../apps/web/src/messages/message-interactions.test.tsx#L20) | fixed message references → renders visible fixed content as text, without activating markup |
+
+## apps/web/src/notifications/notification-api.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:4](../../apps/web/src/notifications/notification-api.test.ts#L4) | marks only the displayed notification version as read with the authenticated tenant and CSRF token |
+| [it:18](../../apps/web/src/notifications/notification-api.test.ts#L18) | rejects stale authority and malformed deep-link responses |
+
+## apps/web/src/offline/offline-store.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:84](../../apps/web/src/offline/offline-store.test.ts#L84) | IndexedDB queue authority and crash recovery → does not resurrect cached content or profile after local erasure races pending writes |
+| [it:100](../../apps/web/src/offline/offline-store.test.ts#L100) | IndexedDB queue authority and crash recovery → requires both device consent and server policy and persists no credentials |
+| [it:118](../../apps/web/src/offline/offline-store.test.ts#L118) | IndexedDB queue authority and crash recovery → serializes competing tab claims and reclaims a crashed sender with the original key |
+| [it:147](../../apps/web/src/offline/offline-store.test.ts#L147) | IndexedDB queue authority and crash recovery → isolates tenants and principals even when a caller supplies a real queued identifier |
+| [it:158](../../apps/web/src/offline/offline-store.test.ts#L158) | IndexedDB queue authority and crash recovery → rejects changed commands and stops seven-day-old messages instead of creating fresh keys |
+| [it:173](../../apps/web/src/offline/offline-store.test.ts#L173) | IndexedDB queue authority and crash recovery → redacts histories, drafts and unsent command content when the authorization generation changes |
+| [it:189](../../apps/web/src/offline/offline-store.test.ts#L189) | IndexedDB queue authority and crash recovery → keeps uncertain delivery on the same key and reconciles a single remote effect |
+| [it:213](../../apps/web/src/offline/offline-store.test.ts#L213) | IndexedDB queue authority and crash recovery → does not send when membership was revoked and removes local plaintext immediately |
+| [it:235](../../apps/web/src/offline/offline-store.test.ts#L235) | IndexedDB queue authority and crash recovery → pauses on 401 and only resumes after the same authenticated principal returns |
+
+## apps/web/src/read-state.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:6](../../apps/web/src/read-state.test.ts#L6) | human read cursor → does not treat fetched or offscreen messages as read |
+| [it:18](../../apps/web/src/read-state.test.ts#L18) | human read cursor → does not advance in a hidden tab or behind a dialog |
+| [it:23](../../apps/web/src/read-state.test.ts#L23) | human read cursor → requires an actual visible part and preserves bigint message sequence precision |
+
+## apps/web/src/recovery/recovery.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:52](../../apps/web/src/recovery/recovery.test.ts#L52) | recovery review controls and transport → never offers orphan accounting for unknown, foreign, legacy or intact/conflicting records |
+| [it:70](../../apps/web/src/recovery/recovery.test.ts#L70) | recovery review controls and transport → requires re-review if the independent log changes even before the database fence changes |
+| [it:76](../../apps/web/src/recovery/recovery.test.ts#L76) | recovery review controls and transport → sends stable idempotency/version/tenant/CSRF bindings, while lookups accept no fabricated evidence |
+
+## apps/web/src/resources/artifact-collaboration-api.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:9](../../apps/web/src/resources/artifact-collaboration-api.test.ts#L9) | maps browser text selection to fixed Unicode character offsets without splitting a surrogate pair |
+| [it:15](../../apps/web/src/resources/artifact-collaboration-api.test.ts#L15) | downloads only the share endpoint and validates length and immutable hash |
+
+## apps/web/src/resources/resource-api.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:19](../../apps/web/src/resources/resource-api.test.ts#L19) | browser private resources → allows only bounded text formats before requesting an upload |
+| [it:27](../../apps/web/src/resources/resource-api.test.ts#L27) | browser private resources → direct upload omits session/tenant/CSRF credentials and lets the browser set signed byte length |
+| [it:48](../../apps/web/src/resources/resource-api.test.ts#L48) | browser private resources → a lost completion response retries the same complete command without PUT or upload creation again |
+| [it:76](../../apps/web/src/resources/resource-api.test.ts#L76) | browser private resources → downloads through the fixed gateway, verifies bytes and rejects tampered content |
+
+## apps/web/src/session-sync.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:5](../../apps/web/src/session-sync.test.ts#L5) | cross-tab session ownership → ignores its own publication even after BroadcastChannel structured cloning |
+| [it:11](../../apps/web/src/session-sync.test.ts#L11) | cross-tab session ownership → invalidates other tabs on the same login or logout publication |
+| [it:16](../../apps/web/src/session-sync.test.ts#L16) | cross-tab session ownership → ignores notifications without a valid session type and source ownership |
+
+## apps/web/src/tasks/task-api.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:5](../../apps/web/src/tasks/task-api.test.ts#L5) | promotes with fresh explicit task input and never copies run output into the command |
+| [it:39](../../apps/web/src/tasks/task-api.test.ts#L39) | takes over from escalation metadata without first reading private task content |
+
+## apps/web/src/tasks/task-state.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:5](../../apps/web/src/tasks/task-state.test.ts#L5) | task command boundaries → does not lose precision when converting money across the safe-number boundary |
+| [it:14](../../apps/web/src/tasks/task-state.test.ts#L14) | task command boundaries → retries the same terms/version under the same key and changes it on deliberate rebase |
+| [it:20](../../apps/web/src/tasks/task-state.test.ts#L20) | task command boundaries → requires explicit nonempty acceptance criteria and bounds their count |
+
+## packages/actions/src/journal.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:41](../../packages/actions/src/journal.test.ts#L41) | independently durable immutable journal → publishes complete files so simultaneous retries all observe the same signed fact |
+| [it:53](../../packages/actions/src/journal.test.ts#L53) | independently durable immutable journal → rejects changing an existing intent while preserving its original contents |
+| [it:62](../../packages/actions/src/journal.test.ts#L62) | independently durable immutable journal → ignores an unpublished crash temporary but never overwrites a corrupt published fact |
+| [it:75](../../packages/actions/src/journal.test.ts#L75) | independently durable immutable journal → detects tampering and refuses writable tenant directories or symlink records |
+| [it:94](../../packages/actions/src/journal.test.ts#L94) | independently durable immutable journal → retains a recovery freeze across journal process recreation |
+| [it:104](../../packages/actions/src/journal.test.ts#L104) | independently durable immutable journal → a signed unfreeze covers exactly the observed freeze set; a new freeze invalidates it |
+
+## packages/actions/src/recovery-tools.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:6](../../packages/actions/src/recovery-tools.test.ts#L6) | bound recovery HTTP lookup → uses only GET and binds provider evidence to tenant/action/attempt/fingerprint |
+| [it:60](../../packages/actions/src/recovery-tools.test.ts#L60) | bound recovery HTTP lookup → preserves unknown for not_found, absent binding and an out-of-range amount |
+
+## packages/application/src/policy-ledger.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:33](../../packages/application/src/policy-ledger.test.ts#L33) | independent signed policy ledger → publishes one immutable complete fact under concurrent retries and reopens it |
+| [it:43](../../packages/application/src/policy-ledger.test.ts#L43) | independent signed policy ledger → rejects tampering, malformed metadata, and a changed signing key |
+| [it:61](../../packages/application/src/policy-ledger.test.ts#L61) | independent signed policy ledger → rejects writable directories and symlinked records |
+
+## packages/application/test/cursor.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:6](../../packages/application/test/cursor.test.ts#L6) | opaque, authenticated cursor boundaries → round trips exact bigint positions without exposing position or authorization binding |
+| [it:15](../../packages/application/test/cursor.test.ts#L15) | opaque, authenticated cursor boundaries → rejects user/scope/generation changes, corruption and a different server secret |
+
+## packages/auth/test/auth.integration.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:118](../../packages/auth/test/auth.integration.test.ts#L118) | Opaque browser sessions with real database roles → identity and application roles cannot access each other’s private data |
+| [it:136](../../packages/auth/test/auth.integration.test.ts#L136) | Opaque browser sessions with real database roles → persists only token digests, uses an opaque secure cookie, and returns authorized me data |
+| [it:174](../../packages/auth/test/auth.integration.test.ts#L174) | Opaque browser sessions with real database roles → requires both the exact origin and matching CSRF token for unsafe methods |
+| [it:201](../../packages/auth/test/auth.integration.test.ts#L201) | Opaque browser sessions with real database roles → rejects unjoined tenants, revoked membership and suspended tenants on every request |
+| [it:247](../../packages/auth/test/auth.integration.test.ts#L247) | Opaque browser sessions with real database roles → rotates sessions on login and enforces expiry, logout and global principal disable |
+| [it:291](../../packages/auth/test/auth.integration.test.ts#L291) | Opaque browser sessions with real database roles → allows only own session inspection/revocation and does not expose hashes |
+| [it:307](../../packages/auth/test/auth.integration.test.ts#L307) | Opaque browser sessions with real database roles → development login is closed by default, denies nonallowlisted identities and is forbidden in production |
+| [it:345](../../packages/auth/test/auth.integration.test.ts#L345) | OIDC authorization code flow over real HTTP → sets a bound login cookie and rotates to a session through the actual callback route |
+| [it:370](../../packages/auth/test/auth.integration.test.ts#L370) | OIDC authorization code flow over real HTTP → validates PKCE/state/nonce and JWT signature, maps issuer+subject, and consumes attempt exactly once |
+| [it:395](../../packages/auth/test/auth.integration.test.ts#L395) | OIDC authorization code flow over real HTTP → rejects incorrect state, wrong browser binding, wrong callback URL and expired attempts before token exchange |
+| [it.each:422](../../packages/auth/test/auth.integration.test.ts#L422) | OIDC authorization code flow over real HTTP → rejects invalid token %s |
+| [it:433](../../packages/auth/test/auth.integration.test.ts#L433) | OIDC authorization code flow over real HTTP → rejects open redirects and concurrent callback replay |
+
+## packages/contracts/test/contracts.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it.each:49](../../packages/contracts/test/contracts.test.ts#L49) | lossless wire values → accepts version %s without numeric coercion |
+| [it.each:57](../../packages/contracts/test/contracts.test.ts#L57) | lossless wire values → rejects noncanonical/overflow version %s |
+| [it:74](../../packages/contracts/test/contracts.test.ts#L74) | lossless wire values → handles zero only for counters and keeps bigint JSON numeric values invalid |
+| [it:81](../../packages/contracts/test/contracts.test.ts#L81) | lossless wire values → validates real UTC calendar dates rather than accepting offsets or invalid dates |
+| [it:88](../../packages/contracts/test/contracts.test.ts#L88) | lossless wire values → uses UUIDs and rejects illustrative prefixed documentation IDs |
+| [it:96](../../packages/contracts/test/contracts.test.ts#L96) | authenticated command boundaries → accepts a message without accepting any caller-selected actor or role |
+| [it:104](../../packages/contracts/test/contracts.test.ts#L104) | authenticated command boundaries → does not coerce, strip unknown keys, or inject defaults |
+| [it:113](../../packages/contracts/test/contracts.test.ts#L113) | authenticated command boundaries → bounds arrays and prevents duplicate conversation members/attachments |
+| [it:129](../../packages/contracts/test/contracts.test.ts#L129) | authenticated command boundaries → requires handoff/approval versions and rejects forged deciders |
+| [it:140](../../packages/contracts/test/contracts.test.ts#L140) | bounded JSON parsing → enforces UTF-8 bytes before parsing and bounds strings afterwards |
+| [it:149](../../packages/contracts/test/contracts.test.ts#L149) | bounded JSON parsing → rejects deeply nested structures before schema evaluation |
+| [it:157](../../packages/contracts/test/contracts.test.ts#L157) | bounded JSON parsing → rejects cyclic values, functions, non-finite numbers and dangerous accessors |
+| [it:170](../../packages/contracts/test/contracts.test.ts#L170) | bounded JSON parsing → does not report shared ordinary JSON subobjects as cycles |
+| [it:185](../../packages/contracts/test/contracts.test.ts#L185) | bounded JSON parsing → returns safe schema errors without embedding rejected payload values |
+| [it:197](../../packages/contracts/test/contracts.test.ts#L197) | DTO and WebSocket distinctions → requires the session/CSRF restoration context and uses the human principal kind |
+| [it:224](../../packages/contracts/test/contracts.test.ts#L224) | DTO and WebSocket distinctions → bounds member roles, reactions and lossless read cursors |
+| [it:245](../../packages/contracts/test/contracts.test.ts#L245) | DTO and WebSocket distinctions → preserves lossless entity and independent projection versions |
+| [it:253](../../packages/contracts/test/contracts.test.ts#L253) | DTO and WebSocket distinctions → keeps transport ACK separate from task acceptance |
+| [it:267](../../packages/contracts/test/contracts.test.ts#L267) | DTO and WebSocket distinctions → accepts a bounded projection summary but not unversioned or arbitrary payloads |
+| [it:287](../../packages/contracts/test/contracts.test.ts#L287) | DTO and WebSocket distinctions → accepts materialized snapshot content and preserves opaque empty-page progress |
+| [it:324](../../packages/contracts/test/contracts.test.ts#L324) | DTO and WebSocket distinctions → does not apply the request-byte cap to bounded message pages |
+| [it:333](../../packages/contracts/test/contracts.test.ts#L333) | schema/OpenAPI generation foundation → publishes self-contained schemas with stable IDs and a 2020-12 dialect |
+| [it:359](../../packages/contracts/test/contracts.test.ts#L359) | schema/OpenAPI generation foundation → generates OpenAPI 3.1.1 distinguishing implemented and modeled route contracts |
+| [it:388](../../packages/contracts/test/contracts.test.ts#L388) | schema/OpenAPI generation foundation → requires the headers enforced by member mutations and models no-content auth results |
+| [it:405](../../packages/contracts/test/contracts.test.ts#L405) | schema/OpenAPI generation foundation → catches deleted components, broken references and duplicate operation IDs |
+| [it:431](../../packages/contracts/test/contracts.test.ts#L431) | M2 explicit work commands and disclosure boundaries → does not permit callers to set owner, actor, execution epoch, or numeric budgets |
+| [it:444](../../packages/contracts/test/contracts.test.ts#L444) | M2 explicit work commands and disclosure boundaries → pins evidence identity and rejects ambiguous artifact references and decision impersonation |
+| [it:469](../../packages/contracts/test/contracts.test.ts#L469) | M2 explicit work commands and disclosure boundaries → does not silently authorize external tools through a work proposal |
+
+## packages/db/test/postgres.integration.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:158](../../packages/db/test/postgres.integration.test.ts#L158) | PostgreSQL isolation and persistence invariants → runs migrations idempotently and forces RLS on every tenant table |
+| [it:192](../../packages/db/test/postgres.integration.test.ts#L192) | PostgreSQL isolation and persistence invariants → fails closed without tenant context and never grants credential reads to application role |
+| [it:211](../../packages/db/test/postgres.integration.test.ts#L211) | PostgreSQL isolation and persistence invariants → resets transaction-local tenant context on a reused pool connection after commit and rollback |
+| [it:237](../../packages/db/test/postgres.integration.test.ts#L237) | PostgreSQL isolation and persistence invariants → rejects cross-tenant writes and composite FK references even when UUIDs are known |
+| [it:277](../../packages/db/test/postgres.integration.test.ts#L277) | PostgreSQL isolation and persistence invariants → keeps stream sequence allocation in commit order when the first transaction stalls |
+| [it:318](../../packages/db/test/postgres.integration.test.ts#L318) | PostgreSQL isolation and persistence invariants → rolls back sequence reservations and preserves bigint precision |
+| [it:344](../../packages/db/test/postgres.integration.test.ts#L344) | PostgreSQL isolation and persistence invariants → atomically rolls back business mutation, domain event, and outbox intent |
+| [it:400](../../packages/db/test/postgres.integration.test.ts#L400) | PostgreSQL isolation and persistence invariants → enforces root ancestry and prevents moving a task tree after creation |
+
+## packages/domain/tests/action.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:29](../../packages/domain/tests/action.test.ts#L29) | action and attempt separation → an action awaiting approval cannot be dispatched |
+| [it:41](../../packages/domain/tests/action.test.ts#L41) | action and attempt separation → unknown outcomes never enter the ordinary retry path and cannot be cancelled away |
+| [it:76](../../packages/domain/tests/action.test.ts#L76) | action and attempt separation → a safe retry preserves business identity, respects delay, and creates a fresh attempt |
+| [it:123](../../packages/domain/tests/action.test.ts#L123) | action and attempt separation → partial effects and revoked authority prohibit ordinary retries |
+| [it:154](../../packages/domain/tests/action.test.ts#L154) | action and attempt separation → a receipt for another action or old attempt cannot settle the current action |
+
+## packages/domain/tests/budget-and-dependency.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:23](../../packages/domain/tests/budget-and-dependency.test.ts#L23) | hierarchical budget ledger → siblings share root capacity instead of each receiving the whole allowance |
+| [it:43](../../packages/domain/tests/budget-and-dependency.test.ts#L43) | hierarchical budget ledger → enforces narrower child limits even when the root has funds |
+| [it:58](../../packages/domain/tests/budget-and-dependency.test.ts#L58) | hierarchical budget ledger → retains unknown cost reservations independently of worker lifetime |
+| [it:85](../../packages/domain/tests/budget-and-dependency.test.ts#L85) | hierarchical budget ledger → records real over-estimate charges and blocks new work without inventing a hard cap |
+| [it:112](../../packages/domain/tests/budget-and-dependency.test.ts#L112) | hierarchical budget ledger → same keys are idempotent but cannot acquire different business meanings |
+| [it:139](../../packages/domain/tests/budget-and-dependency.test.ts#L139) | hierarchical budget ledger → preserves exact bigint costs beyond JavaScript number precision |
+| [it:155](../../packages/domain/tests/budget-and-dependency.test.ts#L155) | hierarchical budget ledger → reservations and unique settlements conserve the root ledger under repetition |
+| [it:201](../../packages/domain/tests/budget-and-dependency.test.ts#L201) | task dependency graph → detects a cross-root cycle closed by previously disjoint edges |
+| [it:213](../../packages/domain/tests/budget-and-dependency.test.ts#L213) | task dependency graph → handles duplicate edges, self-loops and long chains without recursion |
+| [it:224](../../packages/domain/tests/budget-and-dependency.test.ts#L224) | task dependency graph → arbitrary ordered DAG edges remain acyclic; adding the reverse of an edge closes a cycle |
+
+## packages/domain/tests/lease-and-request.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:14](../../packages/domain/tests/lease-and-request.test.ts#L14) | execution leases → rejects an expired worker before another worker has claimed its lease |
+| [it:31](../../packages/domain/tests/lease-and-request.test.ts#L31) | execution leases → requires matching run, holder and generation independently |
+| [it:48](../../packages/domain/tests/lease-and-request.test.ts#L48) | execution leases → expiry is a strict boundary for every generated lease |
+| [it:88](../../packages/domain/tests/lease-and-request.test.ts#L88) | collaboration requests → accepted proposal versions are fixed and accepted facts cannot be withdrawn |
+| [it:120](../../packages/domain/tests/lease-and-request.test.ts#L120) | collaboration requests → cannot accept an expired request even before the expiry worker runs |
+| [it:138](../../packages/domain/tests/lease-and-request.test.ts#L138) | collaboration requests → clarification does not itself become acceptance |
+
+## packages/domain/tests/task-and-run.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:30](../../packages/domain/tests/task-and-run.test.ts#L30) | task responsibility and fencing → handoff changes exactly one owner and preserves the accountable principal |
+| [it:60](../../packages/domain/tests/task-and-run.test.ts#L60) | task responsibility and fencing → completion requires independent acceptance, closed required work and evidence |
+| [it:104](../../packages/domain/tests/task-and-run.test.ts#L104) | task responsibility and fencing → block/resume restores the recorded state and never changes ownership |
+| [it:115](../../packages/domain/tests/task-and-run.test.ts#L115) | task responsibility and fencing → ancestor cancellation blocks a child before child state propagation |
+| [it:141](../../packages/domain/tests/task-and-run.test.ts#L141) | task responsibility and fencing → every cancellation/reopen cycle permanently fences all previous generations |
+| [it:171](../../packages/domain/tests/task-and-run.test.ts#L171) | run lifecycle → a lightweight reply needs no task, while persistent actions do |
+| [it:193](../../packages/domain/tests/task-and-run.test.ts#L193) | run lifecycle → a finished run cannot be resumed, even when its task is reopened |
+| [it:204](../../packages/domain/tests/task-and-run.test.ts#L204) | run lifecycle → waiting, paused and cancelling runs can expire without losing cancellation intent |
+| [it:224](../../packages/domain/tests/task-and-run.test.ts#L224) | run lifecycle → cancelled requires platform execution revocation and registration of unresolved actions |
+| [it:242](../../packages/domain/tests/task-and-run.test.ts#L242) | run lifecycle → pause is only confirmed at a safe checkpoint |
+| [it:253](../../packages/domain/tests/task-and-run.test.ts#L253) | run lifecycle → errors retain machine-readable code/status and safe explicit details |
+
+## packages/notifications/src/push-transport.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it.each:39](../../packages/notifications/src/push-transport.test.ts#L39) | classifies provider HTTP %s without redirect or response-body processing |
+| [it:86](../../packages/notifications/src/push-transport.test.ts#L86) | blocks mixed private DNS answers and revoked authority before starting HTTP |
+
+## packages/notifications/src/push.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:19](../../packages/notifications/src/push.test.ts#L19) | Web Push subscription secrecy and endpoint policy → encrypts at rest with randomized ciphertext and authenticates the complete device binding |
+| [it:31](../../packages/notifications/src/push.test.ts#L31) | Web Push subscription secrecy and endpoint policy → rejects unsafe endpoint forms and non-public DNS results |
+| [it:59](../../packages/notifications/src/push.test.ts#L59) | Web Push subscription secrecy and endpoint policy → requires complete configuration and generates encrypted VAPID protocol requests without disclosing plaintext |
+
+## packages/notifications/src/time.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:4](../../packages/notifications/src/time.test.ts#L4) | IANA do-not-disturb wall clock windows → covers both fall-back hours and skips nonexistent spring wall times |
+| [it:11](../../packages/notifications/src/time.test.ts#L11) | IANA do-not-disturb wall clock windows → defines overnight, end-exclusive, all-day and disabled windows |
+| [it:18](../../packages/notifications/src/time.test.ts#L18) | IANA do-not-disturb wall clock windows → rejects unknown zones and malformed clocks |
+
+## packages/scheduling/src/calendar.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:11](../../packages/scheduling/src/calendar.test.ts#L11) | IANA daily calendar → skips the New York spring gap and selects only the first fall-fold instant |
+| [it:26](../../packages/scheduling/src/calendar.test.ts#L26) | IANA daily calendar → handles half-hour DST and a skipped civil date without coercing nonexistent wall times |
+| [it:33](../../packages/scheduling/src/calendar.test.ts#L33) | IANA daily calendar → coalesces several due days once, while skip advances the persisted cursor without catch-up |
+| [it:53](../../packages/scheduling/src/calendar.test.ts#L53) | IANA daily calendar → uses inclusive start and an exclusive absolute deadline for one-off and daily schedules |
+| [it:71](../../packages/scheduling/src/calendar.test.ts#L71) | IANA daily calendar → rejects numeric offsets and invalid zones or local times |
+
+## tests/e2e/agent-management.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:2](../../tests/e2e/agent-management.spec.ts#L2) | administrator registers an external Agent, issues a one-time credential, revokes it after reload and disables the installation |
+
+## tests/e2e/governance.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:11](../../tests/e2e/governance.spec.ts#L11) | exports only the selected live scope, verifies a complete file, and shows deployed privacy policy |
+
+## tests/e2e/knowledge.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:153](../../tests/e2e/knowledge.spec.ts#L153) | search excludes private content and explicit memory supports human confirmation, conflict, disable and deletion |
+| [test:225](../../tests/e2e/knowledge.spec.ts#L225) | source membership revocation clears personal derived memory, visible details and an open editing draft |
+
+## tests/e2e/message-interactions.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:14](../../tests/e2e/message-interactions.spec.ts#L14) | human replies bind fixed text, thread replies share the root, and reaction removal affects only oneself |
+
+## tests/e2e/messaging.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:23](../../tests/e2e/messaging.spec.ts#L23) | two people exchange messages, see edits/retractions, and never execute message markup |
+| [test:71](../../tests/e2e/messaging.spec.ts#L71) | a lost POST response reconciles to one persisted message and mobile layout remains usable |
+
+## tests/e2e/notifications.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:9](../../tests/e2e/notifications.spec.ts#L9) | opens a notification under current authority, marks it read, and saves reminder preferences |
+
+## tests/e2e/offline.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:2](../../tests/e2e/offline.spec.ts#L2) | explicit device consent queues a message while offline, sends once after reauthorization and erases local data on logout |
+
+## tests/e2e/pwa.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:20](../../tests/e2e/pwa.spec.ts#L20) | production shell reloads offline and CacheStorage never contains API or cached message bodies |
+
+## tests/e2e/recent-history.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:13](../../tests/e2e/recent-history.spec.ts#L13) | loads older messages beyond the bounded recent snapshot and resolves a deep link outside that window |
+
+## tests/e2e/resources.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:185](../../tests/e2e/resources.spec.ts#L185) | real browser S3 upload creates immutable versions and submits the selected version as task evidence |
+| [test:243](../../tests/e2e/resources.spec.ts#L243) | conversation attachments publish after verification and deletion removes the usable attachment |
+| [test:299](../../tests/e2e/resources.spec.ts#L299) | fixed-version comments anchor selected Unicode text and a controlled share grants only its download until revoked |
+
+## tests/e2e/runtime-actions.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:279](../../tests/e2e/runtime-actions.spec.ts#L279) | runtime UI discloses fixed context and budget, controls real runs, and restores scoped history |
+| [test:312](../../tests/e2e/runtime-actions.spec.ts#L312) | grant → proposal → exact human approval → lost response → lookup has one external effect |
+| [test:377](../../tests/e2e/runtime-actions.spec.ts#L377) | a revoked source removes previously visible run context from the browser |
+| [test:397](../../tests/e2e/runtime-actions.spec.ts#L397) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
+| [test:478](../../tests/e2e/runtime-actions.spec.ts#L478) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
+
+## tests/e2e/scheduling-promotion.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:111](../../tests/e2e/scheduling-promotion.spec.ts#L111) | finite wakeup UI creates, revises and disables a plan without resetting or resuming the original run |
+| [test:212](../../tests/e2e/scheduling-promotion.spec.ts#L212) | conversation run promotion requires a new goal and explicit authorization; revoked origin disappears |
+| [test:273](../../tests/e2e/scheduling-promotion.spec.ts#L273) | administrator sees escalation metadata only until explicitly taking responsibility for the private task |
+
+## tests/e2e/tasks.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:15](../../tests/e2e/tasks.spec.ts#L15) | a human explicitly submits fixed evidence and separately accepts it before a task completes |
+| [test:22](../../tests/e2e/tasks.spec.ts#L22) | reading a handoff proposal does not change ownership; explicit acceptance changes both views |
+
+## tests/integration/action-journal.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:127](../../tests/integration/action-journal.test.ts#L127) | intent retry and restore fencing with real PostgreSQL and signed files → retries a durable intent after its acknowledgement is lost without changing its timestamp |
+| [it:166](../../tests/integration/action-journal.test.ts#L166) | intent retry and restore fencing with real PostgreSQL and signed files → rejects an expired claimant before writing any independent intent |
+| [it:177](../../tests/integration/action-journal.test.ts#L177) | intent retry and restore fencing with real PostgreSQL and signed files → opens a restore case for a terminal attempt with the wrong lease generation |
+| [it:202](../../tests/integration/action-journal.test.ts#L202) | intent retry and restore fencing with real PostgreSQL and signed files → does not accept a terminal attempt attached to another action as a recovered match |
+
+## tests/integration/action-recovery.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:240](../../tests/integration/action-recovery.test.ts#L240) | orphan intent accounting and explicit safe unfreeze → accepts a bound terminal no-effect receipt without charging or retrying the old business action |
+| [it:273](../../tests/integration/action-recovery.test.ts#L273) | orphan intent accounting and explicit safe unfreeze → compensates every original ancestor budget exactly once for a restored child task |
+| [it:339](../../tests/integration/action-recovery.test.ts#L339) | orphan intent accounting and explicit safe unfreeze → performs read-only provider reconciliation, charges once, preserves old keys and explicitly unfreezes |
+| [it:394](../../tests/integration/action-recovery.test.ts#L394) | orphan intent accounting and explicit safe unfreeze → does not turn missing or incorrectly bound provider evidence into zero cost or permission to unfreeze |
+| [it:419](../../tests/integration/action-recovery.test.ts#L419) | orphan intent accounting and explicit safe unfreeze → retains the freeze when a signed intent lacks legacy version/budget bindings or its account is missing |
+| [it:461](../../tests/integration/action-recovery.test.ts#L461) | orphan intent accounting and explicit safe unfreeze → retries lost independent unfreeze acknowledgements without repeating accounting or external sends |
+| [it:494](../../tests/integration/action-recovery.test.ts#L494) | orphan intent accounting and explicit safe unfreeze → requires a fresh human confirmation after a newer freeze and detects conflicting late durable receipts |
+| [it:533](../../tests/integration/action-recovery.test.ts#L533) | orphan intent accounting and explicit safe unfreeze → does not reuse a provider receipt across orphan actions and keeps the second charge unresolved |
+| [it:567](../../tests/integration/action-recovery.test.ts#L567) | orphan intent accounting and explicit safe unfreeze → requires a current human tenant admin and does not expose another tenant recovery case |
+| [it:584](../../tests/integration/action-recovery.test.ts#L584) | orphan intent accounting and explicit safe unfreeze → exposes explicit HTTP review without accepting caller-supplied provider evidence |
+
+## tests/integration/actions.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:54](../../tests/integration/actions.test.ts#L54) | controlled actions with real PostgreSQL, HTTP and independent signed journal → requires explicit approval, records durable intent before the effect, and settles once |
+| [it:62](../../tests/integration/actions.test.ts#L62) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retains an unknown result after response loss, queries it, and never resends the business action |
+| [it:70](../../tests/integration/actions.test.ts#L70) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retries confirmed no-effect attempts under the same action, fingerprint and business key |
+| [it:75](../../tests/integration/actions.test.ts#L75) | controlled actions with real PostgreSQL, HTTP and independent signed journal → invalidates old approval after changing parameters and refuses revoked grants before effects |
+| [it:81](../../tests/integration/actions.test.ts#L81) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects expired leases even before takeover and retains unresolved attempts |
+| [it:87](../../tests/integration/actions.test.ts#L87) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive a grant or action when a disabled global identity is re-enabled |
+| [it:94](../../tests/integration/actions.test.ts#L94) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive old authority after task membership removal/reinvitation or epoch changes |
+| [it:103](../../tests/integration/actions.test.ts#L103) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an expired approval before opening a network attempt |
+| [it:108](../../tests/integration/actions.test.ts#L108) | controlled actions with real PostgreSQL, HTTP and independent signed journal → deduplicates the same receipt and preserves a conflicting late receipt as an open case |
+| [it:116](../../tests/integration/actions.test.ts#L116) | controlled actions with real PostgreSQL, HTTP and independent signed journal → enforces human HTTP approval contracts and never exposes internal execution/report capabilities |
+| [it:129](../../tests/integration/actions.test.ts#L129) | controlled actions with real PostgreSQL, HTTP and independent signed journal → finds a whole action lost across a simulated database recovery and freezes new execution |
+
+## tests/integration/agents.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:123](../../tests/integration/agents.test.ts#L123) | M4 machine identity and real HTTP external execution → provisions one identity across concurrent retries and does not grant conversation or task access |
+| [it:145](../../tests/integration/agents.test.ts#L145) | M4 machine identity and real HTTP external execution → stores only credential/token hashes and withholds one-time secrets on replay |
+| [it:174](../../tests/integration/agents.test.ts#L174) | M4 machine identity and real HTTP external execution → binds message authors server-side, deduplicates writes and enforces token scope and tenant |
+| [it:208](../../tests/integration/agents.test.ts#L208) | M4 machine identity and real HTTP external execution → revokes already-authenticated contexts inside business transactions and expires tokens by database clock |
+| [it:228](../../tests/integration/agents.test.ts#L228) | M4 machine identity and real HTTP external execution → idempotently claims a lease, rejects other agents and fences expired/rotated workers |
+| [it:257](../../tests/integration/agents.test.ts#L257) | M4 machine identity and real HTTP external execution → marks completed external reports as unverified and rechecks authorization on report replay |
+| [it:280](../../tests/integration/agents.test.ts#L280) | M4 machine identity and real HTTP external execution → does not revive old tokens after global disable/re-enable or installation disable |
+| [it:299](../../tests/integration/agents.test.ts#L299) | M4 machine identity and real HTTP external execution → requires explicit handoff acceptance for human→agent and agent→agent ownership changes |
+| [it:398](../../tests/integration/agents.test.ts#L398) | SDK retries a lost command response with identical key/body and produces one message |
+| [it:436](../../tests/integration/agents.test.ts#L436) | human Agent management read boundaries → lists credential metadata with actor-bound paging, never hashes or recoverable secrets |
+
+## tests/integration/artifact-collaboration.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:126](../../tests/integration/artifact-collaboration.test.ts#L126) | version-anchored Artifact comments and bounded explicit sharing → fixes comments to the selected version/hash and validates Unicode scalar anchors without moving them on edit |
+| [it:198](../../tests/integration/artifact-collaboration.test.ts#L198) | version-anchored Artifact comments and bounded explicit sharing → lets the explicitly named recipient read only the share while leaving source ACL and other recipients unchanged |
+| [it:232](../../tests/integration/artifact-collaboration.test.ts#L232) | version-anchored Artifact comments and bounded explicit sharing → requires original ownership plus live source and recipient fences, including removal and re-add |
+| [it:286](../../tests/integration/artifact-collaboration.test.ts#L286) | version-anchored Artifact comments and bounded explicit sharing → binds a group disclosure to its current audience generation and does not automatically extend it to a new member |
+| [it:317](../../tests/integration/artifact-collaboration.test.ts#L317) | version-anchored Artifact comments and bounded explicit sharing → stops an in-flight shared download after revoke and denies expired or deleted-source grants |
+| [it:355](../../tests/integration/artifact-collaboration.test.ts#L355) | version-anchored Artifact comments and bounded explicit sharing → replays independent share revocation and comment deletion after a simulated database restore |
+| [it:403](../../tests/integration/artifact-collaboration.test.ts#L403) | version-anchored Artifact comments and bounded explicit sharing → authenticates share HTTP downloads and never redirects to storage or returns the underlying resource locator |
+
+## tests/integration/exports.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:48](../../tests/integration/exports.test.ts#L48) | scoped live exports → exports current authorized messages with integrity marker; creation is idempotent and actor bound |
+| [it:70](../../tests/integration/exports.test.ts#L70) | scoped live exports → stops a download at revocation and never emits a successful complete marker |
+| [it:103](../../tests/integration/exports.test.ts#L103) | scoped live exports → personal export excludes shared memories and respects expiry and invalid scopes |
+| [it:138](../../tests/integration/exports.test.ts#L138) | scoped live exports → HTTP exposes policy, guarded creation, and an attachment stream with current-session checks |
+
+## tests/integration/governance.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:53](../../tests/integration/governance.test.ts#L53) | deletion and permission recovery → records only authorized deletion and synchronously removes derived memory and projection bodies |
+| [it:110](../../tests/integration/governance.test.ts#L110) | deletion and permission recovery → replays the independent accepted intent after an interrupted database transaction |
+| [it:133](../../tests/integration/governance.test.ts#L133) | deletion and permission recovery → restored old message and memory bodies are erased before reads resume, with concurrent replay once |
+| [it:187](../../tests/integration/governance.test.ts#L187) | deletion and permission recovery → restores revocations while preserving a later explicit regrant |
+| [it:216](../../tests/integration/governance.test.ts#L216) | deletion and permission recovery → ledger failure prevents acknowledgment and database mutation |
+
+## tests/integration/http.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:60](../../tests/integration/http.test.ts#L60) | HTTP contracts, real sessions and persisted messaging → requires a current session, exposes only active capabilities and preserves security headers |
+| [it:78](../../tests/integration/http.test.ts#L78) | HTTP contracts, real sessions and persisted messaging → rejects unsafe cross-origin requests and forged actor fields before persistence |
+| [it:101](../../tests/integration/http.test.ts#L101) | HTTP contracts, real sessions and persisted messaging → sends, reads, edits and retracts messages with strong ETags and server-authoritative authors |
+| [it:161](../../tests/integration/http.test.ts#L161) | HTTP contracts, real sessions and persisted messaging → normalizes malformed, oversized and unknown endpoint errors without stack or credential leaks |
+
+## tests/integration/knowledge.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:141](../../tests/integration/knowledge.test.ts#L141) | current-authorized mixed-language search and explicit source-bound memory → matches Chinese, English and NFKC text in message bodies and private Task goals without leaking hidden candidates |
+| [it:156](../../tests/integration/knowledge.test.ts#L156) | current-authorized mixed-language search and explicit source-bound memory → searches verified Artifact text, returns fixed version/hash and retracts its document immediately after source deletion |
+| [it:190](../../tests/integration/knowledge.test.ts#L190) | current-authorized mixed-language search and explicit source-bound memory → saves private memory explicitly, preserves revisions and never interprets its content as authority |
+| [it:240](../../tests/integration/knowledge.test.ts#L240) | current-authorized mixed-language search and explicit source-bound memory → rejects cross-scope derived memories and only permits confirmed active items as Runtime input |
+| [it:292](../../tests/integration/knowledge.test.ts#L292) | current-authorized mixed-language search and explicit source-bound memory → does not revive derived memory after source edit or membership removal and re-add, and reconciles redacted revisions |
+| [it:347](../../tests/integration/knowledge.test.ts#L347) | current-authorized mixed-language search and explicit source-bound memory → excludes expired memory and forbids Agent/service callers from self-confirming a new item |
+| [it:379](../../tests/integration/knowledge.test.ts#L379) | current-authorized mixed-language search and explicit source-bound memory → binds opaque pagination to the caller/query/current ACL and enforces since-join history before matching |
+| [it:405](../../tests/integration/knowledge.test.ts#L405) | current-authorized mixed-language search and explicit source-bound memory → serves authenticated HTTP search and requires session Origin/CSRF for explicit writes |
+
+## tests/integration/machine-knowledge.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:11](../../tests/integration/machine-knowledge.test.ts#L11) | machine knowledge HTTP and SDK require explicit scope and current source membership without exposing personal memory |
+
+## tests/integration/machine-run-tools.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:242](../../tests/integration/machine-run-tools.test.ts#L242) | machine tool intention and execution HTTP leases → cannot execute merely because a human approved; explicit human resume and new lease are required |
+| [it:271](../../tests/integration/machine-run-tools.test.ts#L271) | machine tool intention and execution HTTP leases → requires scope, matching credential holder and unexpired DB lease for every proposal |
+| [it:325](../../tests/integration/machine-run-tools.test.ts#L325) | machine tool intention and execution HTTP leases → rejects payload authority injection and blocks execution after token revocation |
+
+## tests/integration/maintenance.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:84](../../tests/integration/maintenance.test.ts#L84) | durable task maintenance and escalation → blocks an unavailable owner once under concurrent scans and audits the service identity |
+| [it:139](../../tests/integration/maintenance.test.ts#L139) | durable task maintenance and escalation → detects loss of the owner participant independently of global identity or workspace membership |
+| [it:151](../../tests/integration/maintenance.test.ts#L151) | durable task maintenance and escalation → blocks an execution deadline using database time and does not execute or complete work |
+| [it:167](../../tests/integration/maintenance.test.ts#L167) | durable task maintenance and escalation → expires requests durably without implying acceptance or changing the owner |
+| [it:191](../../tests/integration/maintenance.test.ts#L191) | durable task maintenance and escalation → routes unresolved escalation to active workspace administrators after the assignee leaves |
+
+## tests/integration/message-interactions.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:50](../../tests/integration/message-interactions.test.ts#L50) | message threads, fixed quotes and reactions → freezes quote version across edits and redacts/deletes retained source revisions on withdrawal |
+| [it:114](../../tests/integration/message-interactions.test.ts#L114) | message threads, fixed quotes and reactions → requires precise quote versions, same-conversation sources and canonical thread roots |
+| [it:178](../../tests/integration/message-interactions.test.ts#L178) | message threads, fixed quotes and reactions → never leaks older quoted text or thread identifiers to members whose history starts later, including sync |
+| [it:215](../../tests/integration/message-interactions.test.ts#L215) | message threads, fixed quotes and reactions → deduplicates reactions under concurrency without changing message order and only removes the actor’s own reaction |
+| [it:249](../../tests/integration/message-interactions.test.ts#L249) | message threads, fixed quotes and reactions → denies reaction and quote reads after workspace or conversation revocation |
+
+## tests/integration/messaging.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:40](../../tests/integration/messaging.test.ts#L40) | real PostgreSQL messaging commands and current permissions → concurrent command retries commit one conversation and one event/outbox |
+| [it:62](../../tests/integration/messaging.test.ts#L62) | real PostgreSQL messaging commands and current permissions → membership and tenant isolation apply to both lookup and enumeration |
+| [it:76](../../tests/integration/messaging.test.ts#L76) | real PostgreSQL messaging commands and current permissions → concurrent repeated sends allocate once and reject reused client message identity |
+| [it:90](../../tests/integration/messaging.test.ts#L90) | real PostgreSQL messaging commands and current permissions → latest-first pagination is caller-bound, and stale authorization cursors require resync |
+| [it:119](../../tests/integration/messaging.test.ts#L119) | real PostgreSQL messaging commands and current permissions → since-join history blocks earlier bodies and reply references |
+| [it:148](../../tests/integration/messaging.test.ts#L148) | real PostgreSQL messaging commands and current permissions → concurrent edits require the same current version and retain the old revision |
+| [it:179](../../tests/integration/messaging.test.ts#L179) | real PostgreSQL messaging commands and current permissions → revocation blocks reads, new sends, and previously successful command replays |
+| [it:207](../../tests/integration/messaging.test.ts#L207) | real PostgreSQL messaging commands and current permissions → workspace membership revocation closes old conversation access and enumeration |
+| [it:234](../../tests/integration/messaging.test.ts#L234) | real PostgreSQL messaging commands and current permissions → read cursors remain monotonic and reject positions outside the visible stream |
+
+## tests/integration/model-adapter.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:69](../../tests/integration/model-adapter.test.ts#L69) | native model HTTP boundary → pins the model before transmitting explicit context and records actual usage without fabricated supplier receipts |
+| [it:106](../../tests/integration/model-adapter.test.ts#L106) | native model HTTP boundary → rejects a changed model tag before sending any prompt |
+| [it:118](../../tests/integration/model-adapter.test.ts#L118) | native model HTTP boundary → records response loss as unknown without retrying the model request |
+| [it:129](../../tests/integration/model-adapter.test.ts#L129) | native model HTTP boundary → aborts in flight and treats provider execution as unknown |
+| [it:144](../../tests/integration/model-adapter.test.ts#L144) | native model HTTP boundary → refuses redirects and oversized results without trusting remote output |
+| [it:170](../../tests/integration/model-adapter.test.ts#L170) | native model HTTP boundary → refuses silent context truncation and deployment URLs outside loopback |
+
+## tests/integration/model-driver.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:78](../../tests/integration/model-driver.test.ts#L78) | durable model execution against PostgreSQL and HTTP → saves the authorized result and settles measured tokens once before completion |
+| [it:98](../../tests/integration/model-driver.test.ts#L98) | durable model execution against PostgreSQL and HTTP → holds unknown usage after a lost response and never blindly resends the invocation |
+| [it:118](../../tests/integration/model-driver.test.ts#L118) | durable model execution against PostgreSQL and HTTP → records late billing facts without publishing output after source membership is revoked |
+| [it:149](../../tests/integration/model-driver.test.ts#L149) | durable model execution against PostgreSQL and HTTP → restores a settled checkpoint after a worker crash without another model call |
+| [it:190](../../tests/integration/model-driver.test.ts#L190) | durable model execution against PostgreSQL and HTTP → preserves a finished result through pause and resume instead of executing a second step |
+| [it:212](../../tests/integration/model-driver.test.ts#L212) | durable model execution against PostgreSQL and HTTP → refuses destination mismatch before transmitting context to the model |
+
+## tests/integration/notifications.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:111](../../tests/integration/notifications.test.ts#L111) | durable authorization-aware notification intents → coalesces conversation notifications, tolerates duplicates and late older work without taking projector outbox rows |
+| [it:165](../../tests/integration/notifications.test.ts#L165) | durable authorization-aware notification intents → closes non-conversation outbox with explicit invalidation receipts, and read never resolves a Task blocker |
+| [it:204](../../tests/integration/notifications.test.ts#L204) | durable authorization-aware notification intents → checks workspace and conversation ACL before paging, unread counts and opening, including removal and re-add |
+| [it:233](../../tests/integration/notifications.test.ts#L233) | durable authorization-aware notification intents → does not lose an earlier-started event that commits after a newer event was dispatched |
+| [it:266](../../tests/integration/notifications.test.ts#L266) | durable authorization-aware notification intents → fans out large audiences in bounded resumable pages and receipts make retries harmless |
+| [it:280](../../tests/integration/notifications.test.ts#L280) | durable authorization-aware notification intents → backfills old audit facts without generating stale reminders and still closes their non-conversation outbox |
+| [it:294](../../tests/integration/notifications.test.ts#L294) | durable authorization-aware notification intents → keeps unread during DND, mute and category suppression, with per-device gating and sensitive-free payloads |
+| [it:354](../../tests/integration/notifications.test.ts#L354) | durable authorization-aware notification intents → rechecks ACL and revoked sessions before transport, cleans only that device binding, and denies other users device mutation |
+| [it:390](../../tests/integration/notifications.test.ts#L390) | durable authorization-aware notification intents → binds cursors to the caller and enforces real HTTP session/CSRF with opaque click resolution |
+| [it:468](../../tests/integration/notifications.test.ts#L468) | encrypted Web Push subscription and bounded durable delivery → encrypts the endpoint and keys, replaces the session binding, and removes ciphertext when disabled |
+| [it:504](../../tests/integration/notifications.test.ts#L504) | encrypted Web Push subscription and bounded durable delivery → caps retries across worker restarts and removes expired subscriptions on 410 outcomes |
+| [it:560](../../tests/integration/notifications.test.ts#L560) | encrypted Web Push subscription and bounded durable delivery → rechecks authority immediately before transport and fences old delivery settlement after subscription rotation |
+| [it:601](../../tests/integration/notifications.test.ts#L601) | Web Push public HTTP boundary → requires session CSRF and validates configured provider endpoints without exposing private keys |
+
+## tests/integration/promotion.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:54](../../tests/integration/promotion.test.ts#L54) | conversation Run promotion creates new authority without rewriting history → atomically promotes once, preserves the original scope/budget and requires fresh Agent access for continuation |
+| [it:106](../../tests/integration/promotion.test.ts#L106) | conversation Run promotion creates new authority without rewriting history → serializes distinct promotion commands for the same original Run |
+| [it:118](../../tests/integration/promotion.test.ts#L118) | conversation Run promotion creates new authority without rewriting history → does not promote an unfinished run, stale version, other actor or expanded reviewer audience |
+| [it:139](../../tests/integration/promotion.test.ts#L139) | conversation Run promotion creates new authority without rewriting history → rechecks original sources on replay and hides origin metadata when access is revoked |
+| [it:153](../../tests/integration/promotion.test.ts#L153) | exposes promotion and origin through strict HTTP contracts with fresh explicit authorization |
+
+## tests/integration/recovery-drill.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:3](../../tests/integration/recovery-drill.test.ts#L3) | restores a real database/object backup and reapplies independent deletion and revocation facts before reopening |
+
+## tests/integration/resource-links.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:148](../../tests/integration/resource-links.test.ts#L148) | transactional message attachments and fixed Task Artifact evidence → persists one fixed same-scope attachment across retries and projects it through snapshots |
+| [it:170](../../tests/integration/resource-links.test.ts#L170) | transactional message attachments and fixed Task Artifact evidence → does not disclose another readable conversation or Task resource by attaching its ID |
+| [it:190](../../tests/integration/resource-links.test.ts#L190) | transactional message attachments and fixed Task Artifact evidence → invalidates old snapshots immediately on source deletion and emits an attachment-free replacement |
+| [it:218](../../tests/integration/resource-links.test.ts#L218) | transactional message attachments and fixed Task Artifact evidence → allows only an explicit new message to disclose an older same-conversation upload to a new member |
+| [it:243](../../tests/integration/resource-links.test.ts#L243) | transactional message attachments and fixed Task Artifact evidence → keeps the submitted Artifact version fixed when its head changes and refuses deleted-source acceptance |
+| [it:310](../../tests/integration/resource-links.test.ts#L310) | transactional message attachments and fixed Task Artifact evidence → requires the exact Task and SHA-256, even when the submitter can read both Tasks |
+| [it:359](../../tests/integration/resource-links.test.ts#L359) | transactional message attachments and fixed Task Artifact evidence → filters discovery before paging and binds cursors to the current reader and scope generation |
+
+## tests/integration/resources.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:96](../../tests/integration/resources.test.ts#L96) | real private S3 upload and authorization gateway → allows browser PUT preflight only from the configured application origin |
+| [it:113](../../tests/integration/resources.test.ts#L113) | real private S3 upload and authorization gateway → requires authenticated bucket access and verifies staged bytes before publishing immutable content |
+| [it:136](../../tests/integration/resources.test.ts#L136) | real private S3 upload and authorization gateway → binds upload authorization to exact byte count/checksum and rejects oversized declarations |
+| [it:173](../../tests/integration/resources.test.ts#L173) | real private S3 upload and authorization gateway → quarantines unsupported binary content, malformed JSON, and the EICAR test signature |
+| [it:216](../../tests/integration/resources.test.ts#L216) | real private S3 upload and authorization gateway → rechecks current ACL after the storage/scan step and never publishes after revocation |
+| [it:257](../../tests/integration/resources.test.ts#L257) | real private S3 upload and authorization gateway → stops a long download at the next 64 KiB boundary when access is revoked |
+| [it:277](../../tests/integration/resources.test.ts#L277) | real private S3 upload and authorization gateway → enforces tenant isolation and from-join history for resource locators |
+| [it:314](../../tests/integration/resources.test.ts#L314) | real private S3 upload and authorization gateway → tombstones before physical deletion and retries persisted cleanup |
+| [it:349](../../tests/integration/resources.test.ts#L349) | immutable Artifact versions and resource HTTP routes → preserves every Artifact version, rejects cross-scope publication and binds pagination to the caller |
+| [it:408](../../tests/integration/resources.test.ts#L408) | immutable Artifact versions and resource HTTP routes → serves authenticated attachment bytes with no-store/nosniff and never exposes an S3 GET URL |
+
+## tests/integration/retention.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:39](../../tests/integration/retention.test.ts#L39) | bounded retention and Run lifetime maintenance → deletes expired content once, persists a recovery tombstone, and leaves subsequent outbox processing usable |
+| [it:83](../../tests/integration/retention.test.ts#L83) | bounded retention and Run lifetime maintenance → removes terminal Run input, output and checkpoint bodies after retention without deleting usage evidence |
+| [it:137](../../tests/integration/retention.test.ts#L137) | bounded retention and Run lifetime maintenance → expires work at the durable lifetime and keeps unresolved reservations unknown |
+| [it:177](../../tests/integration/retention.test.ts#L177) | bounded retention and Run lifetime maintenance → rejects invalid policy configuration and batch sizes |
+
+## tests/integration/run-tool-intents.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:236](../../tests/integration/run-tool-intents.test.ts#L236) | bounded structured model intention, explicit human approval and fresh leased execution → persists one Action then requires human resume and charges both Run and Task exactly once |
+| [it:270](../../tests/integration/run-tool-intents.test.ts#L270) | bounded structured model intention, explicit human approval and fresh leased execution → replays a lost proposal response without a second Action but rejects a changed intent |
+| [it:295](../../tests/integration/run-tool-intents.test.ts#L295) | bounded structured model intention, explicit human approval and fresh leased execution → holds unknown tool cost and blocks resume and any blind redispatch |
+| [it:330](../../tests/integration/run-tool-intents.test.ts#L330) | bounded structured model intention, explicit human approval and fresh leased execution → rejects scheduling a tool-authorized Run so approval cannot be followed by an automatic resume |
+| [it:352](../../tests/integration/run-tool-intents.test.ts#L352) | bounded structured model intention, explicit human approval and fresh leased execution → cancels an approved but undispatched bound Action with the Run |
+| [it:368](../../tests/integration/run-tool-intents.test.ts#L368) | bounded structured model intention, explicit human approval and fresh leased execution → finishes a structured final response without manufacturing a tool effect |
+| [it:376](../../tests/integration/run-tool-intents.test.ts#L376) | bounded structured model intention, explicit human approval and fresh leased execution → rejects mixed source disclosure before a tool-enabled Run is queued |
+
+## tests/integration/runtime-knowledge.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:217](../../tests/integration/runtime-knowledge.test.ts#L217) | Runtime fixed Memory/Artifact source port on all execution boundaries → persists exact source hashes and supplies verified untrusted content through a real worker claim |
+| [it:276](../../tests/integration/runtime-knowledge.test.ts#L276) | Runtime fixed Memory/Artifact source port on all execution boundaries → rejects hash forgery, private memory disclosure, another conversation scope and an Agent missing source access |
+| [it:313](../../tests/integration/runtime-knowledge.test.ts#L313) | Runtime fixed Memory/Artifact source port on all execution boundaries → rechecks memory confirmation and expiry when claiming, reading, resuming and dispatching a scheduled Run |
+| [it:389](../../tests/integration/runtime-knowledge.test.ts#L389) | Runtime fixed Memory/Artifact source port on all execution boundaries → validates extended references at HTTP ingress and denies a stale context after current source removal |
+
+## tests/integration/runtime.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:161](../../tests/integration/runtime.test.ts#L161) | durable runtime identity, leases and context → rejects owner credentials, binds immutable agent revisions, and creates an idempotent task-free conversation run |
+| [it:205](../../tests/integration/runtime.test.ts#L205) | durable runtime identity, leases and context → scans hosted durable candidates and exposes only the fixed execution revision and explicit manifest |
+| [it:221](../../tests/integration/runtime.test.ts#L221) | durable runtime identity, leases and context → rejects heartbeat/report after expiry even before takeover, increments generation on recovery, and rejects the old holder |
+| [it:241](../../tests/integration/runtime.test.ts#L241) | durable runtime identity, leases and context → invalidates old runs after an ancestor closes and reopens, and checks all ancestor deadlines |
+| [it:272](../../tests/integration/runtime.test.ts#L272) | durable runtime identity, leases and context → captures only explicit source versions/hashes and refuses context use/submission after source revocation |
+| [it:310](../../tests/integration/runtime.test.ts#L310) | durable runtime identity, leases and context → rejects private task input in conversation runs, oversized context and stale source versions without persisting partial runs |
+| [it:352](../../tests/integration/runtime.test.ts#L352) | durable runtime identity, leases and context → freezes global creator and agent identity revisions so disabling and re-enabling never revives an old run |
+| [it:383](../../tests/integration/runtime.test.ts#L383) | durable runtime identity, leases and context → rejects prior task participation after removal and reinvitation even with current tenant membership |
+| [it:399](../../tests/integration/runtime.test.ts#L399) | durable runtime identity, leases and context → withholds previously generated output when a separate context source is later revoked |
+| [it:428](../../tests/integration/runtime.test.ts#L428) | durable runtime identity, leases and context → persists pause/checkpoint/resume and requires an explicit worker cancellation acknowledgement |
+| [it:482](../../tests/integration/runtime.test.ts#L482) | atomic root-shared budget and late accounting facts → concurrent child reservations share the root limit without double counting usage |
+| [it:532](../../tests/integration/runtime.test.ts#L532) | atomic root-shared budget and late accounting facts → retains unknown reservations, refuses unproven release, and records overspend after task cancellation |
+| [it:592](../../tests/integration/runtime.test.ts#L592) | atomic root-shared budget and late accounting facts → gates completion on live runs and unresolved accounting across the complete task subtree |
+| [it:616](../../tests/integration/runtime.test.ts#L616) | atomic root-shared budget and late accounting facts → atomically persists usage and a result checkpoint, then resumes after a crash without dispatching again |
+| [it:666](../../tests/integration/runtime.test.ts#L666) | atomic root-shared budget and late accounting facts → refuses expired result checkpoints while accepting the late accounting fact separately |
+| [it:696](../../tests/integration/runtime.test.ts#L696) | atomic root-shared budget and late accounting facts → does not blindly reclaim a crashed model step with outstanding usage |
+| [it:722](../../tests/integration/runtime.test.ts#L722) | exposes only human authorization/control routes; worker completion and budget writes have no public endpoint |
+| [it:793](../../tests/integration/runtime.test.ts#L793) | retries a real PostgreSQL deadlock without duplicating committed transaction writes |
+| [it:826](../../tests/integration/runtime.test.ts#L826) | bounded V1 execution → serializes concurrent claims across the entire root tree and releases a slot on terminal report |
+| [it:842](../../tests/integration/runtime.test.ts#L842) | bounded V1 execution → bounds zero-cost invocations and durable progress steps without blocking final completion |
+| [it:874](../../tests/integration/runtime.test.ts#L874) | bounded V1 execution → does not renew an execution beyond its absolute lifetime even when its lease is current |
+| [it:893](../../tests/integration/runtime.test.ts#L893) | paginates authorized run history with cursors bound to the current scope |
+
+## tests/integration/scheduling.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:152](../../tests/integration/scheduling.test.ts#L152) | durable bounded schedule dispatch → creates one occurrence/outbox and one Run wake under simultaneous scanners and dispatchers |
+| [it:189](../../tests/integration/scheduling.test.ts#L189) | durable bounded schedule dispatch → revalidates disabled revision after an occurrence was queued, including a concurrent blocked dispatcher |
+| [it:208](../../tests/integration/scheduling.test.ts#L208) | durable bounded schedule dispatch → never trusts client clocks, allows no dispatch before due and enforces a hard deadline |
+| [it:232](../../tests/integration/scheduling.test.ts#L232) | durable bounded schedule dispatch → persists skip versus coalesce and counts finite occurrence allowance across revisions |
+| [it:263](../../tests/integration/scheduling.test.ts#L263) | durable bounded schedule dispatch → skips overlap without resuming a queued Run or resetting its lifecycle |
+| [it:275](../../tests/integration/scheduling.test.ts#L275) | durable bounded schedule dispatch → invalidates descendants after ancestor epoch change before dispatch |
+| [it:292](../../tests/integration/scheduling.test.ts#L292) | durable bounded schedule dispatch → denies global identity disable/re-enable and tenant or installation revocation |
+| [it:320](../../tests/integration/scheduling.test.ts#L320) | durable bounded schedule dispatch → denies held or unknown usage, blocked budgets, exhausted steps and expired Run lifetime |
+| [it:346](../../tests/integration/scheduling.test.ts#L346) | durable bounded schedule dispatch → never revives a completed Run and rejects Agent-authored recursive schedules or substituted bindings |
+| [it:371](../../tests/integration/scheduling.test.ts#L371) | durable bounded schedule dispatch → enforces tenant RLS and owner-only plan visibility independently of task participation |
+| [it:384](../../tests/integration/scheduling.test.ts#L384) | durable bounded schedule dispatch → hides Task/Run source identifiers from detail, occurrence history and lists after live ACL revocation |
+| [it:397](../../tests/integration/scheduling.test.ts#L397) | durable bounded schedule dispatch → validates real HTTP contracts, CSRF/version headers and explicit delete-as-disable |
+
+## tests/integration/sync.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:159](../../tests/integration/sync.test.ts#L159) | durable outbox projection and caller-bound fixed snapshots → projects an independent conversation while another conversation is locked |
+| [it:206](../../tests/integration/sync.test.ts#L206) | durable outbox projection and caller-bound fixed snapshots → lets multiple workers share SKIP LOCKED leases while preserving committed stream order |
+| [it:233](../../tests/integration/sync.test.ts#L233) | durable outbox projection and caller-bound fixed snapshots → rolls back failed projection/checkpoint/receipt together and retries from durable outbox |
+| [it:283](../../tests/integration/sync.test.ts#L283) | durable outbox projection and caller-bound fixed snapshots → defers out-of-order events and attributes current content to its real authoritative event/version |
+| [it:347](../../tests/integration/sync.test.ts#L347) | durable outbox projection and caller-bound fixed snapshots → deduplicates replayed delivery and fences an expired/stolen worker lease |
+| [it:385](../../tests/integration/sync.test.ts#L385) | durable outbox projection and caller-bound fixed snapshots → keeps all snapshot pages at one materialized view while edits/new messages arrive, then catches up from its fixed head |
+| [it:418](../../tests/integration/sync.test.ts#L418) | durable outbox projection and caller-bound fixed snapshots → invalidates snapshots/cursors immediately on content withdrawal and never exposes stale projected bodies |
+| [it:441](../../tests/integration/sync.test.ts#L441) | durable outbox projection and caller-bound fixed snapshots → enforces since-join history, workspace membership, permission generation, snapshot TTL and retention generation |
+| [it:499](../../tests/integration/sync.test.ts#L499) | HTTP snapshots and real WebSocket delivery/recovery → delivers persistent events, accepts transport ACK without changing read state, and resumes after disconnection |
+| [it:548](../../tests/integration/sync.test.ts#L548) | HTTP snapshots and real WebSocket delivery/recovery → notifies revoked subscribers and rejects a cross-origin upgrade |
+| [it:587](../../tests/integration/sync.test.ts#L587) | HTTP snapshots and real WebSocket delivery/recovery → rejects an ACK never delivered on this socket without granting read state |
+| [it:613](../../tests/integration/sync.test.ts#L613) | HTTP snapshots and real WebSocket delivery/recovery → bounds unacknowledged deliveries and closes slow consumers with a resync signal |
+| [it:637](../../tests/integration/sync.test.ts#L637) | materializes at most 200 recent visible messages at a fixed head and binds snapshot cursors to their window |
+
+## tests/integration/tasks.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:131](../../tests/integration/tasks.test.ts#L131) | real PostgreSQL M2 collaboration and task fences → creates one independent task with self owner, exact bigint budget and one durable event |
+| [it:158](../../tests/integration/tasks.test.ts#L158) | real PostgreSQL M2 collaboration and task fences → conversation summary discloses only its explicit text and never grants task ACL, including another tenant |
+| [it:183](../../tests/integration/tasks.test.ts#L183) | real PostgreSQL M2 collaboration and task fences → revoked task and workspace membership defeat existing task references and idempotent replays |
+| [it:211](../../tests/integration/tasks.test.ts#L211) | real PostgreSQL M2 collaboration and task fences → only the actual recipient accepts; concurrent competing handoffs yield one owner and fixed agreement |
+| [it:241](../../tests/integration/tasks.test.ts#L241) | real PostgreSQL M2 collaboration and task fences → same acceptance idempotency key returns exactly one accepted version and never a second handoff |
+| [it:261](../../tests/integration/tasks.test.ts#L261) | real PostgreSQL M2 collaboration and task fences → clarification and revision retain immutable proposals and reject a stale proposal number |
+| [it:296](../../tests/integration/tasks.test.ts#L296) | real PostgreSQL M2 collaboration and task fences → rejection and expiry never create a child or transfer ownership |
+| [it:313](../../tests/integration/tasks.test.ts#L313) | real PostgreSQL M2 collaboration and task fences → delegation creates one child only after acceptance and preserves parent ownership |
+| [it:335](../../tests/integration/tasks.test.ts#L335) | real PostgreSQL M2 collaboration and task fences → terminal and reopen advance epochs and make old pending proposals permanently unusable |
+| [it:358](../../tests/integration/tasks.test.ts#L358) | real PostgreSQL M2 collaboration and task fences → a parent close/reopen invalidates a previously issued child proposal through complete ancestor fences |
+| [it:382](../../tests/integration/tasks.test.ts#L382) | real PostgreSQL M2 collaboration and task fences → serializes cross-root dependency mutation before sorted root locks and rejects the combined cycle |
+| [it:397](../../tests/integration/tasks.test.ts#L397) | real PostgreSQL M2 collaboration and task fences → pins submission text/hash/goal version, restricts acceptance to designated reviewers and completes separately |
+| [it:437](../../tests/integration/tasks.test.ts#L437) | real PostgreSQL M2 collaboration and task fences → does not complete a parent while an accepted child remains open |
+| [it:455](../../tests/integration/tasks.test.ts#L455) | real PostgreSQL M2 collaboration and task fences → rejects old goal submissions and artifact refs until their storage/authorization implementation exists |
+| [it:492](../../tests/integration/tasks.test.ts#L492) | real PostgreSQL M2 collaboration and task fences → takeover is an explicit admin command with a reason, new owner and epoch |
+| [it:510](../../tests/integration/tasks.test.ts#L510) | M2 HTTP commands with real cookie authentication and contracts → creates, reads, proposes and accepts with authoritative identity, version headers and CSRF |
+
+## tests/model/ollama.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:14](../../tests/model/ollama.test.ts#L14) | completes an authorized durable run using a real pinned local Qwen model |

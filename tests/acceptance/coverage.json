@@ -1,0 +1,454 @@
+{
+  "version": 1,
+  "requirements": [
+    {
+      "id": "AC-01",
+      "status": "pending",
+      "tests": [
+        "tests/integration/messaging.test.ts",
+        "tests/integration/message-interactions.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-02",
+      "status": "pending",
+      "tests": [
+        "tests/integration/messaging.test.ts",
+        "tests/integration/sync.test.ts",
+        "tests/integration/agents.test.ts",
+        "tests/e2e/offline.spec.ts",
+        "tests/e2e/pwa.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-03",
+      "status": "pending",
+      "tests": [
+        "tests/integration/promotion.test.ts",
+        "tests/integration/runtime.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-04",
+      "status": "pending",
+      "tests": [
+        "tests/integration/agents.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-05",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/maintenance.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-06",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-07",
+      "status": "pending",
+      "tests": [
+        "tests/integration/runtime.test.ts",
+        "tests/integration/actions.test.ts",
+        "tests/integration/machine-run-tools.test.ts",
+        "tests/e2e/runtime-actions.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-08",
+      "status": "pending",
+      "tests": [
+        "tests/integration/maintenance.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-09",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/knowledge.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-10",
+      "status": "pending",
+      "tests": [
+        "tests/integration/runtime-knowledge.test.ts",
+        "tests/integration/artifact-collaboration.test.ts",
+        "tests/integration/run-tool-intents.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-11",
+      "status": "pending",
+      "tests": [
+        "tests/integration/actions.test.ts",
+        "tests/integration/run-tool-intents.test.ts",
+        "tests/e2e/runtime-actions.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-12",
+      "status": "pending",
+      "tests": [
+        "tests/integration/actions.test.ts",
+        "tests/integration/runtime-knowledge.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-13",
+      "status": "pending",
+      "tests": [
+        "tests/integration/actions.test.ts",
+        "tests/integration/action-recovery.test.ts",
+        "tests/integration/run-tool-intents.test.ts",
+        "tests/e2e/runtime-actions.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-14",
+      "status": "pending",
+      "tests": [
+        "tests/integration/runtime.test.ts",
+        "tests/integration/agents.test.ts",
+        "tests/integration/actions.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-15",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/runtime.test.ts",
+        "tests/integration/scheduling.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-16",
+      "status": "pending",
+      "tests": [
+        "tests/integration/sync.test.ts",
+        "tests/integration/model-driver.test.ts",
+        "tests/integration/action-recovery.test.ts",
+        "tests/e2e/runtime-actions.spec.ts",
+        "tests/e2e/pwa.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-17",
+      "status": "pending",
+      "tests": [
+        "tests/integration/agents.test.ts",
+        "tests/integration/machine-run-tools.test.ts",
+        "tests/e2e/agent-management.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-18",
+      "status": "pending",
+      "tests": [
+        "tests/integration/resources.test.ts",
+        "tests/integration/resource-links.test.ts",
+        "tests/integration/artifact-collaboration.test.ts",
+        "tests/integration/tasks.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-19",
+      "status": "pending",
+      "tests": [
+        "tests/integration/knowledge.test.ts",
+        "tests/integration/resources.test.ts",
+        "tests/integration/notifications.test.ts",
+        "tests/integration/exports.test.ts",
+        "packages/notifications/src/push-transport.test.ts",
+        "tests/e2e/notifications.spec.ts",
+        "tests/e2e/offline.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-20",
+      "status": "pending",
+      "tests": [
+        "tests/integration/governance.test.ts",
+        "tests/integration/retention.test.ts",
+        "tests/integration/recovery-drill.test.ts",
+        "tests/e2e/pwa.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-21",
+      "status": "pending",
+      "tests": [
+        "tests/integration/http.test.ts",
+        "tests/integration/agents.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-22",
+      "status": "pending",
+      "tests": [
+        "tests/integration/scheduling.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-23",
+      "status": "pending",
+      "tests": [
+        "tests/integration/http.test.ts",
+        "tests/integration/agents.test.ts",
+        "tests/integration/runtime-knowledge.test.ts",
+        "tests/integration/actions.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-24",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/runtime.test.ts",
+        "tests/integration/resource-links.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "AC-25",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/runtime.test.ts",
+        "tests/integration/actions.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-01",
+      "status": "pending",
+      "tests": [
+        "tests/integration/http.test.ts",
+        "tests/integration/agents.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-02",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/maintenance.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-03",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/agents.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-04",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/runtime.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-05",
+      "status": "pending",
+      "tests": [
+        "tests/integration/agents.test.ts",
+        "tests/integration/tasks.test.ts",
+        "tests/integration/sync.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-06",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/resource-links.test.ts",
+        "tests/integration/actions.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-07",
+      "status": "pending",
+      "tests": [
+        "tests/integration/runtime-knowledge.test.ts",
+        "tests/integration/artifact-collaboration.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-08",
+      "status": "pending",
+      "tests": [
+        "tests/integration/actions.test.ts",
+        "tests/integration/run-tool-intents.test.ts",
+        "tests/e2e/runtime-actions.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-09",
+      "status": "pending",
+      "tests": [
+        "tests/integration/sync.test.ts",
+        "tests/integration/actions.test.ts",
+        "tests/integration/action-recovery.test.ts",
+        "tests/e2e/runtime-actions.spec.ts",
+        "tests/e2e/offline.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-10",
+      "status": "pending",
+      "tests": [
+        "tests/integration/actions.test.ts",
+        "tests/integration/runtime.test.ts",
+        "tests/integration/machine-run-tools.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-11",
+      "status": "pending",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/runtime.test.ts",
+        "tests/integration/scheduling.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-12",
+      "status": "pending",
+      "tests": [
+        "tests/integration/sync.test.ts",
+        "tests/integration/actions.test.ts",
+        "tests/integration/knowledge.test.ts",
+        "tests/integration/notifications.test.ts",
+        "tests/e2e/offline.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-13",
+      "status": "pending",
+      "tests": [
+        "tests/integration/knowledge.test.ts",
+        "tests/integration/notifications.test.ts",
+        "tests/integration/exports.test.ts",
+        "tests/integration/governance.test.ts",
+        "packages/notifications/src/push.test.ts",
+        "packages/notifications/src/push-transport.test.ts",
+        "tests/e2e/pwa.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-14",
+      "status": "pending",
+      "tests": [
+        "tests/integration/agents.test.ts",
+        "tests/integration/machine-run-tools.test.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-15",
+      "status": "pending",
+      "tests": [
+        "tests/integration/governance.test.ts",
+        "tests/integration/retention.test.ts",
+        "tests/integration/recovery-drill.test.ts",
+        "tests/e2e/pwa.spec.ts"
+      ],
+      "evidence": [],
+      "notes": "已登记相关回归入口；仍需逐断言审查覆盖范围并绑定最终候选执行证据。"
+    },
+    {
+      "id": "INV-16",
+      "status": "pending",
+      "tests": [],
+      "evidence": [],
+      "notes": "需部署 TLS、静态加密和密钥管理证据，以及平台/模型明文可见性说明的发布审查；本地 HTTP 不构成生产加密证明。"
+    }
+  ]
+}

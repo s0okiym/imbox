@@ -1,0 +1,57 @@
+name: imbox
+services:
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    command:
+      [
+        'server',
+        '-dir=/data',
+        '-s3',
+        '-s3.config=/etc/seaweedfs/s3.json',
+        '-ip=seaweedfs',
+        '-volume.max=32',
+        '-master.volumeSizeLimitMB=64',
+        '-master.telemetry=false',
+      ]
+    ports:
+      - '127.0.0.1:18333:8333'
+    volumes:
+      - imbox_object_data:/data
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:9333/cluster/status']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  model:
+    profiles: ['model']
+    image: ollama/ollama:0.35.1@sha256:292ee7945dfc3d5840a181f3ab86fedb1e66703e02c8af98b50f4da56b7e278c
+    ports:
+      - '127.0.0.1:11435:11434'
+    environment:
+      OLLAMA_MAX_LOADED_MODELS: '1'
+      OLLAMA_NUM_PARALLEL: '1'
+      OLLAMA_KEEP_ALIVE: '5m'
+    volumes:
+      - imbox_models:/root/.ollama
+    mem_limit: 2g
+  postgres:
+    image: postgres:18@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+    environment:
+      POSTGRES_USER: imbox_owner
+      POSTGRES_PASSWORD: imbox_local_owner
+      POSTGRES_DB: imbox_dev
+    ports:
+      - '127.0.0.1:55432:5432'
+    volumes:
+      - imbox_pg_data:/var/lib/postgresql
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/001-imbox.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U imbox_owner -d imbox_dev']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+volumes:
+  imbox_object_data:
+  imbox_pg_data:
+  imbox_models:
