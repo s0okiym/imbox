@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 85 个测试文件、481 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 85 个测试文件、482 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -841,17 +841,18 @@
 | 声明 | 用例 |
 |---|---|
 | [it:152](../../tests/integration/scheduling.test.ts#L152) | durable bounded schedule dispatch → creates one occurrence/outbox and one Run wake under simultaneous scanners and dispatchers |
-| [it:189](../../tests/integration/scheduling.test.ts#L189) | durable bounded schedule dispatch → revalidates disabled revision after an occurrence was queued, including a concurrent blocked dispatcher |
-| [it:208](../../tests/integration/scheduling.test.ts#L208) | durable bounded schedule dispatch → never trusts client clocks, allows no dispatch before due and enforces a hard deadline |
-| [it:232](../../tests/integration/scheduling.test.ts#L232) | durable bounded schedule dispatch → persists skip versus coalesce and counts finite occurrence allowance across revisions |
-| [it:263](../../tests/integration/scheduling.test.ts#L263) | durable bounded schedule dispatch → skips overlap without resuming a queued Run or resetting its lifecycle |
-| [it:275](../../tests/integration/scheduling.test.ts#L275) | durable bounded schedule dispatch → invalidates descendants after ancestor epoch change before dispatch |
-| [it:292](../../tests/integration/scheduling.test.ts#L292) | durable bounded schedule dispatch → denies global identity disable/re-enable and tenant or installation revocation |
-| [it:320](../../tests/integration/scheduling.test.ts#L320) | durable bounded schedule dispatch → denies held or unknown usage, blocked budgets, exhausted steps and expired Run lifetime |
-| [it:346](../../tests/integration/scheduling.test.ts#L346) | durable bounded schedule dispatch → never revives a completed Run and rejects Agent-authored recursive schedules or substituted bindings |
-| [it:371](../../tests/integration/scheduling.test.ts#L371) | durable bounded schedule dispatch → enforces tenant RLS and owner-only plan visibility independently of task participation |
-| [it:384](../../tests/integration/scheduling.test.ts#L384) | durable bounded schedule dispatch → hides Task/Run source identifiers from detail, occurrence history and lists after live ACL revocation |
-| [it:397](../../tests/integration/scheduling.test.ts#L397) | durable bounded schedule dispatch → validates real HTTP contracts, CSRF/version headers and explicit delete-as-disable |
+| [it:189](../../tests/integration/scheduling.test.ts#L189) | durable bounded schedule dispatch → bounds a multi-agent wake burst across duplicate scans, disabled plans, root concurrency and shared budget |
+| [it:289](../../tests/integration/scheduling.test.ts#L289) | durable bounded schedule dispatch → revalidates disabled revision after an occurrence was queued, including a concurrent blocked dispatcher |
+| [it:308](../../tests/integration/scheduling.test.ts#L308) | durable bounded schedule dispatch → never trusts client clocks, allows no dispatch before due and enforces a hard deadline |
+| [it:332](../../tests/integration/scheduling.test.ts#L332) | durable bounded schedule dispatch → persists skip versus coalesce and counts finite occurrence allowance across revisions |
+| [it:363](../../tests/integration/scheduling.test.ts#L363) | durable bounded schedule dispatch → skips overlap without resuming a queued Run or resetting its lifecycle |
+| [it:375](../../tests/integration/scheduling.test.ts#L375) | durable bounded schedule dispatch → invalidates descendants after ancestor epoch change before dispatch |
+| [it:392](../../tests/integration/scheduling.test.ts#L392) | durable bounded schedule dispatch → denies global identity disable/re-enable and tenant or installation revocation |
+| [it:420](../../tests/integration/scheduling.test.ts#L420) | durable bounded schedule dispatch → denies held or unknown usage, blocked budgets, exhausted steps and expired Run lifetime |
+| [it:446](../../tests/integration/scheduling.test.ts#L446) | durable bounded schedule dispatch → never revives a completed Run and rejects Agent-authored recursive schedules or substituted bindings |
+| [it:471](../../tests/integration/scheduling.test.ts#L471) | durable bounded schedule dispatch → enforces tenant RLS and owner-only plan visibility independently of task participation |
+| [it:484](../../tests/integration/scheduling.test.ts#L484) | durable bounded schedule dispatch → hides Task/Run source identifiers from detail, occurrence history and lists after live ACL revocation |
+| [it:497](../../tests/integration/scheduling.test.ts#L497) | durable bounded schedule dispatch → validates real HTTP contracts, CSRF/version headers and explicit delete-as-disable |
 
 ## tests/integration/sync.test.ts
 

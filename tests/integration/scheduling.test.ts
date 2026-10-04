@@ -107,11 +107,11 @@ async function makeTask(parent?: string): Promise<string> {
   });
   return id;
 }
-async function makePausedRun(task: string): Promise<string> {
+async function makePausedRun(task: string, agent = installationId): Promise<string> {
   const run = await runtime.createRun(
     fixture.alice,
     {
-      agent_id: installationId,
+      agent_id: agent,
       agent_revision: '1',
       task_id: task,
       context: [],
@@ -186,6 +186,106 @@ describe('durable bounded schedule dispatch', () => {
       'schedule.occurrence_ready',
     ]);
   });
+  it('bounds a multi-agent wake burst across duplicate scans, disabled plans, root concurrency and shared budget', async () => {
+    const plans: Array<{ id: string; run: string; principal: string }> = [];
+    for (let i = 0; i < 8; i += 1) {
+      const principal = randomUUID();
+      await databases.identityDb
+        .insertInto('principals')
+        .values({ id: principal, kind: 'agent', display_name: `Burst agent ${i}` })
+        .execute();
+      await withTenant(databases.owner, fixture.tenantId, async (tx) => {
+        await sql`insert into tenant_principals(tenant_id,principal_id,role) values(${fixture.tenantId},${principal},'agent')`.execute(
+          tx,
+        );
+        await sql`insert into memberships(tenant_id,workspace_id,principal_id,role) values(${fixture.tenantId},${fixture.workspaceId},${principal},'member')`.execute(
+          tx,
+        );
+        await sql`insert into task_participants(tenant_id,task_id,principal_id,role) values(${fixture.tenantId},${taskId},${principal},'contributor')`.execute(
+          tx,
+        );
+      });
+      const agent = await runtime.installAgent(
+        fixture.alice,
+        {
+          principal_id: principal,
+          revision: '1',
+          mode: 'hosted',
+          config: { provider: 'not-invoked' },
+          capabilities: ['task_work'],
+        },
+        randomUUID(),
+      );
+      const run = await makePausedRun(taskId, agent.id);
+      const plan = await schedules.create(fixture.alice, { ...input(), run_id: run }, randomUUID());
+      await makeDue(plan.id);
+      plans.push({ id: plan.id, run, principal });
+    }
+    const emitted = await Promise.all(
+      Array.from({ length: 12 }, () => schedules.collectDue(fixture.tenantId)),
+    );
+    expect(emitted.reduce((sum, n) => sum + n, 0)).toBe(8);
+    for (const plan of plans.slice(0, 2)) {
+      const current = await schedules.get(fixture.alice, plan.id);
+      await schedules.disable(fixture.alice, plan.id, current.version, randomUUID());
+    }
+    const wakes = await Promise.all(
+      Array.from({ length: 12 }, () => schedules.dispatchPending(fixture.tenantId)),
+    );
+    expect(wakes.reduce((sum, n) => sum + n, 0)).toBe(6);
+    for (const [index, plan] of plans.entries()) {
+      expect((await runtime.getRun(fixture.alice, plan.run)).status).toBe(
+        index < 2 ? 'paused' : 'queued',
+      );
+      expect((await schedules.occurrences(fixture.alice, plan.id)).items).toHaveLength(1);
+      await expect(
+        schedules.create(
+          { ...fixture.alice, principalId: plan.principal, kind: 'agent' },
+          { ...input(), run_id: plan.run },
+          randomUUID(),
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+    }
+    expect(await schedules.collectDue(fixture.tenantId)).toBe(0);
+    expect(await schedules.dispatchPending(fixture.tenantId)).toBe(0);
+    const worker = createRuntimeWorker({ db: databases.db, workerId: 'burst-worker' });
+    const claims = await Promise.allSettled(
+      plans.slice(2).map((plan) => worker.claim(fixture.tenantId, plan.run)),
+    );
+    const leases = claims.flatMap((r) => (r.status === 'fulfilled' && r.value ? [r.value] : []));
+    expect(leases).toHaveLength(4);
+    expect(claims.filter((r) => r.status === 'rejected')).toHaveLength(2);
+    for (const result of claims)
+      if (result.status === 'rejected') expect(result.reason.code).toBe('CAPACITY_EXCEEDED');
+    const reservations = await Promise.allSettled(
+      leases.map((lease) =>
+        worker.reserve(lease, {
+          reservation_key: randomUUID(),
+          amount_microunits: '60',
+          currency: 'USD',
+        }),
+      ),
+    );
+    expect(reservations.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    for (const result of reservations)
+      if (result.status === 'rejected') expect(result.reason.code).toBe('BUDGET_EXCEEDED');
+    await withTenant(databases.db, fixture.tenantId, async (tx) => {
+      expect((await sql`select id from schedules`.execute(tx)).rows).toHaveLength(8);
+      expect((await sql`select id from agent_runs`.execute(tx)).rows).toHaveLength(9);
+      expect(
+        (await sql`select id from domain_events where event_type='run.schedule_wake'`.execute(tx))
+          .rows,
+      ).toHaveLength(6);
+      expect(
+        (
+          await sql<{
+            reserved_microunits: string;
+          }>`select reserved_microunits from task_budgets where task_id=${taskId}`.execute(tx)
+        ).rows[0]?.reserved_microunits,
+      ).toBe('60');
+    });
+  });
+
   it('revalidates disabled revision after an occurrence was queued, including a concurrent blocked dispatcher', async () => {
     const schedule = await schedules.create(fixture.alice, input(), randomUUID());
     await makeDue(schedule.id);

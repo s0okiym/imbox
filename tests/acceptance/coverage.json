@@ -192,9 +192,10 @@
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
-        "docs/testing/task-tree-boundaries-2026-10-05.md"
+        "docs/testing/task-tree-boundaries-2026-10-05.md",
+        "docs/testing/multi-agent-wake-burst-2026-10-05.md"
       ],
-      "notes": "已有树预算/并发/期限、依赖防环与禁止递归计划的断言；新增真实五层委派拒绝第六层、199→200 节点并发名额、满额回滚及独立根继续接受。真实多 Agent 唤醒风暴与跨租户压力仍待验收。"
+      "notes": "树预算/并发/期限、依赖防环、五层/200 节点边界已有实测；新增 8 Agent 有限计划、12 并发扫描/派发、停用、四租约和共享预算联合突发验证。模型驱动互相唤醒网络、任意事件触发和跨租户长期压力仍待完成。"
     },
     {
       "id": "AC-16",
@@ -485,9 +486,10 @@
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
-        "docs/testing/task-tree-boundaries-2026-10-05.md"
+        "docs/testing/task-tree-boundaries-2026-10-05.md",
+        "docs/testing/multi-agent-wake-burst-2026-10-05.md"
       ],
-      "notes": "全祖先预算、四并发槽、20 步和绝对期限已有断言；真实委派深度五层、200 节点上限及并发/回滚已补验。多 Agent 唤醒及多租户混合压力仍待验证。"
+      "notes": "全祖先预算、四并发槽、20 步、绝对期限及五层/200 节点边界已有断言；8 Agent 有限唤醒突发联合验证精确容量和预算拒绝。模型驱动事件链与多租户长期混合压力仍待验收。"
     },
     {
       "id": "INV-12",
