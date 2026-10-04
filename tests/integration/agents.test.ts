@@ -1,3 +1,7 @@
+import { fork } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
+import { once } from 'node:events';
+import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { beforeAll, afterAll, beforeEach, afterEach, describe, it, expect } from 'vitest';
 import { createAgentService, type AgentService } from '@imbox/agents';
@@ -536,6 +540,114 @@ describe('M4 machine identity and real HTTP external execution', () => {
       budget: expired.budget,
     });
   });
+  it.skipIf(process.platform !== 'linux')(
+    'recovers an independently suspended external process after its real lease expires without publishing stale output',
+    async () => {
+      const a = await agent();
+      const { created } = await run(a);
+      const child = fork(
+        fileURLToPath(new URL('../helpers/external-agent-process.ts', import.meta.url)),
+        [],
+        {
+          execArgv: ['--import', 'tsx'],
+          stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+          env: { PATH: process.env.PATH, NODE_ENV: 'test' },
+        },
+      );
+      const exited = once(child, 'exit');
+      try {
+        const claimedMessage = once(child, 'message', { signal: AbortSignal.timeout(15000) });
+        child.send({
+          origin,
+          tenantId: f.tenantId,
+          credential: a.credential.secret!,
+          runId: created.id,
+        });
+        const [claimed] = (await claimedMessage) as [
+          { kind: string; generation: string; pid: number },
+        ];
+        expect(claimed).toMatchObject({ kind: 'claimed', pid: child.pid });
+        expect(child.pid).not.toBe(process.pid);
+        expect(child.kill('SIGSTOP')).toBe(true);
+        await expect
+          .poll(async () => readFile(`/proc/${child.pid}/status`, 'utf8'))
+          .toMatch(/^State:\s+T/m);
+        const current = await runtime.getRun(f.alice, created.id);
+        expect(current.status).toBe('running');
+        const cancelled = await runtime.controlRun(
+          f.alice,
+          created.id,
+          'cancel',
+          current.version,
+          key(),
+        );
+        expect(cancelled).toMatchObject({
+          status: 'cancelling',
+          cancellation_acknowledged_at: null,
+        });
+        await expect
+          .poll(
+            async () => {
+              const result = await withTenant(databases.db, f.tenantId, (tx) =>
+                sql<{
+                  live: boolean;
+                }>`select lease_expires_at>clock_timestamp() as live from agent_runs where id=${created.id}`.execute(
+                  tx,
+                ),
+              );
+              return result.rows[0]!.live;
+            },
+            { timeout: 75000, interval: 500 },
+          )
+          .toBe(false);
+        expect((await runtime.getRun(f.alice, created.id)).cancellation_acknowledged_at).toBeNull();
+        const acknowledgement = once(child, 'message', { signal: AbortSignal.timeout(15000) });
+        expect(child.kill('SIGCONT')).toBe(true);
+        child.send({ kind: 'recover' });
+        const [message] = (await acknowledgement) as [
+          {
+            kind: string;
+            stopped: boolean;
+            work_units: number;
+            blocked_status: number;
+            receipt: C['MachineCancellationAck'];
+          },
+        ];
+        expect(message).toMatchObject({
+          kind: 'acknowledged',
+          stopped: true,
+          blocked_status: 409,
+          receipt: {
+            run_id: created.id,
+            generation: claimed.generation,
+            report_source: 'external_report',
+          },
+        });
+        expect(message.work_units).toBeGreaterThan(0);
+        expect(await exited).toEqual([0, null]);
+        const stopped = await runtime.getRun(f.alice, created.id);
+        expect(stopped).toMatchObject({
+          status: 'cancelled',
+          output: null,
+          lease_generation: claimed.generation,
+          cancellation_acknowledged_at: message.receipt.acknowledged_at,
+        });
+        const rows = await withTenant(databases.db, f.tenantId, (tx) =>
+          sql<{
+            count: string;
+          }>`select count(*) from run_reports where run_id=${created.id}`.execute(tx),
+        );
+        expect(rows.rows[0]!.count).toBe('0');
+      } finally {
+        if (child.exitCode === null && child.signalCode === null) {
+          child.kill('SIGCONT');
+          child.kill('SIGKILL');
+        }
+        await exited;
+      }
+    },
+    120000,
+  );
   it('does not revive old tokens after global disable/re-enable or installation disable', async () => {
     const a = await agent();
     await databases.identityDb
