@@ -103,7 +103,7 @@ index 9c9d42c..6f1bd26 100644
 +++ b/tests/integration/sync.test.ts
 @@ -156,6 +156,47 @@ function connect(address: string, token: string) {
  }
- 
+
  describe('durable outbox projection and caller-bound fixed snapshots', () => {
 +  it('bounds ordinary message projection round trips while preserving actor and event identity', async () => {
 +    const conversation = await group();

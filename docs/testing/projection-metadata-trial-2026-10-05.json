@@ -2,7 +2,7 @@
   "version": 1,
   "base_commit": "107dab867fe5273d7c07f859a4a361cdbd2cfdce",
   "trial_patch": "docs/testing/projection-metadata-trial.patch",
-  "trial_patch_sha256": "47d4927f4568a107c0f41fdce5022819efa0e3c0d11afb9c1f59f3060771f0b5",
+  "trial_patch_sha256": "c315f83ce7cfecd325990b2e2d432d13f344352ed131accff29191c9e3041491",
   "disposition": "reverted: no demonstrated end-to-end gain; do not treat the trial as current implementation",
   "baseline": {
     "version": 3,
