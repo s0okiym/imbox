@@ -1,6 +1,6 @@
 # AC / INV 逐项证据审查
 
-日期：2026-10-04（Asia/Shanghai）。审查范围是仓库当前 V1 实现与本机可重复验证的路径。检查了相关测试中的实际断言、状态/权限拒绝条件和业务事务边界，未按文件名批量通过。执行批次及源码指纹见 [候选证据](provisioning-evidence-2026-10-04.json)，具名用例与定位见 [回归目录](regression-cases.md)，机器映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+日期：2026-10-04（Asia/Shanghai）。审查范围是仓库当前 V1 实现与本机可重复验证的路径。检查了相关测试中的实际断言、状态/权限拒绝条件和业务事务边界，未按文件名批量通过。初始分批记录见 [候选证据](provisioning-evidence-2026-10-04.json)，最终同一源码全量 CI 与指纹见 [最终候选证据](final-candidate-evidence-2026-10-05.json)，具名用例与定位见 [回归目录](regression-cases.md)，机器映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 `verified` 表示本项所列当前 V1 协议行为已有本地执行与断言支持，不代表任意外部供应方、性能或生产运维全部通过；`partial` 表示已验证一部分，并明确列出缺口；`pending` 表示缺少关键部署证据。完整生产门禁继续要求 41 项全部 verified，不能用本机试用资格替代。
 

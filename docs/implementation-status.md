@@ -71,3 +71,7 @@ CI 编排已补齐真实 SeaweedFS、受限测试桶 CORS、Chromium 及实际�
 - 新增迁移 030 与 `workspace:provision`：运维 owner 才能初始化新组织，使用既有有效 human 身份，默认只计划、显式 apply、同事务写入独立回执；并发重试不重复初始化，既有组织和不同清单拒绝，重放不恢复被撤销成员。
 - 新增组织初始化的 5 项集成回归及私聊隔离的独立回归。CLI 已实际执行 planned → applied → already_applied，测试数据只写入隔离测试库。
 - 原先全 pending 的验收登记已按断言审查细化为 24 verified / 16 partial / 1 pending；完整生产门禁继续阻断。当前交付边界与未来工作见 `docs/delivery-backlog.md`，新的运行入口见 `docs/operations/local-pilot.md` 与 `workspace-provisioning.md`。
+
+## 2026-10-05 最终功能候选复核（Asia/Shanghai）
+
+`dbcc6b0` 完整远程 CI 所有步骤通过：180 单元、246 集成、24 浏览器和 1 项实际模型验证。两次浏览器失败均保留记录并修复根因：引用测试等待真实版本与保存状态，撤权测试验证自动隐藏，独立 HTTP 夹具关闭整个浏览器上下文以释放转发连接池。功能试用交付已具备可运行入口、组织首次初始化、完整核心流程及回归/总结/准出文档；生产容量、实际设备/IdP、灾备与 17 项未完全验证的验收要求按既定清单保留。

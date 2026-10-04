@@ -32,7 +32,30 @@
     "production_gate": "blocked"
   },
   "final_ci": {
-    "status": "pending_push_and_verification"
+    "status": "success",
+    "commit": "dbcc6b0c5692989f41f3049defc13f57882183d1",
+    "run_id": 37215651755,
+    "job_id": 111475492287,
+    "url": "https://github.com/s0okiym/imbox/actions/runs/37215651755",
+    "verified_at": "2026-10-05T00:18:37.377399+08:00",
+    "engineering": "passed",
+    "unit": {
+      "files": 32,
+      "passed": 180
+    },
+    "integration": {
+      "files": 33,
+      "passed": 246
+    },
+    "browser": {
+      "passed": 24,
+      "minutes_rounded": 2.7
+    },
+    "real_model": {
+      "files": 1,
+      "passed": 1
+    },
+    "all_steps": "success"
   },
   "host_pilot": {
     "web_origin": "http://localhost:5183",
