@@ -216,7 +216,9 @@ export function RequestDetail({
             <p className="task-prose">{p.handoff.completed_summary || '无'}</p>
             <h3>待完成内容</h3>
             <p className="task-prose">{p.handoff.pending_summary || '无'}</p>
-            <p className="small muted">无待接管的外部行动。</p>
+            <p className="small muted">
+              接管后，请到“行动”中核对仍在执行或结果未知的外部行动。交接不会撤销已经发出的操作。
+            </p>
           </section>
         )}
         <section className="task-section">
