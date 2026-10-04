@@ -378,8 +378,8 @@
 
 | 声明 | 用例 |
 |---|---|
-| [test:153](../../tests/e2e/knowledge.spec.ts#L153) | search excludes private content and explicit memory supports human confirmation, conflict, disable and deletion |
-| [test:225](../../tests/e2e/knowledge.spec.ts#L225) | source membership revocation clears personal derived memory, visible details and an open editing draft |
+| [test:156](../../tests/e2e/knowledge.spec.ts#L156) | search excludes private content and explicit memory supports human confirmation, conflict, disable and deletion |
+| [test:228](../../tests/e2e/knowledge.spec.ts#L228) | source membership revocation clears personal derived memory, visible details and an open editing draft |
 
 ## tests/e2e/message-interactions.spec.ts
 
@@ -422,19 +422,19 @@
 
 | 声明 | 用例 |
 |---|---|
-| [test:185](../../tests/e2e/resources.spec.ts#L185) | real browser S3 upload creates immutable versions and submits the selected version as task evidence |
-| [test:243](../../tests/e2e/resources.spec.ts#L243) | conversation attachments publish after verification and deletion removes the usable attachment |
-| [test:299](../../tests/e2e/resources.spec.ts#L299) | fixed-version comments anchor selected Unicode text and a controlled share grants only its download until revoked |
+| [test:186](../../tests/e2e/resources.spec.ts#L186) | real browser S3 upload creates immutable versions and submits the selected version as task evidence |
+| [test:244](../../tests/e2e/resources.spec.ts#L244) | conversation attachments publish after verification and deletion removes the usable attachment |
+| [test:300](../../tests/e2e/resources.spec.ts#L300) | fixed-version comments anchor selected Unicode text and a controlled share grants only its download until revoked |
 
 ## tests/e2e/runtime-actions.spec.ts
 
 | 声明 | 用例 |
 |---|---|
-| [test:279](../../tests/e2e/runtime-actions.spec.ts#L279) | runtime UI discloses fixed context and budget, controls real runs, and restores scoped history |
-| [test:312](../../tests/e2e/runtime-actions.spec.ts#L312) | grant → proposal → exact human approval → lost response → lookup has one external effect |
-| [test:377](../../tests/e2e/runtime-actions.spec.ts#L377) | a revoked source removes previously visible run context from the browser |
-| [test:397](../../tests/e2e/runtime-actions.spec.ts#L397) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
-| [test:478](../../tests/e2e/runtime-actions.spec.ts#L478) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
+| [test:282](../../tests/e2e/runtime-actions.spec.ts#L282) | runtime UI discloses fixed context and budget, controls real runs, and restores scoped history |
+| [test:315](../../tests/e2e/runtime-actions.spec.ts#L315) | grant → proposal → exact human approval → lost response → lookup has one external effect |
+| [test:380](../../tests/e2e/runtime-actions.spec.ts#L380) | a revoked source removes previously visible run context from the browser |
+| [test:401](../../tests/e2e/runtime-actions.spec.ts#L401) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
+| [test:482](../../tests/e2e/runtime-actions.spec.ts#L482) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
 
 ## tests/e2e/scheduling-promotion.spec.ts
 

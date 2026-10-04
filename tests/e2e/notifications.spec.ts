@@ -97,7 +97,7 @@ test('opens a notification under current authority, marks it read, and saves rem
   } finally {
     stopping = true;
     await page.unrouteAll({ behavior: 'ignoreErrors' });
-    await page.close();
+    await page.context().close();
     app.server.closeAllConnections();
     await app.close();
     await db.close();

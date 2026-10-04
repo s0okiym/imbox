@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "recorded_at": "2026-10-05T00:08:11.909852+08:00",
+  "parent_commit": "5fb43c94828327a5b52f4034902595558598b584",
+  "source_index_sha256": "7e9f585521326ded3326319d2d7053fe6efaaac328ec8a57ac65233a2583fec8",
+  "source_index_command": "git ls-files -s -- . ':!docs/**' ':!README.md' | sha256sum",
+  "lock_sha256": "18543dbd50b7294533d136164f8b94777281864bc6df97e1992784cb6dbb6d55",
+  "local_browser": {
+    "passed": 24,
+    "failed": 0,
+    "minutes_rounded": 4.8
+  },
+  "local_incremental_checks": [
+    "ESLint for all E2E files",
+    "test typecheck",
+    "regression catalog check",
+    "git diff whitespace check"
+  ],
+  "application_source_unchanged_from": "5fb43c94828327a5b52f4034902595558598b584",
+  "application_source_ci_evidence": {
+    "run_id": 37214683914,
+    "engineering": "passed",
+    "unit_passed": 180,
+    "integration_files": 33,
+    "integration_passed": 246,
+    "browser_failed_test": "manual refresh raced automatic privacy redaction; corrected in this candidate"
+  },
+  "acceptance": {
+    "verified": 24,
+    "partial": 16,
+    "pending": 1,
+    "production_gate": "blocked"
+  },
+  "final_ci": {
+    "status": "pending_push_and_verification"
+  },
+  "host_pilot": {
+    "web_origin": "http://localhost:5183",
+    "api_port": 4180,
+    "migration": "030-workspace-provisioning",
+    "real_two_person_browser_flow": "passed",
+    "processes_after_validation": "stopped; database and object storage retained",
+    "toolchain_activation": ". .artifacts/pilot-env.sh",
+    "credentials_committed": false
+  }
+}

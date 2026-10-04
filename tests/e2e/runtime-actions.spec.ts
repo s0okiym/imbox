@@ -236,7 +236,10 @@ async function fixture(page: Page) {
     close: async () => {
       stopped = true;
       // Playwright may already have closed a timed-out page. Cleanup must not replace its assertion failure.
-      if (!page.isClosed()) await page.close().catch(() => {});
+      await page
+        .context()
+        .close()
+        .catch(() => {});
       app.server.closeAllConnections();
       connector.closeAllConnections();
       await Promise.allSettled([
@@ -385,7 +388,8 @@ test('a revoked source removes previously visible run context from the browser',
         tx,
       ),
     );
-    await page.getByRole('button', { name: '刷新运行', exact: true }).click();
+    // Background authorization polling can remove this panel before any manual refresh.
+    // Verify automatic redaction rather than racing a button that should disappear.
     await expect(page.getByLabel('运行详情')).toHaveCount(0);
     await expect(page.getByText('model:local', { exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => Object.keys(localStorage))).toEqual(['imbox.tenant']);

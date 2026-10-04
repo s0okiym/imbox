@@ -64,7 +64,17 @@
     "production_gate": "blocked"
   },
   "remote_ci": {
-    "status": "pending_push_and_verification"
+    "status": "failed",
+    "commit": "5fb43c94828327a5b52f4034902595558598b584",
+    "run_id": 37214683914,
+    "url": "https://github.com/s0okiym/imbox/actions/runs/37214683914",
+    "engineering": "passed",
+    "unit_passed": 180,
+    "integration_passed": 246,
+    "browser_passed": 23,
+    "browser_failed": 1,
+    "failure": "test clicked a refresh control after automatic authorization polling had already removed the restricted panel",
+    "model_step": "skipped"
   },
   "prior_ci": {
     "commit": "618f495",

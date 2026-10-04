@@ -139,24 +139,25 @@ async function fixture(page: Page) {
     collaboration,
     login: async (principalId: string) => {
       const login = await identity.devLogin({ principalId, origin });
-      await page
-        .context()
-        .addCookies([
-          {
-            name: 'imbox_session',
-            value: login.token,
-            url: origin,
-            httpOnly: true,
-            sameSite: 'Lax',
-          },
-        ]);
+      await page.context().addCookies([
+        {
+          name: 'imbox_session',
+          value: login.token,
+          url: origin,
+          httpOnly: true,
+          sameSite: 'Lax',
+        },
+      ]);
       await page.reload();
     },
     messaging,
     tasks,
     close: async () => {
       stopped = true;
-      if (!page.isClosed()) await page.close().catch(() => {});
+      await page
+        .context()
+        .close()
+        .catch(() => {});
       if (timer !== undefined) clearTimeout(timer);
       await pumping.catch(() => {});
       app.server.closeAllConnections();
@@ -326,9 +327,14 @@ test('fixed-version comments anchor selected Unicode text and a controlled share
     const preview = page.getByLabel('版本正文', { exact: true });
     await expect(preview).toHaveValue('你好😀 world');
     await preview.focus();
-    await preview.evaluate((node:HTMLTextAreaElement)=>node.setSelectionRange(2,4));
-    expect(await preview.evaluate((node:HTMLTextAreaElement)=>[node.selectionStart,node.selectionEnd])).toEqual([2,4]);
-    await page.getByRole('button',{name:'对选中文字评论',exact:true}).click();
+    await preview.evaluate((node: HTMLTextAreaElement) => node.setSelectionRange(2, 4));
+    expect(
+      await preview.evaluate((node: HTMLTextAreaElement) => [
+        node.selectionStart,
+        node.selectionEnd,
+      ]),
+    ).toEqual([2, 4]);
+    await page.getByRole('button', { name: '对选中文字评论', exact: true }).click();
     await expect(page.getByText('评论已选文字（3–3 字符）', { exact: true })).toBeVisible();
     await page.getByRole('textbox', { name: '评论', exact: true }).fill('请确认这个字符');
     await page.getByRole('button', { name: '发表评论', exact: true }).click();

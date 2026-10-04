@@ -109,7 +109,7 @@ test('exports only the selected live scope, verifies a complete file, and shows 
   } finally {
     stopping = true;
     await page.unrouteAll({ behavior: 'ignoreErrors' });
-    await page.close();
+    await page.context().close();
     app.server.closeAllConnections();
     await app.close();
     await db.close();

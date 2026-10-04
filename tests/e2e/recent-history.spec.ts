@@ -121,7 +121,7 @@ test('loads older messages beyond the bounded recent snapshot and resolves a dee
   } finally {
     stopping = true;
     await page.unrouteAll({ behavior: 'ignoreErrors' });
-    await page.close();
+    await page.context().close();
     app.server.closeAllConnections();
     await app.close();
     await db.close();

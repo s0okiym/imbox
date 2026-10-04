@@ -183,7 +183,7 @@ test('production shell reloads offline and CacheStorage never contains API or ca
     ).toBeVisible();
   } finally {
     await context.setOffline(false);
-    await page.close();
+    await page.context().close();
     shell.closeAllConnections();
     await new Promise<void>((resolve) => shell.close(() => resolve()));
     app.server.closeAllConnections();

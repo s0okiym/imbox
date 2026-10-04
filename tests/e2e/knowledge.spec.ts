@@ -116,7 +116,10 @@ async function fixture(page: Page) {
     privateText,
     close: async () => {
       stopped = true;
-      if (!page.isClosed()) await page.close().catch(() => {});
+      await page
+        .context()
+        .close()
+        .catch(() => {});
       if (timer !== undefined) clearTimeout(timer);
       await pumping.catch(() => {});
       app.server.closeAllConnections();
