@@ -7,7 +7,7 @@ export {
   lockTaskRoots,
   lockDependencyGraph,
 } from './database.js';
-export type { Db, TenantTransaction, DatabaseOptions } from './database.js';
+export type { Db, TenantTransaction, DatabaseOptions, DatabaseObservation } from './database.js';
 export type {
   Database,
   Bigint,

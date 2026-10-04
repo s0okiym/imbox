@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 77 个测试文件、422 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 78 个测试文件、424 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -517,6 +517,13 @@
 | [it:317](../../tests/integration/artifact-collaboration.test.ts#L317) | version-anchored Artifact comments and bounded explicit sharing → stops an in-flight shared download after revoke and denies expired or deleted-source grants |
 | [it:355](../../tests/integration/artifact-collaboration.test.ts#L355) | version-anchored Artifact comments and bounded explicit sharing → replays independent share revocation and comment deletion after a simulated database restore |
 | [it:403](../../tests/integration/artifact-collaboration.test.ts#L403) | version-anchored Artifact comments and bounded explicit sharing → authenticates share HTTP downloads and never redirects to storage or returns the underlying resource locator |
+
+## tests/integration/database-observation.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:12](../../tests/integration/database-observation.test.ts#L12) | measures real acquisition contention and query failures without emitting SQL, values or callback errors |
+| [it:72](../../tests/integration/database-observation.test.ts#L72) | isolates asynchronous diagnostic rejection from successful database work |
 
 ## tests/integration/exports.test.ts
 

@@ -1,29 +1,123 @@
 import { Kysely, PostgresDialect, sql, type Transaction } from 'kysely';
 import pg from 'pg';
+import { createHash } from 'node:crypto';
+import { performance } from 'node:perf_hooks';
 import type { Database } from './schema.js';
 
 export type Db = Kysely<Database>;
 export type TenantTransaction = Transaction<Database>;
+export type DatabaseObservation = {
+  kind: 'query' | 'acquire';
+  durationMs: number;
+  failed: boolean;
+  waiting: number;
+  idle: number;
+  total: number;
+  fingerprint?: string;
+  operation?: string;
+  relation?: string;
+};
 export type DatabaseOptions = {
   max?: number;
   applicationName?: string;
   statementTimeoutMs?: number;
+  observe?: (event: DatabaseObservation) => void | Promise<void>;
 };
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** The caller chooses a role-specific connection URL. No connection here runs migrations. */
 export function createDatabase(url: string, options: DatabaseOptions = {}): Db {
+  const pool = new pg.Pool({
+    connectionString: url,
+    max: options.max ?? 10,
+    application_name: options.applicationName ?? 'imbox',
+    statement_timeout: options.statementTimeoutMs ?? 15_000,
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 30_000,
+  });
+  const dialect = new PostgresDialect({ pool });
+  if (!options.observe) return new Kysely<Database>({ dialect });
+  const notify = (event: Omit<DatabaseObservation, 'waiting' | 'idle' | 'total'>) => {
+    try {
+      const result = options.observe?.({
+        ...event,
+        waiting: pool.waitingCount,
+        idle: pool.idleCount,
+        total: pool.totalCount,
+      });
+      if (result !== undefined) void Promise.resolve(result).catch(() => {});
+    } catch {
+      /* Diagnostics must not alter transaction success or expose callback errors. */
+    }
+  };
+  // Only fixed schema identifiers can enter metrics; never emit SQL, values or errors.
+  const relations = new Set([
+    'tenants',
+    'tenant_principals',
+    'principals',
+    'memberships',
+    'conversations',
+    'conversation_members',
+    'messages',
+    'message_revisions',
+    'message_resources',
+    'resources',
+    'reactions',
+    'domain_events',
+    'outbox',
+    'projection_streams',
+    'projection_items',
+    'projection_events',
+    'projection_checkpoints',
+    'command_receipts',
+    'read_cursors',
+    'notification_event_queue',
+    'notifications',
+    'notification_preferences',
+    'notification_devices',
+    'sessions',
+    'sync_snapshot_sessions',
+    'sync_snapshot_items',
+  ]);
   return new Kysely<Database>({
-    dialect: new PostgresDialect({
-      pool: new pg.Pool({
-        connectionString: url,
-        max: options.max ?? 10,
-        application_name: options.applicationName ?? 'imbox',
-        statement_timeout: options.statementTimeoutMs ?? 15_000,
-        connectionTimeoutMillis: 10_000,
-        idleTimeoutMillis: 30_000,
-      }),
-    }),
+    dialect: {
+      createAdapter: () => dialect.createAdapter(),
+      createIntrospector: (database) => dialect.createIntrospector(database),
+      createQueryCompiler: () => dialect.createQueryCompiler(),
+      createDriver: () => {
+        const driver = dialect.createDriver();
+        const acquire = driver.acquireConnection.bind(driver);
+        driver.acquireConnection = async () => {
+          const start = performance.now();
+          let failed = true;
+          try {
+            const connection = await acquire();
+            failed = false;
+            return connection;
+          } finally {
+            notify({ kind: 'acquire', durationMs: performance.now() - start, failed });
+          }
+        };
+        return driver;
+      },
+    },
+    log: (event) => {
+      const statement = event.query.sql;
+      const verb = /^\s*([a-z]+)/i.exec(statement)?.[1]?.toLowerCase();
+      const relation = /\b(?:from|into|update)\s+"?([a-z_][a-z0-9_]*)"?/i.exec(statement)?.[1];
+      notify({
+        kind: 'query',
+        durationMs: event.queryDurationMillis,
+        failed: event.level === 'error',
+        fingerprint: createHash('sha256').update(statement).digest('hex'),
+        operation:
+          verb &&
+          ['select', 'insert', 'update', 'delete', 'begin', 'commit', 'rollback'].includes(verb)
+            ? verb
+            : 'other',
+        ...(relation && relations.has(relation) ? { relation } : {}),
+      });
+    },
   });
 }
 

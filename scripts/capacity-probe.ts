@@ -5,7 +5,13 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { performance, monitorEventLoopDelay } from 'node:perf_hooks';
 import WebSocket from 'ws';
-import { createDatabase, migrateToLatest, sql, withTenant } from '@imbox/db';
+import {
+  createDatabase,
+  migrateToLatest,
+  sql,
+  withTenant,
+  type DatabaseObservation,
+} from '@imbox/db';
 import { bootstrapDevelopmentRole } from '@imbox/db/testing';
 import {
   createMessagingService,
@@ -50,10 +56,56 @@ export async function runCapacityProbe() {
       u.pathname = '/' + name;
       return u.href;
     };
+  let profiling = false;
+  let profileDropped = 0;
+  const queryProfile = new Map<
+    string,
+    {
+      role: string;
+      kind: string;
+      operation?: string;
+      relation?: string;
+      fingerprint?: string;
+      calls: number;
+      total_ms: number;
+      max_ms: number;
+      failed: number;
+      maximum_waiting: number;
+    }
+  >();
+  const observe = (role: string) => (event: DatabaseObservation) => {
+    if (!profiling) return;
+    const key = role + ':' + event.kind + ':' + (event.fingerprint ?? '');
+    let entry = queryProfile.get(key);
+    if (!entry) {
+      if (queryProfile.size >= 1024) {
+        profileDropped++;
+        return;
+      }
+      entry = {
+        role,
+        kind: event.kind,
+        ...(event.operation ? { operation: event.operation } : {}),
+        ...(event.relation ? { relation: event.relation } : {}),
+        ...(event.fingerprint ? { fingerprint: event.fingerprint } : {}),
+        calls: 0,
+        total_ms: 0,
+        max_ms: 0,
+        failed: 0,
+        maximum_waiting: 0,
+      };
+      queryProfile.set(key, entry);
+    }
+    entry.calls++;
+    entry.total_ms += event.durationMs;
+    entry.max_ms = Math.max(entry.max_ms, event.durationMs);
+    entry.failed += Number(event.failed);
+    entry.maximum_waiting = Math.max(entry.maximum_waiting, event.waiting);
+  };
   const owner = createDatabase(url(0), { max: 2, statementTimeoutMs: 120000 }),
-    db = createDatabase(url(1)),
-    identityDb = createDatabase(url(2), { max: 5 }),
-    workerDb = createDatabase(url(1), { max: 5 });
+    db = createDatabase(url(1), { observe: observe('application') }),
+    identityDb = createDatabase(url(2), { max: 5, observe: observe('identity') }),
+    workerDb = createDatabase(url(1), { max: 5, observe: observe('worker') });
   const sockets: WebSocket[] = [];
   let app: ReturnType<typeof createApp> | undefined,
     stop = false,
@@ -332,6 +384,7 @@ export async function runCapacityProbe() {
       await Promise.all(
         Array.from({ length: Math.min(50, connections - start) }, (_, i) => connect(start + i)),
       );
+    profiling = true;
     const loadedAt = performance.now();
     let saved = 0;
     const flights: Promise<void>[] = [];
@@ -372,6 +425,22 @@ export async function runCapacityProbe() {
     const drainDeadline = drainStarted + 60_000;
     while (seen.size < expectedDeliveries && performance.now() < drainDeadline) await delay(250);
     const drainElapsed = performance.now() - drainStarted;
+    profiling = false;
+    const profileTotals = [...new Set([...queryProfile.values()].map((entry) => entry.role))].map(
+      (role) => {
+        const entries = [...queryProfile.values()].filter((entry) => entry.role === role);
+        const queries = entries.filter((entry) => entry.kind === 'query');
+        const acquire = entries.find((entry) => entry.kind === 'acquire');
+        return {
+          role,
+          query_calls: queries.reduce((n, e) => n + e.calls, 0),
+          query_total_ms: Math.round(queries.reduce((n, e) => n + e.total_ms, 0)),
+          acquisition_calls: acquire?.calls ?? 0,
+          acquisition_total_ms: Math.round(acquire?.total_ms ?? 0),
+          maximum_waiting: Math.max(0, ...entries.map((e) => e.maximum_waiting)),
+        };
+      },
+    );
     // Reconnection to 1,000 incremental facts is a separate scenario, not asserted by this probe.
     const report = {
       version: 2,
@@ -401,6 +470,19 @@ export async function runCapacityProbe() {
         network: 'host loopback; PostgreSQL Docker; shared development host',
       },
       results: {
+        database_profile_totals: profileTotals,
+        database_profile_dropped: profileDropped,
+        database_profile: [...queryProfile.values()]
+          .sort((a, b) => b.total_ms - a.total_ms)
+          .slice(0, 30)
+          .map((entry) => ({
+            ...entry,
+            total_ms: Math.round(entry.total_ms),
+            max_ms: Math.round(entry.max_ms * 100) / 100,
+            mean_ms: Math.round((entry.total_ms / entry.calls) * 100) / 100,
+          })),
+        database_profile_scope:
+          'load plus drain; query round trip excludes acquisition; acquire includes pool wait and new connection setup; concurrent totals overlap; no SQL or parameters retained',
         notification_source_plan: notificationPlan,
         saved_messages: saved,
         committed_messages: committed.size,

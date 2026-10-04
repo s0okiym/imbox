@@ -708,6 +708,9 @@ export function createMessagingService(
     ) {
       checkFormat(input);
       return transaction(auth, async (tx) => {
+        // Command replays do not execute the callback: they must authorize the returned message anew.
+        // New sends retain the conversation and membership locks until this transaction commits.
+        let createdAccess: ConversationAccess | undefined;
         const messageId = await command(
           tx,
           auth,
@@ -716,6 +719,7 @@ export function createMessagingService(
           { id, ...input },
           async () => {
             const access = await conversation(tx, auth, id, true);
+            createdAccess = access;
             const existing = await tx
               .selectFrom('messages')
               .select('id')
@@ -776,7 +780,7 @@ export function createMessagingService(
             return newId;
           },
         );
-        return messageDto(tx, auth, messageId);
+        return messageDto(tx, auth, messageId, createdAccess);
       });
     },
     async changeMessage(
