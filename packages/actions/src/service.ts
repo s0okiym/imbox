@@ -1517,6 +1517,7 @@ export function createActionService(options: Options) {
           business_key: a.business_key,
           tool_id: a.tool_id,
           tool_version: a.tool_version,
+          tool_binding: boundTool(await grant(tx, a.grant_id)).executionBinding,
           budget_account_ids: a.ancestor_fences.map((fence) => fence.taskId),
           ...(a.run_id ? { run_id: a.run_id } : {}),
           target_id: a.target_id,
@@ -1532,6 +1533,7 @@ export function createActionService(options: Options) {
       if (previous?.kind === 'intent') {
         const compatible = { ...record };
         if (previous.tool_version === undefined) delete compatible.tool_version;
+        if (previous.tool_binding === undefined) delete compatible.tool_binding;
         if (previous.budget_account_ids === undefined) delete compatible.budget_account_ids;
         if (canonical(previous) !== canonical(compatible)) fail('IDEMPOTENCY_CONFLICT', 409);
         record = previous;

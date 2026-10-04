@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 87 个测试文件、525 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 87 个测试文件、526 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -516,16 +516,17 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:240](../../tests/integration/action-recovery.test.ts#L240) | orphan intent accounting and explicit safe unfreeze → accepts a bound terminal no-effect receipt without charging or retrying the old business action |
-| [it:273](../../tests/integration/action-recovery.test.ts#L273) | orphan intent accounting and explicit safe unfreeze → compensates every original ancestor budget exactly once for a restored child task |
-| [it:339](../../tests/integration/action-recovery.test.ts#L339) | orphan intent accounting and explicit safe unfreeze → performs read-only provider reconciliation, charges once, preserves old keys and explicitly unfreezes |
-| [it:394](../../tests/integration/action-recovery.test.ts#L394) | orphan intent accounting and explicit safe unfreeze → does not turn missing or incorrectly bound provider evidence into zero cost or permission to unfreeze |
-| [it:419](../../tests/integration/action-recovery.test.ts#L419) | orphan intent accounting and explicit safe unfreeze → retains the freeze when a signed intent lacks legacy version/budget bindings or its account is missing |
-| [it:461](../../tests/integration/action-recovery.test.ts#L461) | orphan intent accounting and explicit safe unfreeze → retries lost independent unfreeze acknowledgements without repeating accounting or external sends |
-| [it:494](../../tests/integration/action-recovery.test.ts#L494) | orphan intent accounting and explicit safe unfreeze → requires a fresh human confirmation after a newer freeze and detects conflicting late durable receipts |
-| [it:533](../../tests/integration/action-recovery.test.ts#L533) | orphan intent accounting and explicit safe unfreeze → does not reuse a provider receipt across orphan actions and keeps the second charge unresolved |
-| [it:567](../../tests/integration/action-recovery.test.ts#L567) | orphan intent accounting and explicit safe unfreeze → requires a current human tenant admin and does not expose another tenant recovery case |
-| [it:584](../../tests/integration/action-recovery.test.ts#L584) | orphan intent accounting and explicit safe unfreeze → exposes explicit HTTP review without accepting caller-supplied provider evidence |
+| [it.each:240](../../tests/integration/action-recovery.test.ts#L240) | orphan intent accounting and explicit safe unfreeze → keeps orphan recovery frozen without the original connector binding: %s |
+| [it:290](../../tests/integration/action-recovery.test.ts#L290) | orphan intent accounting and explicit safe unfreeze → accepts a bound terminal no-effect receipt without charging or retrying the old business action |
+| [it:323](../../tests/integration/action-recovery.test.ts#L323) | orphan intent accounting and explicit safe unfreeze → compensates every original ancestor budget exactly once for a restored child task |
+| [it:389](../../tests/integration/action-recovery.test.ts#L389) | orphan intent accounting and explicit safe unfreeze → performs read-only provider reconciliation, charges once, preserves old keys and explicitly unfreezes |
+| [it:444](../../tests/integration/action-recovery.test.ts#L444) | orphan intent accounting and explicit safe unfreeze → does not turn missing or incorrectly bound provider evidence into zero cost or permission to unfreeze |
+| [it:469](../../tests/integration/action-recovery.test.ts#L469) | orphan intent accounting and explicit safe unfreeze → retains the freeze when a signed intent lacks legacy version/budget bindings or its account is missing |
+| [it:511](../../tests/integration/action-recovery.test.ts#L511) | orphan intent accounting and explicit safe unfreeze → retries lost independent unfreeze acknowledgements without repeating accounting or external sends |
+| [it:544](../../tests/integration/action-recovery.test.ts#L544) | orphan intent accounting and explicit safe unfreeze → requires a fresh human confirmation after a newer freeze and detects conflicting late durable receipts |
+| [it:583](../../tests/integration/action-recovery.test.ts#L583) | orphan intent accounting and explicit safe unfreeze → does not reuse a provider receipt across orphan actions and keeps the second charge unresolved |
+| [it:617](../../tests/integration/action-recovery.test.ts#L617) | orphan intent accounting and explicit safe unfreeze → requires a current human tenant admin and does not expose another tenant recovery case |
+| [it:634](../../tests/integration/action-recovery.test.ts#L634) | orphan intent accounting and explicit safe unfreeze → exposes explicit HTTP review without accepting caller-supplied provider evidence |
 
 ## tests/integration/actions.test.ts
 

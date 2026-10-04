@@ -17,6 +17,8 @@ export interface IntentRecord {
   tool_id: string;
   /** Absent only on legacy intents, which cannot be automatically repaired if orphaned. */
   tool_version?: string;
+  /** Exact connector configuration; legacy records without it cannot query a provider. */
+  tool_binding?: string;
   budget_account_ids?: string[];
   run_id?: string;
   target_id: string;

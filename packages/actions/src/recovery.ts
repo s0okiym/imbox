@@ -416,10 +416,14 @@ export function createActionRecoveryService(options: {
         return assertContract('RecoveryEvidence', evidenceDto(reference.existing));
       const intent = await boundIntent(reference.row, await journal.records(auth.tenantId));
       let observation: ToolObservation = { status: 'unknown', reason: 'invalid_response' };
-      if (intent.tool_version) {
+      if (intent.tool_version && intent.tool_binding) {
         try {
           const tool = tools.get(intent.tool_id, intent.tool_version, intent.target_id);
-          if (tool.recoveryTransport === 'controlled_http_v1' && tool.lookupRecovery)
+          if (
+            tool.executionBinding === intent.tool_binding &&
+            tool.recoveryTransport === 'controlled_http_v1' &&
+            tool.lookupRecovery
+          )
             observation = await tool.lookupRecovery({
               tenantId: auth.tenantId,
               actionId: intent.action_id,

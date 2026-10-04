@@ -237,6 +237,56 @@ async function unfreezePayload() {
 }
 
 describe('orphan intent accounting and explicit safe unfreeze', () => {
+  it.each(['changed', 'missing'] as const)(
+    'keeps orphan recovery frozen without the original connector binding: %s',
+    async (kind) => {
+      await execute();
+      await restoreBeforeActions();
+      const item = await firstCase();
+      const originalTools = tools;
+      if (kind === 'changed') {
+        tools = {
+          list: () => originalTools.list(),
+          get: (id, version, target) => ({
+            ...originalTools.get(id, version, target),
+            executionBinding: '0'.repeat(64),
+          }),
+        };
+        actions = service();
+      } else {
+        const records = await journal.records(fixture.tenantId);
+        const original = records.find((r): r is IntentRecord => r.kind === 'intent')!;
+        const legacy = { ...original, id: key(), attempt_id: key(), action_id: key() };
+        legacy.id = legacy.attempt_id;
+        delete legacy.tool_binding;
+        await journal.append(legacy);
+        await actions.recovery.refresh(
+          fixture.alice,
+          { reason: 'Discover legacy unbound intent' },
+          key(),
+        );
+      }
+      const target =
+        kind === 'changed'
+          ? item
+          : (await actions.recovery.list(fixture.alice)).items.find(
+              (r) => r.attempt_id !== item.attempt_id,
+            )!;
+      const proof = await actions.recovery.lookup(fixture.alice, target.id, key());
+      expect(proof.outcome).toBe('unknown');
+      expect(getCount).toBe(0);
+      expect((await actions.recovery.status(fixture.alice)).frozen).toBe(true);
+      expect(postCount).toBe(1);
+      if (kind === 'changed') {
+        tools = originalTools;
+        actions = service();
+        const recovered = await actions.recovery.lookup(fixture.alice, item.id, key());
+        expect(recovered.outcome).toBe('succeeded');
+        expect(getCount).toBe(1);
+        expect(postCount).toBe(1);
+      }
+    },
+  );
   it('accepts a bound terminal no-effect receipt without charging or retrying the old business action', async () => {
     providerOutcome = 'no_effect';
     await execute();
