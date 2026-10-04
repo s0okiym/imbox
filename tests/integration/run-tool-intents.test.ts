@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import type { AddressInfo } from 'node:net';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -14,6 +14,14 @@ import {
 } from '@imbox/actions';
 import { createModelDriver, createOllamaAdapter } from '@imbox/model-runtime';
 import { createSchedulingService } from '@imbox/scheduling';
+import {
+  createKnowledgeService,
+  knowledgeRuntimeSourcePort,
+  knowledgeResourceIndex,
+} from '@imbox/knowledge';
+import { createResourceService, createS3ObjectStore } from '@imbox/resources';
+import { createRuntimeService, createRuntimeWorker } from '@imbox/runtime';
+import type { ContractTypes as C } from '@imbox/contracts';
 import { createTaskService } from '@imbox/application';
 import { sql, withTenant } from '@imbox/db';
 import { modelFixture } from '../helpers/model.js';
@@ -21,13 +29,30 @@ import { testDatabases } from '../helpers/database.js';
 const key = randomUUID,
   secret = 'run-tool-intents-integration-secret-at-least-32',
   digest = 'sha256:' + 'a'.repeat(64);
+const store = createS3ObjectStore({
+  endpoint: process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:18333',
+  region: 'us-east-1',
+  bucket: 'imbox-resources-test',
+  accessKeyId: 'imbox_local_s3_app',
+  secretAccessKey: 'imbox_local_s3_app_secret',
+});
+const adminStore = createS3ObjectStore({
+  endpoint: process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:18333',
+  region: 'us-east-1',
+  bucket: 'imbox-resources-test',
+  accessKeyId: 'imbox_local_s3_admin',
+  secretAccessKey: 'imbox_local_s3_admin_secret',
+});
 let dbs: Awaited<ReturnType<typeof testDatabases>>;
 let fixture: Awaited<ReturnType<typeof setup>>;
 const cleanups: Array<() => Promise<void>> = [];
 beforeAll(async () => {
   dbs = await testDatabases();
+  await adminStore.ensureDevelopmentBucket('test');
 });
 afterAll(async () => {
+  store.destroy();
+  adminStore.destroy();
   await dbs.close();
 });
 beforeEach(async () => {
@@ -36,9 +61,20 @@ beforeEach(async () => {
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) await cleanup();
 });
-async function setup() {
+async function setup(withArtifact = false) {
   const base = await modelFixture(dbs),
     tasks = createTaskService(dbs.db, secret);
+  const sources = knowledgeRuntimeSourcePort(
+    createKnowledgeService({ db: dbs.db, cursorSecret: secret }),
+  );
+  base.runtime = createRuntimeService({ db: dbs.db, sources });
+  base.worker = createRuntimeWorker({ db: dbs.db, workerId: 'artifact-model-worker', sources });
+  const resources = createResourceService({
+    db: dbs.db,
+    store,
+    cursorSecret: secret,
+    textIndex: knowledgeResourceIndex(),
+  });
   let task = await tasks.createTask(
     base.alice,
     {
@@ -60,6 +96,44 @@ async function setup() {
     key(),
   );
   task = await tasks.changeState(base.alice, task.id, { state: 'active' }, task.version, key());
+  const refs: C['ActionResourceRef'][] = [{ type: 'task', id: task.id, version: task.version }];
+  let file: C['StoredArtifact'] | null = null;
+  if (withArtifact) {
+    const bytes = Buffer.from('IMBOX_TOOL_OK');
+    const ticket = await resources.createUpload(
+      base.alice,
+      {
+        task_id: task.id,
+        filename: 'hosted-publication.md',
+        content_type: 'text/markdown',
+        byte_size: bytes.byteLength,
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+      },
+      key(),
+    );
+    expect(
+      (
+        await fetch(ticket.upload_url, {
+          method: 'PUT',
+          headers: ticket.upload_headers,
+          body: bytes,
+        })
+      ).status,
+    ).toBe(200);
+    const content = await resources.completeUpload(base.alice, ticket.id, key());
+    file = await resources.createArtifact(
+      base.alice,
+      { resource_id: content.id, title: 'Hosted fixed publication' },
+      key(),
+    );
+    refs.push({
+      type: 'artifact_version',
+      id: file.version_id,
+      version: file.head_version,
+      sha256: file.resource.sha256,
+    });
+  }
+  const deliveredTexts: unknown[] = [];
   let posts = 0,
     generations = 0,
     loseResponse = false,
@@ -88,6 +162,7 @@ async function setup() {
     request.on('end', () => {
       const data = JSON.parse(text) as Record<string, unknown>;
       if (url.pathname === '/execute') {
+        deliveredTexts.push((data.input as { text: string }).text);
         posts++;
         const receipt = {
           status: 'succeeded',
@@ -149,7 +224,13 @@ async function setup() {
       estimateMicrounits: '5',
     },
   ]);
-  const actions = createActionService({ db: dbs.db, tools, journal, cursorSecret: secret });
+  const actions = createActionService({
+    db: dbs.db,
+    tools,
+    journal,
+    cursorSecret: secret,
+    sources,
+  });
   const grant = await actions.createGrant(
     base.alice,
     {
@@ -160,7 +241,7 @@ async function setup() {
       target_id: 'fixed-provider',
       allow_execute: true,
       allow_disclosure: true,
-      resource_versions: [{ type: 'task', id: task.id, version: task.version }],
+      resource_versions: refs,
       approver_principal_ids: [base.alice.principalId],
       budget: { currency: 'USD', limit_microunits: '50' },
       expires_at: new Date(Date.now() + 3600000).toISOString(),
@@ -184,7 +265,7 @@ async function setup() {
     agent_revision: '1',
     task_id: task.id,
     tool_grant_id: grant.id,
-    context: [{ type: 'task' as const, id: task.id, version: task.version, required: true }],
+    context: refs.map((ref) => ({ ...ref, required: true })),
     purpose: 'Propose sending IMBOX_TOOL_OK to the fixed provider; wait for approval.',
     destination: 'model:local',
     budget: { currency: 'USD', limit_microunits: '50' },
@@ -211,6 +292,8 @@ async function setup() {
   };
   return {
     ...base,
+    file,
+    deliveredTexts,
     task,
     tasks,
     grant,
@@ -233,6 +316,24 @@ async function setup() {
   };
 }
 describe('bounded structured model intention, explicit human approval and fresh leased execution', () => {
+  it('publishes a fixed artifact from the hosted structured model path only after human approval and resume', async () => {
+    fixture = await setup(true);
+    const run = await fixture.createRun();
+    expect(await fixture.driver.execute(fixture.tenantId, run.id)).toBe('waiting');
+    const action = await fixture.actions.getRunIntent(fixture.alice, run.id);
+    expect(action.resource_versions).toContainEqual({
+      type: 'artifact_version',
+      id: fixture.file!.version_id,
+      version: fixture.file!.head_version,
+      sha256: fixture.file!.resource.sha256,
+    });
+    expect(fixture.posts()).toBe(0);
+    await fixture.approve(action.id);
+    await fixture.resume(run.id);
+    expect(await fixture.driver.execute(fixture.tenantId, run.id)).toBe('completed');
+    expect(fixture.deliveredTexts).toEqual(['IMBOX_TOOL_OK']);
+    expect(fixture.posts()).toBe(1);
+  });
   it('persists one Action then requires human resume and charges both Run and Task exactly once', async () => {
     const run = await fixture.createRun();
     expect(await fixture.driver.execute(fixture.tenantId, run.id)).toBe('waiting');

@@ -4,10 +4,29 @@ import {
   type AuthContext,
   type RuntimeSourcePort,
 } from '@imbox/application';
+import type { ContractTypes as C } from '@imbox/contracts';
 import { sql, type TenantTransaction as Tx } from '@imbox/db';
 import { RUNTIME_LIMITS } from './limits.js';
 import { activeChain, ancestry, fail, hash, liveActors, runRow, verifyContext } from './shared.js';
 import type { ContextItem, LeaseClaim, RunRow } from './types.js';
+
+/** Explicit publication sources only; other context types cannot become tool disclosure. */
+export function runToolReferences(taskId: string, items: ContextItem[]): C['ActionResourceRef'][] {
+  if (items.filter((item) => item.source_type === 'artifact_version').length > 1)
+    fail('DISCLOSURE_DENIED', 403);
+  return items.map((item) => {
+    if (item.source_type === 'task' && item.source_id === taskId)
+      return { type: 'task', id: item.source_id, version: item.source_version };
+    if (item.source_type === 'artifact_version' && item.source_sha256)
+      return {
+        type: 'artifact_version',
+        id: item.source_id,
+        version: item.source_version,
+        sha256: item.source_sha256,
+      };
+    return fail('DISCLOSURE_DENIED', 403);
+  });
+}
 
 /** The caller holds the Action safety fence before entering this gate. No network operations. */
 export async function lockRunToolAuthority(
@@ -52,16 +71,7 @@ export async function lockRunToolAuthority(
     ).rows.length === 1;
   if (!replay) await assertRunToolLease(tx, run, claim);
   const items = await verifyContext(tx, run, actors.creator, actors.agent, sources);
-  const leaf = chain.at(-1)!;
-  if (
-    items.some(
-      (item) =>
-        item.source_type !== 'task' ||
-        item.source_id !== run.task_id ||
-        item.source_version !== leaf.version,
-    )
-  )
-    fail('DISCLOSURE_DENIED', 403);
+  runToolReferences(run.task_id!, items);
   return { run, actors, chain, items };
 }
 export async function assertRunToolLease(tx: Tx, run: RunRow, claim: LeaseClaim) {
@@ -92,12 +102,7 @@ export async function bindRunToolGrant(
   grantId: string,
   executorId: string,
 ) {
-  if (
-    auth.kind !== 'human' ||
-    !run.task_id ||
-    items.some((item) => item.source_type !== 'task' || item.source_id !== run.task_id)
-  )
-    fail('DISCLOSURE_DENIED', 403);
+  if (auth.kind !== 'human' || !run.task_id) fail('DISCLOSURE_DENIED', 403);
   const row = (
     await sql<{
       task_id: string;
@@ -111,11 +116,7 @@ export async function bindRunToolGrant(
       tx,
     )
   ).rows[0];
-  const refs = items.map((item) => ({
-    type: 'task',
-    id: item.source_id,
-    version: item.source_version,
-  }));
+  const refs = runToolReferences(run.task_id!, items);
   if (
     !row ||
     !row.valid ||
@@ -128,7 +129,7 @@ export async function bindRunToolGrant(
     fail(
       'FORBIDDEN',
       403,
-      'The explicit Run grant does not match the disclosed Task context and budget',
+      'The explicit Run grant does not match the disclosed fixed context and budget',
     );
   await sql`update agent_runs set tool_grant_id=${grantId},tool_grant_revision=${row.revision} where id=${run.id}`.execute(
     tx,

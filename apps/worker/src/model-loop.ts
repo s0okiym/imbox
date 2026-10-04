@@ -1,4 +1,4 @@
-import {configuredActions} from '@imbox/actions';
+import { configuredActions } from '@imbox/actions';
 import { createKnowledgeService, knowledgeRuntimeSourcePort } from '@imbox/knowledge';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -24,8 +24,12 @@ export async function runModelLoop(db: Db, tenants: readonly string[], signal: A
     digest,
     allowLoopbackHttp: process.env.OLLAMA_ALLOW_LOOPBACK_HTTP === 'true',
   });
-  const actions=await configuredActions(db,process.env);
-  const driver = createModelDriver({ worker, models: new Map([['local', adapter]]),...(actions?{actions}:{}) });
+  const actions = await configuredActions(db, process.env, sources);
+  const driver = createModelDriver({
+    worker,
+    models: new Map([['local', adapter]]),
+    ...(actions ? { actions } : {}),
+  });
   while (!signal.aborted) {
     for (const tenantId of tenants) {
       if (signal.aborted) break;

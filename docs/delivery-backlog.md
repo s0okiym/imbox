@@ -38,3 +38,5 @@ TypeScript workspace 包含 API、Web、Worker、独立工具执行器、机器 
 
 
 产物发布基础进展：ActionResourceRef 后端已支持固定产物版本与 SHA-256，原文一致性及领取/派发前当前来源校验；旧 head 批准不替换新版，删除后正文隐藏且保留 unknown 核对。24 项 Action 集成通过。上段所述实现缺口正在分阶段消除，仍需 Web 选择/发布完整体验及 Agent Run 产物工具授权，见 [功能约定](development/artifact-publication.md)。
+
+Agent 产物发布进展：已接通外部机器 HTTP 与托管模型工具路径，固定引用保留类型/版本/哈希；要求人工批准、恢复和新租约，产物删除后拒绝外发。model-loop、API、tool-runner 均连接来源适配器。剩余优先项是 Web 固定产物选择、授权/提出流程及相应完整浏览器回归。

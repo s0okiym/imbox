@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 87 个测试文件、510 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 87 个测试文件、514 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -664,9 +664,12 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:242](../../tests/integration/machine-run-tools.test.ts#L242) | machine tool intention and execution HTTP leases → cannot execute merely because a human approved; explicit human resume and new lease are required |
-| [it:271](../../tests/integration/machine-run-tools.test.ts#L271) | machine tool intention and execution HTTP leases → requires scope, matching credential holder and unexpired DB lease for every proposal |
-| [it:325](../../tests/integration/machine-run-tools.test.ts#L325) | machine tool intention and execution HTTP leases → rejects payload authority injection and blocks execution after token revocation |
+| [it:323](../../tests/integration/machine-run-tools.test.ts#L323) | machine tool intention and execution HTTP leases → publishes a fixed artifact through the external machine lease after exact approval and explicit resume |
+| [it:356](../../tests/integration/machine-run-tools.test.ts#L356) | machine tool intention and execution HTTP leases → refuses an approved external artifact after source deletion even with the current machine lease |
+| [it:370](../../tests/integration/machine-run-tools.test.ts#L370) | machine tool intention and execution HTTP leases → rejects artifact publication through an approval-free tool for both direct and machine actions |
+| [it:401](../../tests/integration/machine-run-tools.test.ts#L401) | machine tool intention and execution HTTP leases → cannot execute merely because a human approved; explicit human resume and new lease are required |
+| [it:430](../../tests/integration/machine-run-tools.test.ts#L430) | machine tool intention and execution HTTP leases → requires scope, matching credential holder and unexpired DB lease for every proposal |
+| [it:484](../../tests/integration/machine-run-tools.test.ts#L484) | machine tool intention and execution HTTP leases → rejects payload authority injection and blocks execution after token revocation |
 
 ## tests/integration/maintenance.test.ts
 
@@ -827,13 +830,14 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:236](../../tests/integration/run-tool-intents.test.ts#L236) | bounded structured model intention, explicit human approval and fresh leased execution → persists one Action then requires human resume and charges both Run and Task exactly once |
-| [it:270](../../tests/integration/run-tool-intents.test.ts#L270) | bounded structured model intention, explicit human approval and fresh leased execution → replays a lost proposal response without a second Action but rejects a changed intent |
-| [it:295](../../tests/integration/run-tool-intents.test.ts#L295) | bounded structured model intention, explicit human approval and fresh leased execution → holds unknown tool cost and blocks resume and any blind redispatch |
-| [it:330](../../tests/integration/run-tool-intents.test.ts#L330) | bounded structured model intention, explicit human approval and fresh leased execution → rejects scheduling a tool-authorized Run so approval cannot be followed by an automatic resume |
-| [it:352](../../tests/integration/run-tool-intents.test.ts#L352) | bounded structured model intention, explicit human approval and fresh leased execution → cancels an approved but undispatched bound Action with the Run |
-| [it:368](../../tests/integration/run-tool-intents.test.ts#L368) | bounded structured model intention, explicit human approval and fresh leased execution → finishes a structured final response without manufacturing a tool effect |
-| [it:376](../../tests/integration/run-tool-intents.test.ts#L376) | bounded structured model intention, explicit human approval and fresh leased execution → rejects mixed source disclosure before a tool-enabled Run is queued |
+| [it:319](../../tests/integration/run-tool-intents.test.ts#L319) | bounded structured model intention, explicit human approval and fresh leased execution → publishes a fixed artifact from the hosted structured model path only after human approval and resume |
+| [it:337](../../tests/integration/run-tool-intents.test.ts#L337) | bounded structured model intention, explicit human approval and fresh leased execution → persists one Action then requires human resume and charges both Run and Task exactly once |
+| [it:371](../../tests/integration/run-tool-intents.test.ts#L371) | bounded structured model intention, explicit human approval and fresh leased execution → replays a lost proposal response without a second Action but rejects a changed intent |
+| [it:396](../../tests/integration/run-tool-intents.test.ts#L396) | bounded structured model intention, explicit human approval and fresh leased execution → holds unknown tool cost and blocks resume and any blind redispatch |
+| [it:431](../../tests/integration/run-tool-intents.test.ts#L431) | bounded structured model intention, explicit human approval and fresh leased execution → rejects scheduling a tool-authorized Run so approval cannot be followed by an automatic resume |
+| [it:453](../../tests/integration/run-tool-intents.test.ts#L453) | bounded structured model intention, explicit human approval and fresh leased execution → cancels an approved but undispatched bound Action with the Run |
+| [it:469](../../tests/integration/run-tool-intents.test.ts#L469) | bounded structured model intention, explicit human approval and fresh leased execution → finishes a structured final response without manufacturing a tool effect |
+| [it:477](../../tests/integration/run-tool-intents.test.ts#L477) | bounded structured model intention, explicit human approval and fresh leased execution → rejects mixed source disclosure before a tool-enabled Run is queued |
 
 ## tests/integration/runtime-knowledge.test.ts
 

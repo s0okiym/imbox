@@ -1,5 +1,6 @@
 import {
   lockRunToolAuthority,
+  runToolReferences,
   assertRunToolLease,
   runToolState,
   type LeaseClaim,
@@ -914,7 +915,11 @@ export function createActionService(options: Options) {
       businessKey: input.business_key,
       parameterFingerprint: fp,
     });
-    if (runId && !tool.definition.approvalRequired) fail('FORBIDDEN', 403);
+    if (
+      (runId || input.resource_versions.some((ref) => ref.type === 'artifact_version')) &&
+      !tool.definition.approvalRequired
+    )
+      fail('FORBIDDEN', 403);
     const state = prepareAction(initial, initial.version, tool.definition.approvalRequired);
     await grantCurrent(tx, {
       grant_id: g.id,
@@ -1079,11 +1084,7 @@ export function createActionService(options: Options) {
             tool_version: g.tool_version,
             target_id: g.target_id,
             parameters: { text },
-            resource_versions: items.map((item) => ({
-              type: 'task' as const,
-              id: item.source_id,
-              version: item.source_version,
-            })),
+            resource_versions: runToolReferences(run.task_id!, items),
             business_key: `run.${run.id}.tool.1`,
             estimate: {
               currency: g.currency,

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,19 +11,42 @@ import { createAgentService } from '@imbox/agents';
 import { createIdentityService } from '@imbox/auth';
 import { createTaskService } from '@imbox/application';
 import { createRuntimeService } from '@imbox/runtime';
-import { MACHINE_SCOPES, assertContract } from '@imbox/contracts';
+import {
+  createKnowledgeService,
+  knowledgeRuntimeSourcePort,
+  knowledgeResourceIndex,
+} from '@imbox/knowledge';
+import { createResourceService, createS3ObjectStore } from '@imbox/resources';
+import { MACHINE_SCOPES, assertContract, type ContractTypes as C } from '@imbox/contracts';
 import { sql, withTenant } from '@imbox/db';
 import { createApp } from '../../apps/api/src/app.js';
 import { testDatabases, tenantFixture } from '../helpers/database.js';
 const key = randomUUID,
   secret = 'machine-run-tools-secret-at-least-thirty-two';
+const store = createS3ObjectStore({
+  endpoint: process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:18333',
+  region: 'us-east-1',
+  bucket: 'imbox-resources-test',
+  accessKeyId: 'imbox_local_s3_app',
+  secretAccessKey: 'imbox_local_s3_app_secret',
+});
+const adminStore = createS3ObjectStore({
+  endpoint: process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:18333',
+  region: 'us-east-1',
+  bucket: 'imbox-resources-test',
+  accessKeyId: 'imbox_local_s3_admin',
+  secretAccessKey: 'imbox_local_s3_admin_secret',
+});
 let databases: Awaited<ReturnType<typeof testDatabases>>;
 let f: Awaited<ReturnType<typeof setup>>;
 const cleanups: Array<() => Promise<void>> = [];
 beforeAll(async () => {
   databases = await testDatabases();
+  await adminStore.ensureDevelopmentBucket('test');
 });
 afterAll(async () => {
+  store.destroy();
+  adminStore.destroy();
   await databases.close();
 });
 beforeEach(async () => {
@@ -32,10 +55,24 @@ beforeEach(async () => {
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) await cleanup();
 });
-async function setup() {
+async function setup(artifactBody?: string, approvalRequired = true) {
   const base = await tenantFixture(databases.owner);
-  const agents = createAgentService({ db: databases.db, identityDb: databases.identityDb, secret });
-  const runtime = createRuntimeService({ db: databases.db });
+  const sources = knowledgeRuntimeSourcePort(
+    createKnowledgeService({ db: databases.db, cursorSecret: secret }),
+  );
+  const resources = createResourceService({
+    db: databases.db,
+    store,
+    cursorSecret: secret,
+    textIndex: knowledgeResourceIndex(),
+  });
+  const agents = createAgentService({
+    db: databases.db,
+    identityDb: databases.identityDb,
+    secret,
+    sources,
+  });
+  const runtime = createRuntimeService({ db: databases.db, sources });
   const tasks = createTaskService(databases.db, secret);
   const installed = await agents.register(
     base.alice,
@@ -60,6 +97,7 @@ async function setup() {
     scopes: [...MACHINE_SCOPES],
   });
   let posts = 0;
+  const deliveredTexts: unknown[] = [];
   const provider = createServer((request, response) => {
     response.setHeader('Content-Type', 'application/json');
     let body = '';
@@ -71,6 +109,7 @@ async function setup() {
       }
       posts++;
       const data = JSON.parse(body) as Record<string, unknown>;
+      deliveredTexts.push((data.input as { text: string }).text);
       response.end(
         JSON.stringify({
           status: 'succeeded',
@@ -99,6 +138,7 @@ async function setup() {
   const actions = createActionService({
     db: databases.db,
     cursorSecret: secret,
+    sources,
     journal: await createFileJournal({ directory, signingKey: secret }),
     tools: createHttpToolRegistry([
       {
@@ -107,7 +147,7 @@ async function setup() {
         targetId: 'fixed',
         executeUrl: `${providerOrigin}/execute`,
         lookupUrl: `${providerOrigin}/lookup`,
-        approvalRequired: true,
+        approvalRequired,
         estimateMicrounits: '3',
         allowInsecureLoopback: true,
       },
@@ -134,6 +174,43 @@ async function setup() {
     key(),
   );
   task = await tasks.changeState(base.alice, task.id, { state: 'active' }, task.version, key());
+  const refs: C['ActionResourceRef'][] = [{ type: 'task', id: task.id, version: task.version }];
+  let file: C['StoredArtifact'] | null = null;
+  if (artifactBody !== undefined) {
+    const bytes = Buffer.from(artifactBody);
+    const ticket = await resources.createUpload(
+      base.alice,
+      {
+        task_id: task.id,
+        filename: 'agent-publication.md',
+        content_type: 'text/markdown',
+        byte_size: bytes.byteLength,
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+      },
+      key(),
+    );
+    expect(
+      (
+        await fetch(ticket.upload_url, {
+          method: 'PUT',
+          headers: ticket.upload_headers,
+          body: bytes,
+        })
+      ).status,
+    ).toBe(200);
+    const content = await resources.completeUpload(base.alice, ticket.id, key());
+    file = await resources.createArtifact(
+      base.alice,
+      { resource_id: content.id, title: 'Agent fixed publication' },
+      key(),
+    );
+    refs.push({
+      type: 'artifact_version',
+      id: file.version_id,
+      version: file.head_version,
+      sha256: file.resource.sha256,
+    });
+  }
   const grant = await actions.createGrant(
     base.alice,
     {
@@ -144,7 +221,7 @@ async function setup() {
       target_id: 'fixed',
       allow_execute: true,
       allow_disclosure: true,
-      resource_versions: [{ type: 'task', id: task.id, version: task.version }],
+      resource_versions: refs,
       approver_principal_ids: [base.alice.principalId],
       budget: { currency: 'USD', limit_microunits: '50' },
       expires_at: new Date(Date.now() + 3600000).toISOString(),
@@ -158,7 +235,7 @@ async function setup() {
       agent_revision: '1',
       task_id: task.id,
       tool_grant_id: grant.id,
-      context: [{ type: 'task', id: task.id, version: task.version, required: true }],
+      context: refs.map((ref) => ({ ...ref, required: true })),
       purpose: 'Propose the explicitly approved text',
       destination: `agent:${installed.id}`,
       budget: { currency: 'USD', limit_microunits: '50' },
@@ -223,6 +300,10 @@ async function setup() {
   }
   return {
     ...base,
+    resources,
+    grant,
+    file,
+    deliveredTexts,
     installed,
     credential,
     token,
@@ -239,6 +320,84 @@ async function setup() {
   };
 }
 describe('machine tool intention and execution HTTP leases', () => {
+  it('publishes a fixed artifact through the external machine lease after exact approval and explicit resume', async () => {
+    f = await setup('EXTERNAL_ARTIFACT_ONCE');
+    const lease = await f.claim();
+    expect(
+      (
+        await f.http('/tool-intents', {
+          generation: lease.generation,
+          text: 'Substituted model text',
+        })
+      ).status,
+    ).toBe(409);
+    const proposal = await f.http('/tool-intents', {
+      generation: lease.generation,
+      text: 'EXTERNAL_ARTIFACT_ONCE',
+    });
+    expect(proposal.status).toBe(201);
+    const action = assertContract('Action', await proposal.json());
+    expect(action.resource_versions).toContainEqual({
+      type: 'artifact_version',
+      id: f.file!.version_id,
+      version: f.file!.head_version,
+      sha256: f.file!.resource.sha256,
+    });
+    expect(action.status).toBe('awaiting_approval');
+    await f.approve();
+    expect((await f.http('/tool-execution', { generation: lease.generation })).status).toBe(409);
+    await f.resume();
+    const next = await f.claim();
+    expect((await f.http('/tool-execution', { generation: next.generation })).status).toBe(200);
+    expect((await f.http('/tool-execution', { generation: next.generation })).status).toBe(200);
+    expect(f.posts()).toBe(1);
+    expect(f.deliveredTexts).toEqual(['EXTERNAL_ARTIFACT_ONCE']);
+  });
+  it('refuses an approved external artifact after source deletion even with the current machine lease', async () => {
+    f = await setup('REVOKED_ARTIFACT');
+    const lease = await f.claim();
+    expect(
+      (await f.http('/tool-intents', { generation: lease.generation, text: 'REVOKED_ARTIFACT' }))
+        .status,
+    ).toBe(201);
+    await f.approve();
+    await f.resume();
+    const next = await f.claim();
+    await f.resources.deleteResource(f.alice, f.file!.resource.id, f.file!.resource.version, key());
+    expect((await f.http('/tool-execution', { generation: next.generation })).status).toBe(404);
+    expect(f.posts()).toBe(0);
+  });
+  it('rejects artifact publication through an approval-free tool for both direct and machine actions', async () => {
+    f = await setup('REQUIRES_HUMAN_APPROVAL', false);
+    const lease = await f.claim();
+    expect(
+      (
+        await f.http('/tool-intents', {
+          generation: lease.generation,
+          text: 'REQUIRES_HUMAN_APPROVAL',
+        })
+      ).status,
+    ).toBe(403);
+    await expect(
+      f.actions.createAction(
+        f.alice,
+        {
+          task_id: f.task.id,
+          grant_id: f.grant.id,
+          executor_principal_id: f.installed.principal_id,
+          tool_id: 'delivery',
+          tool_version: '1',
+          target_id: 'fixed',
+          parameters: { text: 'REQUIRES_HUMAN_APPROVAL' },
+          resource_versions: f.grant.resource_versions,
+          business_key: key(),
+          estimate: { currency: 'USD', limit_microunits: '3' },
+        },
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(f.posts()).toBe(0);
+  });
   it('cannot execute merely because a human approved; explicit human resume and new lease are required', async () => {
     const lease = await f.claim();
     const proposed = await f.http('/tool-intents', {
