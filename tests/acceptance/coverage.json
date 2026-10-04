@@ -234,12 +234,15 @@
     },
     {
       "id": "AC-18",
-      "status": "partial",
+      "status": "verified",
       "tests": [
         "tests/integration/resources.test.ts",
         "tests/integration/resource-links.test.ts",
         "tests/integration/artifact-collaboration.test.ts",
-        "tests/integration/tasks.test.ts"
+        "tests/integration/tasks.test.ts",
+        "tests/integration/actions.test.ts",
+        "tests/e2e/resources.spec.ts",
+        "tests/e2e/runtime-actions.spec.ts"
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
@@ -248,9 +251,10 @@
         "docs/testing/artifact-disclosure-version-2026-10-05.md",
         "docs/testing/artifact-contributors-2026-10-05.md",
         "docs/testing/artifact-version-comparison-2026-10-05.md",
-        "docs/testing/artifact-branches-2026-10-05.md"
+        "docs/testing/artifact-branches-2026-10-05.md",
+        "docs/testing/artifact-acceptance-audit-2026-10-05.md"
       ],
-      "notes": "任务 owner/contributor 可跨作者追加版本，并发同一版本仅一人成功，降权后新提交与旧命令重放拒绝；Web 已提供固定版本文本比较。独立分支保留冲突内容，显式上传整理后的内容合并，校验当前主版本并记录合并来源；数据库保护原稿不可变，竞争合并只成功一次。浏览器实际经历并发冲突→保存分支→显式合并→仍提交旧固定证据。外部发布 Action 的旧批准/新版产物联合矩阵仍待完成，不能以内部合并替代该项。"
+      "notes": "已逐项对照 AC-18：跨作者并发编辑显式冲突、独立分支和当前主版本合并；验收引用在并发更新和审核竞争中固定。旧批准后的新 head 不替换外发内容，旧授权不能换版；授权含两版时修订也撤销旧批准、改变指纹并要求重新审批。直接与 Agent 发布浏览器均验证固定全文、明确审批、一次发送和 unknown 核对。本轮 64 相关集成与 4 浏览器通过；不替代 AC-12/INV-08 联合安全矩阵或生产部署准出。"
     },
     {
       "id": "AC-19",

@@ -2,6 +2,8 @@
 
 更新：2026-10-05（Asia/Shanghai）。执行顺序遵循“先完成主体框架、核心流程并提交一轮，再完善细节”。当前交付定位为可运行的功能试用候选；完整生产准出标准继续保留，不把未验证项目标为通过。
 
+当前产物协作与固定版本发布已完成 AC-18 验收，见 [逐项证据](testing/artifact-acceptance-audit-2026-10-05.md)。下文产物分阶段记录保留历史过程；其中 UI/Agent 绑定缺口已解决。下一步聚焦独立的 AC-12/INV-08 联合授权矩阵与部署、容量等未完成项。
+
 ## 已形成的主体
 
 TypeScript workspace 包含 API、Web、Worker、独立工具执行器、机器 Agent SDK，以及身份、消息同步、任务、Runtime、Action、文件产物、显式记忆、调度、通知和治理模块。核心流程已有真实 PostgreSQL、浏览器、受控工具、S3、本地模型和恢复演练证据。具体执行批次见 [测试报告](testing/test-report.md)。

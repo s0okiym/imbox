@@ -223,6 +223,7 @@ afterEach(async () => {
 async function proposed(
   refs: C['ActionResourceRef'][] = [{ type: 'task', id: task.id, version: task.version }],
   text = 'A deliberately approved delivery',
+  grantRefs = refs,
 ) {
   const grant = await actions.createGrant(
     fixture.alice,
@@ -234,7 +235,7 @@ async function proposed(
       target_id: 'demo',
       allow_execute: true,
       allow_disclosure: true,
-      resource_versions: refs,
+      resource_versions: grantRefs,
       approver_principal_ids: [fixture.alice.principalId],
       budget: { currency: 'USD', limit_microunits: '10' },
       expires_at: new Date(Date.now() + 3600000).toISOString(),
@@ -458,6 +459,69 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
     await approve(next.action);
     expect((await runner().runOnce(fixture.tenantId, next.action.id)).status).toBe('succeeded');
     expect(deliveredTexts).toEqual(['Approved original text', 'New text needs new approval']);
+  });
+  it('requires a fresh approval when revising to another explicitly granted artifact version', async () => {
+    const original = await artifact('First approved edition');
+    const replacement = await artifact('Second separately approved edition');
+    const latest = await resources.createArtifactVersion(
+      fixture.alice,
+      original.id,
+      { resource_id: replacement.resource.id },
+      original.version,
+      key(),
+    );
+    const { action } = await proposed([artifactRef(original)], 'First approved edition', [
+      artifactRef(original),
+      artifactRef(latest),
+    ]);
+    const firstApproval = await approve(action);
+    const revised = await actions.reviseAction(
+      fixture.bob,
+      action.id,
+      {
+        parameters: { text: 'Second separately approved edition' },
+        resource_versions: [artifactRef(latest)],
+      },
+      firstApproval.version,
+      key(),
+    );
+    expect(revised.status).toBe('awaiting_approval');
+    expect(revised.fingerprint).not.toBe(firstApproval.fingerprint);
+    expect(revised.approval_binding_version).not.toBe(firstApproval.approval_binding_version);
+    const approvals = await withTenant(databases.db, fixture.tenantId, (tx) =>
+      sql<{
+        status: string;
+        action_version: string;
+      }>`select status,action_version from action_approvals where action_id=${action.id}`.execute(
+        tx,
+      ),
+    );
+    expect(approvals.rows).toContainEqual({
+      status: 'revoked',
+      action_version: firstApproval.approval_binding_version,
+    });
+    await expect(
+      actions.decideApproval(
+        fixture.alice,
+        action.id,
+        {
+          decision: 'approve',
+          action_version: firstApproval.approval_binding_version,
+          fingerprint: firstApproval.fingerprint,
+          comment: 'Stale approval must fail',
+        },
+        revised.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    await expect(runner().runOnce(fixture.tenantId, action.id)).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+    expect(deliveredTexts).toEqual([]);
+    await approve(revised);
+    expect((await runner().runOnce(fixture.tenantId, action.id)).status).toBe('succeeded');
+    expect(deliveredTexts).toEqual(['Second separately approved edition']);
+    expect(sideEffects).toBe(1);
   });
   it.each(['before_claim', 'after_intent'] as const)(
     'blocks deleted artifact disclosure %s and hides retained action text',
