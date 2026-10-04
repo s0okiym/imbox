@@ -1,0 +1,11 @@
+{
+  "commit": "2f751069fc11062f48cfd5d377db2970e9088268",
+  "server_parent": "d5bfb99",
+  "actionFiles": {
+    "index.js": "68b9f33fa6d69a39059f5c4410bc0f771df67b12660d939a9295fb3e02534c0f",
+    "service.js": "929f928dc7e411d92e0cf6fb47039f7e1a19319b6c9cc924acd235ea39343c59",
+    "runner.js": "a552a5128b8d1fc92a3e9dea25dac21e883220d6eeade8cf5d07f7a05d732aa0",
+    "tools.js": "bbcd15ce5effe32eebb3c0d840185667fe3cfc8dda706286ba529b6447f7195c"
+  },
+  "scope": "Historical compiled Action service/runner loaded in the test process; current database and journal ports."
+}

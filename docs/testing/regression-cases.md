@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 88 个测试文件、532 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 89 个测试文件、536 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -382,6 +382,15 @@
 | [it:33](../../packages/scheduling/src/calendar.test.ts#L33) | IANA daily calendar → coalesces several due days once, while skip advances the persisted cursor without catch-up |
 | [it:53](../../packages/scheduling/src/calendar.test.ts#L53) | IANA daily calendar → uses inclusive start and an exclusive absolute deadline for one-off and daily schedules |
 | [it:71](../../packages/scheduling/src/calendar.test.ts#L71) | IANA daily calendar → rejects numeric offsets and invalid zones or local times |
+
+## tests/compatibility/historical-actions.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:215](../../tests/compatibility/historical-actions.spec.ts#L215) | compiled historical service cannot issue an unbound grant |
+| [test:219](../../tests/compatibility/historical-actions.spec.ts#L219) | compiled historical runner cannot claim an unbound legacy grant |
+| [test:223](../../tests/compatibility/historical-actions.spec.ts#L223) | compiled historical service cannot dispatch a prepared unbound attempt and can clean it up |
+| [test:227](../../tests/compatibility/historical-actions.spec.ts#L227) | compiled historical runner rejects new bound authority while the current runner sends once |
 
 ## tests/compatibility/historical-web.spec.ts
 

@@ -42,6 +42,14 @@ writeFileSync(
     {
       commit,
       files,
+      actionFiles: Object.fromEntries(
+        ['index.js', 'service.js', 'runner.js', 'tools.js'].map((file) => [
+          file,
+          createHash('sha256')
+            .update(readFileSync(join(directory, 'packages/actions/dist', file)))
+            .digest('hex'),
+        ]),
+      ),
       apiEntrySha256: createHash('sha256')
         .update(readFileSync(join(directory, 'apps/api/dist/main.js')))
         .digest('hex'),

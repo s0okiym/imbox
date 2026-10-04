@@ -310,6 +310,7 @@
         "apps/web/src/conversation-sync.test.ts",
         "tests/e2e/messaging.spec.ts",
         "tests/compatibility/historical-web.spec.ts",
+        "tests/compatibility/historical-actions.spec.ts",
         "tests/integration/actions.test.ts"
       ],
       "evidence": [
@@ -319,9 +320,10 @@
         "docs/testing/historical-client-2026-10-05.md",
         "docs/testing/rolling-api-2026-10-05.md",
         "docs/testing/rolling-api-ci-2026-10-05.json",
-        "docs/testing/database-binding-fence-2026-10-05.md"
+        "docs/testing/database-binding-fence-2026-10-05.md",
+        "docs/testing/historical-action-writer-2026-10-05.md"
       ],
-      "notes": "协议/schema v1 内未知展示安全降级，未知控制及不兼容版本拒绝。固定历史 2f75106 Web/API 独立构建，旧/新客户端保持会话经历旧 API→当前 API→旧 API，双向通信、连接重建与刷新无重复/丢失；远程 9a23f2c 全步骤通过。当前 Action HTTP 拒绝未来 schema/参数/媒体类型且保留原批准，合法执行仍一次。迁移 036 使用受限数据库角色验证旧 SQL 形态的无绑定授权/尝试提交拒绝，并保留终态清理；实际旧执行二进制、完整业务混合版本、生产登录与 SW 更新联合矩阵仍未完成，升级必须协调停止旧外部执行与恢复写入器。"
+      "notes": "协议/schema v1 内未知展示安全降级，未知控制及不兼容版本拒绝。固定历史 2f75106 Web/API 独立构建，旧/新客户端保持会话经历旧 API→当前 API→旧 API，双向通信、连接重建与刷新无重复/丢失；远程 9a23f2c 全步骤通过。当前 Action HTTP 拒绝未来 schema/参数/媒体类型且保留原批准，合法执行仍一次。迁移 036 使用受限数据库角色验证旧 SQL 形态的无绑定授权/尝试提交拒绝，并保留终态清理；已补固定历史编译 Action 服务/runner 的四项真实数据库/HTTP 验证（签发/领取/派发拒绝及当前版本一次执行对照）；完整独立旧 Worker/恢复程序、业务混合版本、生产登录与 SW 更新联合矩阵仍未完成，升级必须协调停止旧外部执行与恢复写入器。"
     },
     {
       "id": "AC-22",
