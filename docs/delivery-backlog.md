@@ -32,3 +32,6 @@ TypeScript workspace 包含 API、Web、Worker、独立工具执行器、机器 
 组织成员管理的操作、撤权范围和回退兼容边界见 [管理说明](operations/organization-management.md)。旧授权 Run 的常规列表可见性和批量取消体验尚待完善；不得使旧授权复活来解决操作不便。
 
 应用容器部署基线已实现：API/Worker/tool-runner/Web 镜像、同源 HTTPS/WSS、显式迁移、持久化账本和容器业务回归。继续补齐真实环境证书/IdP、业务健康指标、可选外部能力部署实测、容量与恢复验收；配置见 [部署手册](operations/container-deployment.md)。
+
+
+产物外部发布缺口（2026-10-05 审查）：`packages/contracts/src/action-definitions.ts` 的 resource_versions 仅引用 TaskVersionRef，`packages/actions/src/service.ts` 的 validateResources 也只接受本任务版本。因此 AC-18 的剩余项包括实际实现，不能只补测试后标为通过。下一阶段需新增不可变产物版本引用，批准指纹绑定版本/内容哈希，重验请求者与执行者当前来源读取及披露权限，在领取和外部派发前检查来源仍有效，并在 Web 显示明确批准的产物版本。新 head 不得静默替换旧批准内容；若用户要求发布新版，必须新建或修订 Action 并重新审批。还需覆盖删除/撤权、并发版本、旧批准与新版、unknown 只读核对的真实 HTTP/浏览器流程。

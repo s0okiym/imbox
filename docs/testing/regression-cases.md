@@ -554,20 +554,20 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:132](../../tests/integration/agents.test.ts#L132) | M4 machine identity and real HTTP external execution → provisions one identity across concurrent retries and does not grant conversation or task access |
-| [it:154](../../tests/integration/agents.test.ts#L154) | M4 machine identity and real HTTP external execution → stores only credential/token hashes and withholds one-time secrets on replay |
-| [it:183](../../tests/integration/agents.test.ts#L183) | M4 machine identity and real HTTP external execution → binds message authors server-side, deduplicates writes and enforces token scope and tenant |
-| [it:217](../../tests/integration/agents.test.ts#L217) | M4 machine identity and real HTTP external execution → revokes already-authenticated contexts inside business transactions and expires tokens by database clock |
-| [it:237](../../tests/integration/agents.test.ts#L237) | M4 machine identity and real HTTP external execution → idempotently claims a lease, rejects other agents and fences expired/rotated workers |
-| [it:266](../../tests/integration/agents.test.ts#L266) | M4 machine identity and real HTTP external execution → marks completed external reports as unverified and rechecks authorization on report replay |
-| [it:289](../../tests/integration/agents.test.ts#L289) | M4 machine identity and real HTTP external execution → distinguishes platform cancellation from a reconnected external worker acknowledgement and retries a lost receipt once |
-| [it:392](../../tests/integration/agents.test.ts#L392) | M4 machine identity and real HTTP external execution → accepts only the last external worker late stop acknowledgement without restoring execution or publishing output |
-| [it:517](../../tests/integration/agents.test.ts#L517) | M4 machine identity and real HTTP external execution → records late confirmation after platform expiry without replacing the expired state or its generation fence |
-| [it.skipIf:543](../../tests/integration/agents.test.ts#L543) | M4 machine identity and real HTTP external execution → recovers an independently suspended external process after its real lease expires without publishing stale output |
-| [it:651](../../tests/integration/agents.test.ts#L651) | M4 machine identity and real HTTP external execution → does not revive old tokens after global disable/re-enable or installation disable |
-| [it:670](../../tests/integration/agents.test.ts#L670) | M4 machine identity and real HTTP external execution → requires explicit handoff acceptance for human→agent and agent→agent ownership changes |
-| [it:777](../../tests/integration/agents.test.ts#L777) | SDK retries a lost command response with identical key/body and produces one message |
-| [it:815](../../tests/integration/agents.test.ts#L815) | human Agent management read boundaries → lists credential metadata with actor-bound paging, never hashes or recoverable secrets |
+| [it:139](../../tests/integration/agents.test.ts#L139) | M4 machine identity and real HTTP external execution → provisions one identity across concurrent retries and does not grant conversation or task access |
+| [it:161](../../tests/integration/agents.test.ts#L161) | M4 machine identity and real HTTP external execution → stores only credential/token hashes and withholds one-time secrets on replay |
+| [it:190](../../tests/integration/agents.test.ts#L190) | M4 machine identity and real HTTP external execution → binds message authors server-side, deduplicates writes and enforces token scope and tenant |
+| [it:224](../../tests/integration/agents.test.ts#L224) | M4 machine identity and real HTTP external execution → revokes already-authenticated contexts inside business transactions and expires tokens by database clock |
+| [it:244](../../tests/integration/agents.test.ts#L244) | M4 machine identity and real HTTP external execution → idempotently claims a lease, rejects other agents and fences expired/rotated workers |
+| [it:273](../../tests/integration/agents.test.ts#L273) | M4 machine identity and real HTTP external execution → marks completed external reports as unverified and rechecks authorization on report replay |
+| [it:296](../../tests/integration/agents.test.ts#L296) | M4 machine identity and real HTTP external execution → distinguishes platform cancellation from a reconnected external worker acknowledgement and retries a lost receipt once |
+| [it:399](../../tests/integration/agents.test.ts#L399) | M4 machine identity and real HTTP external execution → accepts only the last external worker late stop acknowledgement without restoring execution or publishing output |
+| [it:524](../../tests/integration/agents.test.ts#L524) | M4 machine identity and real HTTP external execution → records late confirmation after platform expiry without replacing the expired state or its generation fence |
+| [it.skipIf.each:550](../../tests/integration/agents.test.ts#L550) | M4 machine identity and real HTTP external execution → recovers an independently suspended external process after %s cancellation and real lease expiry without publishing stale output |
+| [it:699](../../tests/integration/agents.test.ts#L699) | M4 machine identity and real HTTP external execution → does not revive old tokens after global disable/re-enable or installation disable |
+| [it:718](../../tests/integration/agents.test.ts#L718) | M4 machine identity and real HTTP external execution → requires explicit handoff acceptance for human→agent and agent→agent ownership changes |
+| [it:825](../../tests/integration/agents.test.ts#L825) | SDK retries a lost command response with identical key/body and produces one message |
+| [it:863](../../tests/integration/agents.test.ts#L863) | human Agent management read boundaries → lists credential metadata with actor-bound paging, never hashes or recoverable secrets |
 
 ## tests/integration/artifact-collaboration.test.ts
 

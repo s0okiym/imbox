@@ -19,11 +19,11 @@
 | AC-11  | verified | actions 验证无批准、过期批准、参数修改后旧批准失效且外部调用为零；machine-run-tools 验证审批后仍须人工 resume 与新租约。                                                        |
 | AC-12  | partial  | 批准后撤销 grant、身份/参与代际改变会拒绝执行；来源撤回阻止模型输出。仍需针对已批准 Action 的每种资源版本变更补齐独立组合测试。                                                 |
 | AC-13  | verified | actions/run-tool-intents 对真实受控服务注入丢响应，断言 unknown、一个 POST、核对成功后不重发；action-recovery 核对仅 GET 并且记账一次。                                         |
-| AC-14 | partial | 独立 Linux Agent 进程暂停、真实租约到期和恢复后拒绝迟到输出/确认停止已通过；Run 级取消不伪造远端确认。Task 取消/失败到后代 Run 取消请求及待执行 Action 撤销已补齐；跨主机部署故障矩阵仍待验证。见 [任务联动](task-cancellation-propagation-2026-10-05.md) 与 [进程演练](external-process-recovery-2026-10-05.md)。 |
+| AC-14 | partial | 独立 Linux Agent 进程暂停、真实租约到期和恢复后拒绝迟到输出/确认停止已通过，已分别覆盖 Run 和 Task 取消入口；Run 级取消不伪造远端确认。Task 取消/失败到后代 Run 取消请求及待执行 Action 撤销已补齐；跨主机部署故障矩阵仍待验证。见 [任务联动](task-cancellation-propagation-2026-10-05.md) 与 [进程演练](external-process-recovery-2026-10-05.md)。 |
 | AC-15 | partial | 树预算/并发/期限、依赖防环、五层/200 节点边界已有实测；新增 8 Agent 有限计划、12 并发扫描/派发、停用、四租约和共享预算联合突发验证。模型驱动互相唤醒网络、任意事件触发和跨租户长期压力仍待完成。 |
 | AC-16  | partial  | sync 投影事务回滚后持久重试、模型丢响应挂起、checkpoint 恢复不再请求模型；浏览器离线壳可用。尚未完成模型/对象/连接故障与积压同时出现时的长期联合演练。                          |
 | AC-17  | verified | agents 作者绑定认证身份，伪造 actor 字段拒绝；过期/轮换 lease 拒绝；completed 外部回报保留 external_report/external 标识，machine API 不提供人类批准/恢复入口。                 |
-| AC-18 | partial | 已支持任务产物跨作者追加、版本比较、独立冲突分支和显式合并；当前权限/主版本重复校验，旧证据保持固定。真实浏览器经历并发冲突后保存分支并合并。外部发布 Action 的旧批准/新版产物联合矩阵仍待完成；见 [分支证据](artifact-branches-2026-10-05.md)。 |
+| AC-18 | partial | 已支持任务产物跨作者追加、版本比较、独立冲突分支和显式合并；当前权限/主版本重复校验，旧证据保持固定。真实浏览器经历并发冲突后保存分支并合并。Action 当前 resource_versions 仅接受 TaskVersionRef，尚缺产物版本绑定与外部发布完整实现及旧批准/新版联合矩阵；见 [分支证据](artifact-branches-2026-10-05.md)。 |
 | AC-19  | partial  | knowledge、resources、notifications、exports 验证当前 ACL 与分页/计数/下载分块/导出中途撤权，推送发送前重验。真实厂商通知及离线设备得知撤权后的跨设备矩阵仍待验收。             |
 | AC-20  | partial  | governance/retention 验证派生正文清除、独立意图重放；真实隔离 dump/对象恢复重放四条事实，PWA 清除本机副本。生产备份链、所有组织授权历史和 WAL PITR 尚未覆盖。                   |
 | AC-21  | partial  | Web 对协议/schema v1 内未知展示实体使用固定本地提示，不展示未知载荷；HTTP 快照和 WebSocket 保持已知消息同步，控制帧及不兼容版本拒绝。已有未知路由/非法请求拒绝。真实历史客户端与服务端滚动升级、动作 schema 版本联合矩阵仍未完成。                                   |

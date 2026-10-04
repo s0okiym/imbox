@@ -17,8 +17,10 @@ import {
   createRuntimeService,
   createRuntimeWorker,
   createRuntimeMaintenance,
+  stopTaskRuns,
   type RuntimeService,
 } from '@imbox/runtime';
+import { cancelPendingTaskActions } from '@imbox/actions';
 import { withTenant, sql } from '@imbox/db';
 import { MACHINE_SCOPES, type ContractTypes as C } from '@imbox/contracts';
 import { createApp } from '../../apps/api/src/app.js';
@@ -44,7 +46,12 @@ beforeEach(async () => {
   agents = createAgentService({ db: databases.db, identityDb: databases.identityDb, secret });
   runtime = createRuntimeService({ db: databases.db });
   messaging = createMessagingService(databases.db, secret);
-  tasks = createTaskService(databases.db, secret);
+  tasks = createTaskService(databases.db, secret, {
+    stopTaskExecution: async (tx, auth, id) => {
+      await stopTaskRuns(tx, auth, id);
+      await cancelPendingTaskActions(tx, auth, id);
+    },
+  });
   const identity = createIdentityService({
     db: databases.db,
     identityDb: databases.identityDb,
@@ -540,11 +547,49 @@ describe('M4 machine identity and real HTTP external execution', () => {
       budget: expired.budget,
     });
   });
-  it.skipIf(process.platform !== 'linux')(
-    'recovers an independently suspended external process after its real lease expires without publishing stale output',
-    async () => {
+  it.skipIf(process.platform !== 'linux').each(['run', 'task'] as const)(
+    'recovers an independently suspended external process after %s cancellation and real lease expiry without publishing stale output',
+    async (cancellationScope) => {
       const a = await agent();
-      const { created } = await run(a);
+      let task: C['Task'] | null = null;
+      if (cancellationScope === 'task') {
+        task = await tasks.createTask(
+          f.alice,
+          {
+            workspace_id: f.workspaceId,
+            title: 'Independent process task',
+            goal: 'Stop external execution when the task is cancelled',
+            acceptance_criteria: ['No stale output after cancellation'],
+            reviewer_principal_ids: [f.alice.principalId],
+            budget: { currency: 'USD', limit_microunits: '100' },
+          },
+          key(),
+        );
+        task = await tasks.changeParticipant(
+          f.alice,
+          task.id,
+          a.installed.principal_id,
+          'contributor',
+          task.version,
+          key(),
+        );
+        task = await tasks.changeState(f.alice, task.id, { state: 'active' }, task.version, key());
+      }
+      const created = task
+        ? await runtime.createRun(
+            f.alice,
+            {
+              agent_id: a.installed.id,
+              agent_revision: '1',
+              task_id: task.id,
+              context: [{ type: 'task', id: task.id, version: task.version, required: true }],
+              purpose: 'Execute the explicit task',
+              destination: `agent:${a.installed.id}`,
+              budget: { currency: 'USD', limit_microunits: '100' },
+            },
+            key(),
+          )
+        : (await run(a)).created;
       const child = fork(
         fileURLToPath(new URL('../helpers/external-agent-process.ts', import.meta.url)),
         [],
@@ -574,13 +619,16 @@ describe('M4 machine identity and real HTTP external execution', () => {
           .toMatch(/^State:\s+T/m);
         const current = await runtime.getRun(f.alice, created.id);
         expect(current.status).toBe('running');
-        const cancelled = await runtime.controlRun(
-          f.alice,
-          created.id,
-          'cancel',
-          current.version,
-          key(),
-        );
+        if (task)
+          await tasks.cancelTask(
+            f.alice,
+            task.id,
+            { reason: 'Remote worker is suspended' },
+            task.version,
+            key(),
+          );
+        else await runtime.controlRun(f.alice, created.id, 'cancel', current.version, key());
+        const cancelled = await runtime.getRun(f.alice, created.id);
         expect(cancelled).toMatchObject({
           status: 'cancelling',
           cancellation_acknowledged_at: null,
