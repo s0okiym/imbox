@@ -22,7 +22,7 @@ import {
   knowledgeResourceIndex,
 } from '@imbox/knowledge';
 import { createResourceService, createS3ObjectStore, type ResourceService } from '@imbox/resources';
-import { createTaskService, type TaskService } from '@imbox/application';
+import { createTaskService, createOrganizationService, type TaskService } from '@imbox/application';
 import { runtimeCompletionGate, stopTaskRuns } from '@imbox/runtime';
 import type { ContractTypes as C } from '@imbox/contracts';
 import { sql, withTenant } from '@imbox/db';
@@ -224,6 +224,7 @@ async function proposed(
   refs: C['ActionResourceRef'][] = [{ type: 'task', id: task.id, version: task.version }],
   text = 'A deliberately approved delivery',
   grantRefs = refs,
+  approverIds: C['CreateGrantInput']['approver_principal_ids'] = [fixture.alice.principalId],
 ) {
   const grant = await actions.createGrant(
     fixture.alice,
@@ -236,7 +237,7 @@ async function proposed(
       allow_execute: true,
       allow_disclosure: true,
       resource_versions: grantRefs,
-      approver_principal_ids: [fixture.alice.principalId],
+      approver_principal_ids: approverIds,
       budget: { currency: 'USD', limit_microunits: '10' },
       expires_at: new Date(Date.now() + 3600000).toISOString(),
     },
@@ -292,9 +293,9 @@ function artifactRef(a: C['StoredArtifact']): C['ActionResourceRef'] {
     sha256: a.resource.sha256,
   };
 }
-const approve = (action: C['Action']) =>
+const approve = (action: C['Action'], actor = fixture.alice) =>
   actions.decideApproval(
-    fixture.alice,
+    actor,
     action.id,
     {
       decision: 'approve',
@@ -1090,18 +1091,97 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
     ).rejects.toMatchObject({ code: 'EXECUTION_FENCE_CONFLICT' });
     expect(sideEffects).toBe(0);
   });
-  it('rejects an expired approval before opening a network attempt', async () => {
-    const { action } = await proposed();
-    await approve(action);
-    await withTenant(databases.owner, fixture.tenantId, (tx) =>
-      sql`update action_approvals set expires_at=clock_timestamp()-interval '1 second' where action_id=${action.id}`.execute(
-        tx,
-      ),
+  it.each([
+    ['before_claim', 'disabled'],
+    ['after_intent', 'disabled'],
+    ['before_claim', 'restored'],
+    ['after_intent', 'restored'],
+    ['before_claim', 'demoted'],
+    ['after_intent', 'demoted'],
+  ] as const)('rejects stale independent approver authority %s / %s', async (phase, change) => {
+    task = await tasks.changeParticipant(
+      fixture.alice,
+      task.id,
+      fixture.charlie.principalId,
+      'reviewer',
+      task.version,
+      key(),
     );
-    await expect(runner().runOnce(fixture.tenantId, action.id)).rejects.toMatchObject({
-      code: 'FORBIDDEN',
-    });
+    const { action } = await proposed(undefined, undefined, undefined, [
+      fixture.charlie.principalId,
+    ]);
+    await approve(action, fixture.charlie);
+    const claim =
+      phase === 'after_intent'
+        ? await actions.claim(fixture.tenantId, action.id, 'approver-fence-worker')
+        : null;
+    if (claim) await actions.persistIntent(claim);
+    const organization = createOrganizationService(databases.db, secret);
+    const changed = await organization.setMember(
+      fixture.alice,
+      fixture.workspaceId,
+      {
+        principal_id: fixture.charlie.principalId,
+        role: change === 'demoted' ? 'guest' : 'member',
+        status: change === 'demoted' ? 'active' : 'disabled',
+        reason: 'Revalidate the independent human approver',
+      },
+      '1',
+      key(),
+    );
+    if (change === 'restored')
+      await organization.setMember(
+        fixture.alice,
+        fixture.workspaceId,
+        {
+          principal_id: fixture.charlie.principalId,
+          role: 'member',
+          status: 'active',
+          reason: 'Restoration must not revive an old approval',
+        },
+        changed.version,
+        key(),
+      );
+    // Neither Task resources nor issuer/executor authority changed; approval must be rechecked.
+    expect((await tasks.getTask(fixture.alice, task.id)).version).toBe(task.version);
+    await expect(
+      claim ? actions.dispatch(claim) : runner().runOnce(fixture.tenantId, action.id),
+    ).rejects.toMatchObject({ code: change === 'disabled' ? 'NOT_FOUND' : 'FORBIDDEN' });
+    if (claim) await actions.abortPrepared(claim);
     expect(attempts).toBe(0);
+    expect(sideEffects).toBe(0);
+    expect(deliveredTexts).toEqual([]);
+  });
+  it.each([
+    ['approval', 'before_claim'],
+    ['approval', 'after_intent'],
+    ['grant', 'before_claim'],
+    ['grant', 'after_intent'],
+  ] as const)('rejects an expired %s at %s before network dispatch', async (authority, phase) => {
+    const { action, grant } = await proposed();
+    await approve(action);
+    const claim =
+      phase === 'after_intent'
+        ? await actions.claim(fixture.tenantId, action.id, 'expired-authority-worker')
+        : null;
+    if (claim) await actions.persistIntent(claim);
+    // Move only the authority deadline behind database time; the execution lease stays live.
+    await withTenant(databases.owner, fixture.tenantId, (tx) =>
+      authority === 'approval'
+        ? sql`update action_approvals set expires_at=clock_timestamp()-interval '1 second' where action_id=${action.id}`.execute(
+            tx,
+          )
+        : sql`update capability_grants set expires_at=clock_timestamp()-interval '1 second' where id=${grant.id}`.execute(
+            tx,
+          ),
+    );
+    await expect(
+      claim ? actions.dispatch(claim) : runner().runOnce(fixture.tenantId, action.id),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    if (claim) await actions.abortPrepared(claim);
+    expect(attempts).toBe(0);
+    expect(sideEffects).toBe(0);
+    expect(deliveredTexts).toEqual([]);
   });
   it('deduplicates the same receipt and preserves a conflicting late receipt as an open case', async () => {
     const { action } = await proposed();

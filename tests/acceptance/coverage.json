@@ -145,13 +145,17 @@
     {
       "id": "AC-12",
       "status": "partial",
-      "tests": ["tests/integration/actions.test.ts", "tests/integration/runtime-knowledge.test.ts"],
+      "tests": [
+        "tests/integration/actions.test.ts",
+        "tests/integration/runtime-knowledge.test.ts"
+      ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
-        "docs/testing/action-resource-version-2026-10-05.md"
+        "docs/testing/action-resource-version-2026-10-05.md",
+        "docs/testing/action-approver-fences-2026-10-05.md"
       ],
-      "notes": "批准后撤销 grant、身份/参与代际改变会拒绝执行；来源撤回阻止模型输出。仍需针对已批准 Action 的每种资源版本变更补齐独立组合测试。 2026-10-05 补验：任务标题变更不改变 epoch，旧资源版本在 claim 前及持久意图后 dispatch 均拒绝，零外部请求；HTTP 修订注入目标/执行者/工具/版本均拒绝且原绑定不变。完整联合矩阵仍未完成。"
+      "notes": "批准后撤销 grant、身份/参与代际改变会拒绝执行；来源撤回阻止模型输出。仍需针对已批准 Action 的每种资源版本变更补齐独立组合测试。 2026-10-05 补验：任务标题变更不改变 epoch，旧资源版本在 claim 前及持久意图后 dispatch 均拒绝，零外部请求；HTTP 修订注入目标/执行者/工具/版本均拒绝且原绑定不变。完整联合矩阵仍未完成。 独立批准者停用/恢复/降权及批准/授权到期，均已覆盖领取前和持久意图后零外部请求（Action 41 项通过）；剩余绑定条件继续统一审查。"
     },
     {
       "id": "AC-13",
@@ -453,9 +457,10 @@
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
-        "docs/testing/action-resource-version-2026-10-05.md"
+        "docs/testing/action-resource-version-2026-10-05.md",
+        "docs/testing/action-approver-fences-2026-10-05.md"
       ],
-      "notes": "未批/过期/参数变化/当前撤权均有执行前拒绝与零副作用断言；更完整的目标、执行主体和资源变更交叉矩阵仍待补验，不能将部分覆盖描述为完整证明。 2026-10-05 补验：任务标题变更不改变 epoch，旧资源版本在 claim 前及持久意图后 dispatch 均拒绝，零外部请求；HTTP 修订注入目标/执行者/工具/版本均拒绝且原绑定不变。完整联合矩阵仍未完成。"
+      "notes": "未批/过期/参数变化/当前撤权均有执行前拒绝与零副作用断言；更完整的目标、执行主体和资源变更交叉矩阵仍待补验，不能将部分覆盖描述为完整证明。 2026-10-05 补验：任务标题变更不改变 epoch，旧资源版本在 claim 前及持久意图后 dispatch 均拒绝，零外部请求；HTTP 修订注入目标/执行者/工具/版本均拒绝且原绑定不变。完整联合矩阵仍未完成。 独立批准者停用/恢复/降权及批准/授权到期，均已覆盖领取前和持久意图后零外部请求（Action 41 项通过）；剩余绑定条件继续统一审查。"
     },
     {
       "id": "INV-09",
