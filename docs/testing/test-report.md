@@ -166,3 +166,7 @@ Node.js 24.21.0、pnpm 10.34.6，PostgreSQL 18、SeaweedFS S3、Ollama 固定模
 ## 2026-10-05 已批准 Action 资源版本补验
 
 真实 PostgreSQL/HTTP/独立日志的 actions 集成 19/19 通过（19.05 秒）：新增任务版本在领取前、持久意图后两阶段拒绝，扩展 HTTP 修订的四种不可变绑定注入拒绝。产品源码未改变；完整联合矩阵继续 partial。详见 [证据](action-resource-version-2026-10-05.md)。
+
+## 2026-10-05 Artifact 分享新旧版本隔离
+
+Artifact collaboration 8/8 集成通过（10.25 秒）。真实对象字节证明旧分享不随 head 更新，混用摘要及复用旧请求键换版均拒绝，新版需要新的明确分享。见 [版本隔离证据](artifact-disclosure-version-2026-10-05.md)。完整外部发布批准矩阵和跨作者编辑仍待完成，AC-18 保持 partial。

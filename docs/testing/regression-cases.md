@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 86 个测试文件、489 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 86 个测试文件、490 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -559,11 +559,12 @@
 |---|---|
 | [it:126](../../tests/integration/artifact-collaboration.test.ts#L126) | version-anchored Artifact comments and bounded explicit sharing → fixes comments to the selected version/hash and validates Unicode scalar anchors without moving them on edit |
 | [it:198](../../tests/integration/artifact-collaboration.test.ts#L198) | version-anchored Artifact comments and bounded explicit sharing → lets the explicitly named recipient read only the share while leaving source ACL and other recipients unchanged |
-| [it:232](../../tests/integration/artifact-collaboration.test.ts#L232) | version-anchored Artifact comments and bounded explicit sharing → requires original ownership plus live source and recipient fences, including removal and re-add |
-| [it:286](../../tests/integration/artifact-collaboration.test.ts#L286) | version-anchored Artifact comments and bounded explicit sharing → binds a group disclosure to its current audience generation and does not automatically extend it to a new member |
-| [it:317](../../tests/integration/artifact-collaboration.test.ts#L317) | version-anchored Artifact comments and bounded explicit sharing → stops an in-flight shared download after revoke and denies expired or deleted-source grants |
-| [it:355](../../tests/integration/artifact-collaboration.test.ts#L355) | version-anchored Artifact comments and bounded explicit sharing → replays independent share revocation and comment deletion after a simulated database restore |
-| [it:403](../../tests/integration/artifact-collaboration.test.ts#L403) | version-anchored Artifact comments and bounded explicit sharing → authenticates share HTTP downloads and never redirects to storage or returns the underlying resource locator |
+| [it:232](../../tests/integration/artifact-collaboration.test.ts#L232) | version-anchored Artifact comments and bounded explicit sharing → keeps an existing disclosure pinned when a newer head is published and requires exact new-version consent |
+| [it:298](../../tests/integration/artifact-collaboration.test.ts#L298) | version-anchored Artifact comments and bounded explicit sharing → requires original ownership plus live source and recipient fences, including removal and re-add |
+| [it:352](../../tests/integration/artifact-collaboration.test.ts#L352) | version-anchored Artifact comments and bounded explicit sharing → binds a group disclosure to its current audience generation and does not automatically extend it to a new member |
+| [it:383](../../tests/integration/artifact-collaboration.test.ts#L383) | version-anchored Artifact comments and bounded explicit sharing → stops an in-flight shared download after revoke and denies expired or deleted-source grants |
+| [it:421](../../tests/integration/artifact-collaboration.test.ts#L421) | version-anchored Artifact comments and bounded explicit sharing → replays independent share revocation and comment deletion after a simulated database restore |
+| [it:469](../../tests/integration/artifact-collaboration.test.ts#L469) | version-anchored Artifact comments and bounded explicit sharing → authenticates share HTTP downloads and never redirects to storage or returns the underlying resource locator |
 
 ## tests/integration/database-observation.test.ts
 

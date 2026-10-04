@@ -229,6 +229,72 @@ describe('version-anchored Artifact comments and bounded explicit sharing', () =
     ]);
     expect((await collaboration.listShares(fixture.bob, a.id)).items).toEqual([]);
   });
+  it('keeps an existing disclosure pinned when a newer head is published and requires exact new-version consent', async () => {
+    const chat = await group();
+    const first = await artifact(chat.id, 'Explicitly disclosed version one');
+    const input = shareInput(first);
+    const requestKey = key();
+    const shared = await collaboration.createShare(fixture.alice, first.id, input, requestKey);
+    const replacement = await artifact(
+      chat.id,
+      'Private version two must not replace shared bytes',
+    );
+    const second = await resources.createArtifactVersion(
+      fixture.alice,
+      first.id,
+      { resource_id: replacement.resource.id },
+      first.version,
+      key(),
+    );
+    expect(second.version_id).not.toBe(first.version_id);
+    expect((await collaboration.createShare(fixture.alice, first.id, input, requestKey)).id).toBe(
+      shared.id,
+    );
+    expect(await collaboration.getShare(fixture.bob, shared.id)).toMatchObject({
+      version_id: first.version_id,
+      sha256: first.resource.sha256,
+    });
+    const download = await collaboration.openShareDownload(fixture.bob, shared.id);
+    const chunks: Buffer[] = [];
+    for await (const bytes of download.chunks()) chunks.push(Buffer.from(bytes));
+    expect(Buffer.concat(chunks).toString()).toBe('Explicitly disclosed version one');
+    await expect(resources.getResource(fixture.bob, second.resource.id)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    await expect(
+      collaboration.createShare(
+        fixture.alice,
+        first.id,
+        { ...input, version_id: second.version_id },
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    await expect(
+      collaboration.createShare(
+        fixture.alice,
+        first.id,
+        { ...input, version_id: second.version_id, sha256: second.resource.sha256 },
+        requestKey,
+      ),
+    ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });
+    expect((await collaboration.listShares(fixture.alice, first.id)).items).toHaveLength(1);
+    const renewed = await collaboration.createShare(
+      fixture.alice,
+      first.id,
+      { ...input, version_id: second.version_id, sha256: second.resource.sha256 },
+      key(),
+    );
+    expect(renewed.id).not.toBe(shared.id);
+    const latest = await collaboration.openShareDownload(fixture.bob, renewed.id);
+    const latestChunks: Buffer[] = [];
+    for await (const bytes of latest.chunks()) latestChunks.push(Buffer.from(bytes));
+    expect(Buffer.concat(latestChunks).toString()).toBe(
+      'Private version two must not replace shared bytes',
+    );
+    expect((await collaboration.getShare(fixture.bob, shared.id)).version_id).toBe(
+      first.version_id,
+    );
+  });
   it('requires original ownership plus live source and recipient fences, including removal and re-add', async () => {
     const chat = await group();
     const a = await artifact(chat.id);
