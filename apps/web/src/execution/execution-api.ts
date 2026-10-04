@@ -1,5 +1,6 @@
 import type {
   Action,
+  PublicationSource,
   ActionApprovalDecisionInput,
   ActionPage,
   ActionReconciliation,
@@ -64,6 +65,16 @@ export class ExecutionApi {
       );
     }
     return value as T;
+  }
+  publicationSource(
+    grantId: string,
+    versionId: string,
+    signal: AbortSignal,
+  ): Promise<PublicationSource> {
+    return this.request(
+      `/v1/grants/${encodeURIComponent(grantId)}/publication-sources/${encodeURIComponent(versionId)}`,
+      signal,
+    );
   }
   agents(workspace: string, signal: AbortSignal): Promise<AgentDirectory> {
     return this.request(`/v1/agents?${new URLSearchParams({ workspace_id: workspace })}`, signal);

@@ -12422,6 +12422,65 @@
         }
       }
     },
+    "/v1/grants/{id}/publication-sources/{versionId}": {
+      "get": {
+        "operationId": "getGrantPublicationSource",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationSource"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/grants/{id}": {
       "get": {
         "operationId": "getGrant",
@@ -17364,6 +17423,42 @@
             "additionalProperties": false
           }
         ]
+      },
+      "PublicationSourceParams": {
+        "title": "PublicationSourceParams",
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "versionId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": [
+          "id",
+          "versionId"
+        ],
+        "additionalProperties": false
+      },
+      "PublicationSource": {
+        "title": "PublicationSource",
+        "type": "object",
+        "properties": {
+          "reference": {
+            "$ref": "#/components/schemas/ActionResourceRef"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "reference",
+          "text"
+        ],
+        "additionalProperties": false
       },
       "ActionParameters": {
         "title": "ActionParameters",

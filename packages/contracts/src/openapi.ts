@@ -1504,6 +1504,13 @@ export const routeContracts: readonly RouteContract[] = [
   },
   {
     method: 'get',
+    path: '/v1/grants/{id}/publication-sources/{versionId}',
+    operationId: 'getGrantPublicationSource',
+    response: 'PublicationSource',
+    success: '200',
+  },
+  {
+    method: 'get',
     path: '/v1/grants/{id}',
     operationId: 'getGrant',
     response: 'CapabilityGrant',

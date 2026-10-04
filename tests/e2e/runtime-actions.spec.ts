@@ -1,5 +1,5 @@
 import { createModelDriver, createOllamaAdapter } from '@imbox/model-runtime';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import type { AddressInfo } from 'node:net';
@@ -7,6 +7,12 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
+import {
+  createKnowledgeService,
+  knowledgeResourceIndex,
+  knowledgeRuntimeSourcePort,
+} from '@imbox/knowledge';
+import { createResourceService, createS3ObjectStore } from '@imbox/resources';
 import { createAgentService } from '@imbox/agents';
 import {
   createActionService,
@@ -35,6 +41,33 @@ const modelDigest = 'sha256:' + 'd'.repeat(64);
 async function fixture(page: Page) {
   const databases = await testDatabases();
   const f = await tenantFixture(databases.owner);
+  const s3 = {
+    endpoint: process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:18333',
+    region: 'us-east-1',
+    bucket: 'imbox-resources-test',
+  };
+  const store = createS3ObjectStore({
+    ...s3,
+    accessKeyId: 'imbox_local_s3_app',
+    secretAccessKey: 'imbox_local_s3_app_secret',
+  });
+  const admin = createS3ObjectStore({
+    ...s3,
+    accessKeyId: 'imbox_local_s3_admin',
+    secretAccessKey: 'imbox_local_s3_admin_secret',
+  });
+  await admin.ensureDevelopmentBucket('test');
+  const sources = knowledgeRuntimeSourcePort(
+    createKnowledgeService({ db: databases.db, cursorSecret: secret }),
+  );
+  const resources = createResourceService({
+    db: databases.db,
+    store,
+    cursorSecret: secret,
+    textIndex: knowledgeResourceIndex(),
+  });
+  const sentTexts: string[] = [];
+
   const directory = await mkdtemp(join(tmpdir(), 'imbox-web-actions-'));
   let stopped = false;
   let sends = 0;
@@ -65,6 +98,7 @@ async function fixture(page: Page) {
         business_key: string;
         fingerprint: string;
         format?: unknown;
+        input?: { text: string };
         tenant_id: string;
         action_id: string;
         attempt_id: string;
@@ -88,6 +122,7 @@ async function fixture(page: Page) {
         return;
       }
       sends += 1;
+      sentTexts.push(input.input!.text);
       if (!receipts.has(input.business_key)) {
         effects += 1;
         receipts.set(input.business_key, {
@@ -110,6 +145,7 @@ async function fixture(page: Page) {
   const journal = await createFileJournal({ directory, signingKey: secret });
   const actions = createActionService({
     db: databases.db,
+    sources,
     journal,
     cursorSecret: secret,
     tools: createHttpToolRegistry([
@@ -134,7 +170,7 @@ async function fixture(page: Page) {
     requiredActionsClosed: async (tx, id) =>
       (await runtimeCompletionGate(tx, id)) && (await requiredActionsClosed(tx, id)),
   });
-  const runtime = createRuntimeService({ db: databases.db, cursorSecret: secret });
+  const runtime = createRuntimeService({ db: databases.db, cursorSecret: secret, sources });
   const agents = createAgentService({ db: databases.db, identityDb: databases.identityDb, secret });
   const agent = await agents.register(
     f.alice,
@@ -192,6 +228,7 @@ async function fixture(page: Page) {
     runtime,
     tasks,
     actions,
+    resources,
     messaging: createMessagingService(databases.db, secret),
     readiness: async () => {},
   });
@@ -221,6 +258,8 @@ async function fixture(page: Page) {
   await expect(page.getByRole('navigation', { name: '运行列表' })).toBeVisible();
   return {
     f,
+    resources,
+    sentTexts,
     task,
     agent,
     actions,
@@ -259,12 +298,38 @@ async function fixture(page: Page) {
           connector.close((error) => (error ? reject(error) : resolve())),
         ),
       ]);
+      store.destroy();
+      admin.destroy();
       await Promise.allSettled([
         databases.close(),
         rm(directory, { recursive: true, force: true }),
       ]);
     },
   };
+}
+async function artifact(f: Awaited<ReturnType<typeof fixture>>, body: string) {
+  const bytes = Buffer.from(body);
+  const ticket = await f.resources.createUpload(
+    f.f.alice,
+    {
+      task_id: f.task.id,
+      filename: 'publication.md',
+      content_type: 'text/markdown',
+      byte_size: bytes.byteLength,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    },
+    randomUUID(),
+  );
+  expect(
+    (await fetch(ticket.upload_url, { method: 'PUT', headers: ticket.upload_headers, body: bytes }))
+      .status,
+  ).toBe(200);
+  const resource = await f.resources.completeUpload(f.f.alice, ticket.id, randomUUID());
+  return f.resources.createArtifact(
+    f.f.alice,
+    { resource_id: resource.id, title: '固定成果发布' },
+    randomUUID(),
+  );
 }
 async function createRun(page: Page, f: Awaited<ReturnType<typeof fixture>>, grantId?: string) {
   await page.getByRole('button', { name: '新建运行', exact: true }).first().click();
@@ -422,7 +487,9 @@ test('grant → proposal → exact human approval → lost response → lookup h
     await expect(page.getByLabel('授权详情')).toBeVisible();
     await page.getByRole('button', { name: '使用此授权提出行动', exact: true }).click();
     dialog = page.getByRole('dialog');
-    await dialog.getByLabel('将发送给目标的完整内容', { exact: true }).fill('唯一的已批准消息');
+    await dialog
+      .getByRole('textbox', { name: '将发送给目标的完整内容', exact: true })
+      .fill('唯一的已批准消息');
     await dialog.getByLabel(/^本次费用预估上限/).fill('0.00001');
     await dialog.getByRole('checkbox', { name: /我已核对授权/ }).check();
     await dialog.getByRole('button', { name: '提交行动提案', exact: true }).click();
@@ -457,6 +524,95 @@ test('grant → proposal → exact human approval → lost response → lookup h
     await expect(dialog.getByRole('status')).toContainText('没有再次发送');
     expect(f.sends()).toBe(1);
     expect(f.effects()).toBe(1);
+    await dialog.getByRole('button', { name: '关闭', exact: true }).last().click();
+    await expect(
+      page.getByLabel('行动详情').getByRole('heading', { name: '外部结果已确认', exact: true }),
+    ).toBeVisible();
+  } finally {
+    await f.close();
+  }
+});
+test('fixed artifact selection → new head → original approved publication → receipt lookup without resending', async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  try {
+    const original = await artifact(f, '唯一的已批准消息');
+    await page.getByRole('tab', { name: '授权', exact: true }).click();
+    await page.getByRole('button', { name: '新建授权', exact: true }).first().click();
+    let dialog = page.getByRole('dialog');
+    await dialog
+      .getByRole('combobox', { name: '授权所属任务', exact: true })
+      .selectOption(f.task.id);
+    await dialog
+      .getByRole('combobox', { name: '获授权的执行者', exact: true })
+      .selectOption(f.f.bob.principalId);
+    await dialog
+      .getByRole('combobox', { name: '待发布产物', exact: true })
+      .selectOption(original.id);
+    await dialog
+      .getByRole('combobox', { name: '批准使用的固定版本', exact: true })
+      .selectOption(original.version_id);
+    await dialog.getByRole('checkbox', { name: /Alice/ }).check();
+    await dialog.getByLabel(/^授权预算上限/).fill('0.00001');
+    await dialog.getByRole('checkbox', { name: /允许此执行者/ }).check();
+    await dialog.getByRole('checkbox', { name: /允许将经人工审批/ }).check();
+    await dialog.getByRole('button', { name: '签发授权', exact: true }).click();
+    await expect(page.getByLabel('授权详情')).toBeVisible();
+    const replacement = await artifact(f, '未经批准的新版本');
+    await f.resources.createArtifactVersion(
+      f.f.alice,
+      original.id,
+      { resource_id: replacement.resource.id },
+      original.version,
+      randomUUID(),
+    );
+    await page.getByRole('button', { name: '使用此授权提出行动', exact: true }).click();
+    dialog = page.getByRole('dialog');
+    await dialog
+      .getByRole('combobox', { name: '本次发布的固定产物版本', exact: true })
+      .selectOption(original.version_id);
+    await expect(
+      dialog.getByRole('textbox', { name: '将发送给目标的完整内容', exact: true }),
+    ).toHaveValue('唯一的已批准消息');
+    await expect(
+      dialog.getByRole('textbox', { name: '将发送给目标的完整内容', exact: true }),
+    ).toHaveAttribute('readonly', '');
+    await dialog.getByLabel(/^本次费用预估上限/).fill('0.00001');
+    await dialog.getByRole('checkbox', { name: /我已核对授权/ }).check();
+    await dialog.getByRole('button', { name: '提交行动提案', exact: true }).click();
+    await expect(
+      page.getByLabel('行动详情').getByRole('heading', { name: '等待人工审批', exact: true }),
+    ).toBeVisible();
+    expect(f.effects()).toBe(0);
+    await page.getByRole('button', { name: '核对并批准', exact: true }).click();
+    dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('唯一的已批准消息', { exact: true })).toBeVisible();
+    await dialog.getByLabel('决定说明', { exact: true }).fill('核对了完整内容、目标与费用');
+    await dialog.getByRole('checkbox', { name: /我已逐项核对/ }).check();
+    await dialog.getByRole('button', { name: '提交明确决定', exact: true }).click();
+    await expect(
+      page.getByLabel('行动详情').getByRole('heading', { name: '等待执行', exact: true }),
+    ).toBeVisible();
+    const action = (await f.actions.listActions(f.f.alice, {})).items[0] as Action;
+    await createToolRunner({ actions: f.actions, workerId: 'browser-real-tool-worker' }).runOnce(
+      f.f.tenantId,
+      action.id,
+    );
+    await page.getByRole('button', { name: '刷新行动', exact: true }).click();
+    await expect(
+      page.getByLabel('行动详情').getByRole('heading', { name: '结果未知', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /重新执行|重新发送|重试行动/ })).toHaveCount(0);
+    await page.getByRole('button', { name: '查询外部结果', exact: true }).click();
+    dialog = page.getByRole('dialog');
+    await dialog.getByLabel('查询理由', { exact: true }).fill('只查询已有回执');
+    await dialog.getByRole('checkbox').check();
+    await dialog.getByRole('button', { name: '仅查询已有结果', exact: true }).click();
+    await expect(dialog.getByRole('status')).toContainText('没有再次发送');
+    expect(f.sends()).toBe(1);
+    expect(f.effects()).toBe(1);
+    expect(f.sentTexts).toEqual(['唯一的已批准消息']);
     await dialog.getByRole('button', { name: '关闭', exact: true }).last().click();
     await expect(
       page.getByLabel('行动详情').getByRole('heading', { name: '外部结果已确认', exact: true }),

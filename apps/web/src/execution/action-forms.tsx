@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type {
   Action,
+  ActionResourceRef,
   CapabilityGrant,
   CreateActionInput,
   CreateGrantInput,
@@ -8,13 +9,14 @@ import type {
   TaskParticipantPage,
 } from '@imbox/contracts';
 import type { ApiClient, Session } from '../api.js';
-import { isAccessLoss } from '../api.js';
+import { ApiError, isAccessLoss } from '../api.js';
 import { ErrorNotice, Modal, Spinner } from '../components.js';
 import { Field, MemberPicker, requiredIds, useWorkspaceMembers } from '../tasks/task-common.js';
 import { TaskApi } from '../tasks/task-api.js';
 import { decimalToMicrounits, futureLocalDate, localDeadline } from '../tasks/task-state.js';
 import { ExecutionApi } from './execution-api.js';
 import { BudgetCard, Fact, Facts, SubmitActions, useExecutionCommand } from './execution-common.js';
+import { PublicationPicker } from './publication-picker.js';
 import { executionError } from './execution-state.js';
 
 export function CreateGrantForm({
@@ -39,6 +41,7 @@ export function CreateGrantForm({
   readonly accessLost: (error: unknown) => void;
 }) {
   const [taskId, setTaskId] = useState('');
+  const [publication, setPublication] = useState<ActionResourceRef | null>(null);
   const task = tasks.find((item) => item.id === taskId);
   const roster = useWorkspaceMembers(client, task?.workspace_id ?? '');
   const [participants, setParticipants] = useState<TaskParticipantPage['items']>([]);
@@ -56,7 +59,7 @@ export function CreateGrantForm({
   useEffect(() => {
     setExecute(false);
     setDisclose(false);
-  }, [task?.version, executor, tool, toolVersion, target, amount, expires, approvers]);
+  }, [task?.version, executor, tool, toolVersion, target, amount, expires, approvers, publication]);
   useEffect(() => {
     const controller = new AbortController();
     setParticipants([]);
@@ -112,7 +115,10 @@ export function CreateGrantForm({
                 target_id: target,
                 allow_execute: execute,
                 allow_disclosure: disclose,
-                resource_versions: [{ type: 'task', id: task.id, version: task.version }],
+                resource_versions: [
+                  { type: 'task', id: task.id, version: task.version },
+                  ...(publication ? [publication] : []),
+                ],
                 approver_principal_ids: requiredIds(approvers),
                 budget: {
                   currency: task.budget.currency,
@@ -138,7 +144,10 @@ export function CreateGrantForm({
             className="text-input"
             required
             value={taskId}
-            onChange={(event) => setTaskId(event.target.value)}
+            onChange={(event) => {
+              setTaskId(event.target.value);
+              setPublication(null);
+            }}
           >
             <option value="">选择进行中的任务</option>
             {tasks
@@ -150,6 +159,15 @@ export function CreateGrantForm({
               ))}
           </select>
         </Field>
+        {task && (
+          <PublicationPicker
+            key={task.id}
+            tenantId={api.tenantId}
+            csrfToken={api.csrfToken}
+            taskId={task.id}
+            onChange={setPublication}
+          />
+        )}
         {loading || roster.loading ? (
           <Spinner />
         ) : (
@@ -291,12 +309,51 @@ export function CreateActionForm({
 }) {
   const [grantId, setGrantId] = useState(initialGrant ?? '');
   const [text, setText] = useState('');
+  const [publicationId, setPublicationId] = useState('');
+  const [publicationReady, setPublicationReady] = useState(false);
   const [amount, setAmount] = useState('0');
   const [businessKey, setBusinessKey] = useState<string>(() => crypto.randomUUID());
   const [required, setRequired] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
   const grant = grants.find((item) => item.id === grantId);
   const command = useExecutionCommand('new-action', refresh, accessLost);
+  const artifactRefs =
+    grant?.resource_versions.filter((ref) => ref.type === 'artifact_version') ?? [];
+  const selectedPublication = artifactRefs.find((ref) => ref.id === publicationId);
+  useEffect(() => {
+    setPublicationId('');
+    setText('');
+    setConfirmed(false);
+  }, [grant?.id]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setPublicationReady(false);
+    setConfirmed(false);
+    if (!grant || !selectedPublication) return () => controller.abort();
+    setText('');
+    void api
+      .publicationSource(grant.id, selectedPublication.id, controller.signal)
+      .then((source) => {
+        if (!controller.signal.aborted) {
+          setText(source.text);
+          setPublicationReady(true);
+        }
+      })
+      .catch((failure: unknown) => {
+        if (!controller.signal.aborted) {
+          setText('');
+          if (isAccessLoss(failure)) accessLost(failure);
+          else
+            command.setError(
+              failure instanceof ApiError && failure.code === 'PUBLICATION_TOO_LARGE'
+                ? '所选版本为空或超过 4000 字符，不能通过此文本工具完整发布。'
+                : executionError(failure),
+            );
+        }
+      });
+    return () => controller.abort();
+  }, [api, grant?.id, grant?.revision, publicationId]);
+
   useEffect(() => {
     setConfirmed(false);
   }, [grant?.revision, grant?.status]);
@@ -306,7 +363,7 @@ export function CreateActionForm({
         onSubmit={(event) => {
           event.preventDefault();
           void (async () => {
-            if (!grant || !confirmed) return;
+            if (!grant || !confirmed || (artifactRefs.length > 0 && !publicationReady)) return;
             try {
               const input: CreateActionInput = {
                 task_id: grant.task_id,
@@ -316,7 +373,9 @@ export function CreateActionForm({
                 tool_version: grant.tool_version,
                 target_id: grant.target_id,
                 parameters: { text },
-                resource_versions: grant.resource_versions,
+                resource_versions: grant.resource_versions.filter(
+                  (ref) => ref.type === 'task' || ref.id === selectedPublication?.id,
+                ),
                 business_key: businessKey,
                 estimate: {
                   currency: grant.budget.currency,
@@ -371,6 +430,36 @@ export function CreateActionForm({
             <BudgetCard budget={grant.budget} label="授权预算" />
           </>
         )}
+        {artifactRefs.length > 0 && (
+          <>
+            <Field label="本次发布的固定产物版本">
+              <select
+                className="text-input"
+                required
+                value={publicationId}
+                onChange={(e) => {
+                  setPublicationId(e.target.value);
+                  setPublicationReady(false);
+                  setConfirmed(false);
+                  setText('');
+                }}
+              >
+                <option value="">选择授权内的固定版本</option>
+                {artifactRefs.map((ref) => (
+                  <option key={ref.id} value={ref.id}>
+                    版本 {ref.version} · {ref.id}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <p className="execution-note">
+              正文从固定版本读取，只读核对；修改内容须创建新产物版本并重新授权。
+            </p>
+            {selectedPublication && (
+              <p className="execution-note">SHA-256 {selectedPublication.sha256}</p>
+            )}
+          </>
+        )}
         <Field label="将发送给目标的完整内容">
           <textarea
             className="text-input"
@@ -378,6 +467,7 @@ export function CreateActionForm({
             maxLength={4000}
             rows={5}
             value={text}
+            readOnly={artifactRefs.length > 0}
             onChange={(event) => {
               setText(event.target.value);
               setConfirmed(false);
@@ -435,7 +525,7 @@ export function CreateActionForm({
           command={command}
           label="提交行动提案"
           onClose={onClose}
-          disabled={!grant || !confirmed}
+          disabled={!grant || !confirmed || (artifactRefs.length > 0 && !publicationReady)}
         />
       </form>
     </Modal>

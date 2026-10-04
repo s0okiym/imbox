@@ -33,6 +33,8 @@ export const actionDefinitions = {
       }),
     ],
   },
+  PublicationSourceParams: obj({ id: ref('Identifier'), versionId: ref('Identifier') }),
+  PublicationSource: obj({ reference: ref('ActionResourceRef'), text: str(4000) }),
   ActionParameters: obj({ text: str(4000) }),
   CreateGrantInput: obj({
     task_id: ref('Identifier'),

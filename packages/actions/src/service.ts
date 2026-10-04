@@ -947,6 +947,21 @@ export function createActionService(options: Options) {
     return id;
   }
   const service = {
+    async publicationSource(auth: AuthContext, grantId: string, versionId: string) {
+      return transaction(auth, async (tx) => {
+        const g = await grant(tx, grantId);
+        const t = await task(tx, g.task_id);
+        await access(tx, t, auth.principalId);
+        if (g.status !== 'active' || g.expires_at <= (await now(tx))) fail('FORBIDDEN', 403);
+        const reference = g.resource_versions.find(
+          (ref) => ref.type === 'artifact_version' && ref.id === versionId,
+        );
+        if (!reference) fail('NOT_FOUND', 404);
+        const [text] = await artifactBodies(tx, t, [reference], [auth.principalId]);
+        if (!text || Array.from(text).length > 4000) fail('PUBLICATION_TOO_LARGE', 413);
+        return assertContract('PublicationSource', { reference, text });
+      });
+    },
     async createGrant(auth: AuthContext, input: C['CreateGrantInput'], key: string) {
       assertContract('CreateGrantInput', input);
       return transaction(auth, async (tx) => {

@@ -307,9 +307,42 @@ const approve = (action: C['Action']) =>
 const runner = () => createToolRunner({ actions, workerId: 'test-tool-worker' });
 
 describe('controlled actions with real PostgreSQL, HTTP and independent signed journal', () => {
+  it('rejects oversized publication previews without returning truncated content', async () => {
+    const file = await artifact('x'.repeat(4001));
+    const grant = await actions.createGrant(
+      fixture.alice,
+      {
+        task_id: task.id,
+        executor_principal_id: fixture.bob.principalId,
+        tool_id: 'demo.delivery',
+        tool_version: '1',
+        target_id: 'demo',
+        allow_execute: true,
+        allow_disclosure: true,
+        resource_versions: [artifactRef(file)],
+        approver_principal_ids: [fixture.alice.principalId],
+        budget: { currency: 'USD', limit_microunits: '10' },
+        expires_at: new Date(Date.now() + 3600000).toISOString(),
+      },
+      key(),
+    );
+    await expect(
+      actions.publicationSource(fixture.alice, grant.id, file.version_id),
+    ).rejects.toMatchObject({ code: 'PUBLICATION_TOO_LARGE', status: 413 });
+  });
   it('publishes the approved immutable artifact despite a new head and requires new authority for the new version', async () => {
     const old = await artifact('Approved original text');
     const first = await proposed([artifactRef(old)], 'Approved original text');
+    expect(
+      await actions.publicationSource(fixture.alice, first.grant.id, old.version_id),
+    ).toMatchObject({ reference: artifactRef(old), text: 'Approved original text' });
+    await expect(
+      actions.publicationSource(fixture.charlie, first.grant.id, old.version_id),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(
+      actions.publicationSource(fixture.alice, first.grant.id, key()),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
     const approved = await approve(first.action);
     const replacement = await artifact('New text needs new approval');
     const latest = await resources.createArtifactVersion(
@@ -365,6 +398,9 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
         claim ? actions.dispatch(claim) : runner().runOnce(fixture.tenantId, action.id),
       ).rejects.toBeDefined();
       if (claim) await actions.abortPrepared(claim);
+      await expect(
+        actions.publicationSource(fixture.alice, action.grant_id, file.version_id),
+      ).rejects.toMatchObject({ code: 'NOT_FOUND' });
       const view = await actions.getAction(fixture.alice, action.id);
       expect(view.content_restricted).toBe(true);
       expect(JSON.stringify(view)).not.toContain('Sensitive artifact body');

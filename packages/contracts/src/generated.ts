@@ -182,6 +182,8 @@ export interface ContractTypes {
   MachineReportInput: MachineReportInput;
   MachineRunPage: MachineRunPage;
   ActionResourceRef: ActionResourceRef;
+  PublicationSourceParams: PublicationSourceParams;
+  PublicationSource: PublicationSource;
   ActionParameters: ActionParameters;
   CreateGrantInput: CreateGrantInput;
   CapabilityGrant: CapabilityGrant;
@@ -1449,6 +1451,14 @@ export interface TaskVersionRef {
   type: 'task';
   id: Identifier;
   version: Version;
+}
+export interface PublicationSourceParams {
+  id: Identifier;
+  versionId: Identifier;
+}
+export interface PublicationSource {
+  reference: ActionResourceRef;
+  text: string;
 }
 export interface ActionParameters {
   text: string;

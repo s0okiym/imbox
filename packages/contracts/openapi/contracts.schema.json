@@ -4190,6 +4190,42 @@
         }
       ]
     },
+    "PublicationSourceParams": {
+      "title": "PublicationSourceParams",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "versionId": {
+          "$ref": "#/$defs/Identifier"
+        }
+      },
+      "required": [
+        "id",
+        "versionId"
+      ],
+      "additionalProperties": false
+    },
+    "PublicationSource": {
+      "title": "PublicationSource",
+      "type": "object",
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/ActionResourceRef"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        }
+      },
+      "required": [
+        "reference",
+        "text"
+      ],
+      "additionalProperties": false
+    },
     "ActionParameters": {
       "title": "ActionParameters",
       "type": "object",
