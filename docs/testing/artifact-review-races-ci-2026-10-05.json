@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "commit": "b26b4f957cb350aa32b2b3ad79dca4ce7b5c42f4",
+  "run_id": 37229828711,
+  "job_id": 111516977146,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37229828711",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 181,
+    "seconds": 3.82
+  },
+  "integration": {
+    "files": 35,
+    "passed": 279,
+    "seconds": 81.12
+  },
+  "browser": {
+    "passed": 31,
+    "minutes_rounded": 2.8
+  },
+  "actual_model": {
+    "passed": 1,
+    "seconds": 3.74
+  },
+  "deployment": {
+    "passed": 3,
+    "seconds": 11.6
+  },
+  "scope": "Artifact review races; excludes later projection compatibility and task-tree boundary changes"
+}

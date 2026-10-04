@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 85 个测试文件、479 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 85 个测试文件、481 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -882,15 +882,17 @@
 | [it:247](../../tests/integration/tasks.test.ts#L247) | real PostgreSQL M2 collaboration and task fences → same acceptance idempotency key returns exactly one accepted version and never a second handoff |
 | [it:267](../../tests/integration/tasks.test.ts#L267) | real PostgreSQL M2 collaboration and task fences → clarification and revision retain immutable proposals and reject a stale proposal number |
 | [it:305](../../tests/integration/tasks.test.ts#L305) | real PostgreSQL M2 collaboration and task fences → rejection and expiry never create a child or transfer ownership |
-| [it:322](../../tests/integration/tasks.test.ts#L322) | real PostgreSQL M2 collaboration and task fences → delegation creates one child only after acceptance and preserves parent ownership |
-| [it:344](../../tests/integration/tasks.test.ts#L344) | real PostgreSQL M2 collaboration and task fences → terminal and reopen advance epochs and make old pending proposals permanently unusable |
-| [it:367](../../tests/integration/tasks.test.ts#L367) | real PostgreSQL M2 collaboration and task fences → a parent close/reopen invalidates a previously issued child proposal through complete ancestor fences |
-| [it:391](../../tests/integration/tasks.test.ts#L391) | real PostgreSQL M2 collaboration and task fences → serializes cross-root dependency mutation before sorted root locks and rejects the combined cycle |
-| [it:406](../../tests/integration/tasks.test.ts#L406) | real PostgreSQL M2 collaboration and task fences → pins submission text/hash/goal version, restricts acceptance to designated reviewers and completes separately |
-| [it:446](../../tests/integration/tasks.test.ts#L446) | real PostgreSQL M2 collaboration and task fences → does not complete a parent while an accepted child remains open |
-| [it:464](../../tests/integration/tasks.test.ts#L464) | real PostgreSQL M2 collaboration and task fences → rejects old goal submissions and artifact refs until their storage/authorization implementation exists |
-| [it:501](../../tests/integration/tasks.test.ts#L501) | real PostgreSQL M2 collaboration and task fences → takeover is an explicit admin command with a reason, new owner and epoch |
-| [it:519](../../tests/integration/tasks.test.ts#L519) | M2 HTTP commands with real cookie authentication and contracts → creates, reads, proposes and accepts with authoritative identity, version headers and CSRF |
+| [it:322](../../tests/integration/tasks.test.ts#L322) | real PostgreSQL M2 collaboration and task fences → bounds real recursive delegation at five levels and leaves no child or agreement when deeper acceptance races |
+| [it:384](../../tests/integration/tasks.test.ts#L384) | real PostgreSQL M2 collaboration and task fences → serializes the final task-tree slot and refuses further accepted delegations at 200 nodes |
+| [it:430](../../tests/integration/tasks.test.ts#L430) | real PostgreSQL M2 collaboration and task fences → delegation creates one child only after acceptance and preserves parent ownership |
+| [it:452](../../tests/integration/tasks.test.ts#L452) | real PostgreSQL M2 collaboration and task fences → terminal and reopen advance epochs and make old pending proposals permanently unusable |
+| [it:475](../../tests/integration/tasks.test.ts#L475) | real PostgreSQL M2 collaboration and task fences → a parent close/reopen invalidates a previously issued child proposal through complete ancestor fences |
+| [it:499](../../tests/integration/tasks.test.ts#L499) | real PostgreSQL M2 collaboration and task fences → serializes cross-root dependency mutation before sorted root locks and rejects the combined cycle |
+| [it:514](../../tests/integration/tasks.test.ts#L514) | real PostgreSQL M2 collaboration and task fences → pins submission text/hash/goal version, restricts acceptance to designated reviewers and completes separately |
+| [it:554](../../tests/integration/tasks.test.ts#L554) | real PostgreSQL M2 collaboration and task fences → does not complete a parent while an accepted child remains open |
+| [it:572](../../tests/integration/tasks.test.ts#L572) | real PostgreSQL M2 collaboration and task fences → rejects old goal submissions and artifact refs until their storage/authorization implementation exists |
+| [it:609](../../tests/integration/tasks.test.ts#L609) | real PostgreSQL M2 collaboration and task fences → takeover is an explicit admin command with a reason, new owner and epoch |
+| [it:627](../../tests/integration/tasks.test.ts#L627) | M2 HTTP commands with real cookie authentication and contracts → creates, reads, proposes and accepts with authoritative identity, version headers and CSRF |
 
 ## tests/integration/workspace-provisioning.test.ts
 

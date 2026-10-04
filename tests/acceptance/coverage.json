@@ -191,9 +191,10 @@
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
-        "docs/testing/provisioning-evidence-2026-10-04.json"
+        "docs/testing/provisioning-evidence-2026-10-04.json",
+        "docs/testing/task-tree-boundaries-2026-10-05.md"
       ],
-      "notes": "runtime 并发子任务预占只成功一次、root 四个并发槽、20 步上限及绝对期限；tasks 依赖环并发拒绝，scheduling 禁止 Agent 递归创建。深度边界和真实多 Agent 唤醒风暴仍待专门验证。"
+      "notes": "已有树预算/并发/期限、依赖防环与禁止递归计划的断言；新增真实五层委派拒绝第六层、199→200 节点并发名额、满额回滚及独立根继续接受。真实多 Agent 唤醒风暴与跨租户压力仍待验收。"
     },
     {
       "id": "AC-16",
@@ -483,9 +484,10 @@
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
-        "docs/testing/provisioning-evidence-2026-10-04.json"
+        "docs/testing/provisioning-evidence-2026-10-04.json",
+        "docs/testing/task-tree-boundaries-2026-10-05.md"
       ],
-      "notes": "全祖先预算、四并发槽、20 步和绝对期限已有断言；委派深度及多租户混合压力边界仍待专门测试，同 AC-15。"
+      "notes": "全祖先预算、四并发槽、20 步和绝对期限已有断言；真实委派深度五层、200 节点上限及并发/回滚已补验。多 Agent 唤醒及多租户混合压力仍待验证。"
     },
     {
       "id": "INV-12",

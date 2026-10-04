@@ -319,6 +319,114 @@ describe('real PostgreSQL M2 collaboration and task fences', () => {
       expect((await sql`select * from tasks`.execute(tx)).rows).toHaveLength(1),
     );
   });
+  it('bounds real recursive delegation at five levels and leaves no child or agreement when deeper acceptance races', async () => {
+    const root = await create();
+    let parent = root;
+    let owner = fixture.alice;
+    for (let level = 2; level <= 5; level += 1) {
+      const recipient =
+        owner.principalId === fixture.alice.principalId ? fixture.bob : fixture.alice;
+      const invitation = await request(parent, 'delegate', recipient.principalId, owner);
+      const result = await decide(invitation, recipient);
+      const child = await tasks.getTask(recipient, result.agreement!.child_task_id!);
+      expect(child.parent_task_id).toBe(parent.id);
+      expect(child.root_task_id).toBe(root.id);
+      expect(child.owner_principal_id).toBe(recipient.principalId);
+      expect(child.accountable_principal_id).toBe(owner.principalId);
+      expect((await tasks.getTask(owner, parent.id)).owner_principal_id).toBe(owner.principalId);
+      parent = child;
+      owner = recipient;
+    }
+    const recipients = [fixture.bob, fixture.charlie];
+    const invitations = await Promise.all(
+      recipients.map((recipient) => request(parent, 'delegate', recipient.principalId, owner)),
+    );
+    const before = await withTenant(databases.db, fixture.tenantId, async (tx) => ({
+      participants: (
+        await sql`select task_id,principal_id from task_participants order by task_id,principal_id`.execute(
+          tx,
+        )
+      ).rows,
+      agreements: (await sql`select id from agreements order by id`.execute(tx)).rows,
+    }));
+    const decisions = await Promise.allSettled(
+      invitations.map((invitation, index) => decide(invitation, recipients[index]!)),
+    );
+    for (const result of decisions) {
+      expect(result.status).toBe('rejected');
+      if (result.status === 'rejected') expect(result.reason.code).toBe('VALIDATION_FAILED');
+    }
+    await withTenant(databases.db, fixture.tenantId, async (tx) => {
+      expect(
+        (await sql`select id from tasks where root_task_id=${root.id}`.execute(tx)).rows,
+      ).toHaveLength(5);
+      expect(
+        (
+          await sql`select task_id,principal_id from task_participants order by task_id,principal_id`.execute(
+            tx,
+          )
+        ).rows,
+      ).toEqual(before.participants);
+      expect((await sql`select id from agreements order by id`.execute(tx)).rows).toEqual(
+        before.agreements,
+      );
+      expect(
+        (
+          await sql<{
+            status: string;
+          }>`select status from collaboration_requests where task_id=${parent.id}`.execute(tx)
+        ).rows.map((r) => r.status),
+      ).toEqual(['pending', 'pending']);
+    });
+    expect((await tasks.getTask(owner, parent.id)).version).toBe(parent.version);
+  });
+
+  it('serializes the final task-tree slot and refuses further accepted delegations at 200 nodes', async () => {
+    let root = await create();
+    // Build through the public workflow, including consent and agreement creation.
+    for (let nodes = 1; nodes < 199; nodes += 1) {
+      await decide(await request(root, 'delegate'));
+      root = await tasks.getTask(fixture.alice, root.id);
+    }
+    const invitations = await Promise.all([
+      request(root, 'delegate', fixture.bob.principalId),
+      request(root, 'delegate', fixture.charlie.principalId),
+    ]);
+    const results = await Promise.allSettled([
+      decide(invitations[0]!, fixture.bob),
+      decide(invitations[1]!, fixture.charlie),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    for (const result of results)
+      if (result.status === 'rejected') expect(result.reason.code).toBe('VERSION_CONFLICT');
+    root = await tasks.getTask(fixture.alice, root.id);
+    const overflow = await request(root, 'delegate');
+    await expect(decide(overflow)).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    await withTenant(databases.db, fixture.tenantId, async (tx) => {
+      expect(
+        (await sql`select id from tasks where root_task_id=${root.id}`.execute(tx)).rows,
+      ).toHaveLength(200);
+      expect(
+        (await sql`select id from agreements where task_id=${root.id}`.execute(tx)).rows,
+      ).toHaveLength(199);
+      expect(
+        (
+          await sql<{
+            status: string;
+          }>`select status from collaboration_requests where id=${overflow.id}`.execute(tx)
+        ).rows[0]?.status,
+      ).toBe('pending');
+    });
+    expect((await tasks.getTask(fixture.alice, root.id)).owner_principal_id).toBe(
+      fixture.alice.principalId,
+    );
+    // The tree cap does not become an accidental tenant-wide task cap.
+    const separate = await create();
+    expect(
+      (await decide(await request(separate, 'delegate'))).agreement?.child_task_id,
+    ).toBeTruthy();
+  }, 120_000);
+
   it('delegation creates one child only after acceptance and preserves parent ownership', async () => {
     const t = await create();
     const r = await request(t, 'delegate');

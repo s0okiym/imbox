@@ -20,7 +20,7 @@
 | AC-12  | partial  | 批准后撤销 grant、身份/参与代际改变会拒绝执行；来源撤回阻止模型输出。仍需针对已批准 Action 的每种资源版本变更补齐独立组合测试。                                                 |
 | AC-13  | verified | actions/run-tool-intents 对真实受控服务注入丢响应，断言 unknown、一个 POST、核对成功后不重发；action-recovery 核对仅 GET 并且记账一次。                                         |
 | AC-14  | partial  | runtime 分开记录 cancelling 与 worker acknowledged cancelled；未派发 Action 随 Run 取消，已发生/unknown 保留。真实外部 Agent 失联后恢复及远端确认的部署演练仍未完成。           |
-| AC-15  | partial  | runtime 并发子任务预占只成功一次、root 四个并发槽、20 步上限及绝对期限；tasks 依赖环并发拒绝，scheduling 禁止 Agent 递归创建。深度边界和真实多 Agent 唤醒风暴仍待专门验证。     |
+| AC-15 | partial | 已有树预算/并发/期限、依赖防环与禁止递归计划的断言；新增真实五层委派拒绝第六层、199→200 节点并发名额、满额回滚及独立根继续接受。真实多 Agent 唤醒风暴与跨租户压力仍待验收。 |
 | AC-16  | partial  | sync 投影事务回滚后持久重试、模型丢响应挂起、checkpoint 恢复不再请求模型；浏览器离线壳可用。尚未完成模型/对象/连接故障与积压同时出现时的长期联合演练。                          |
 | AC-17  | verified | agents 作者绑定认证身份，伪造 actor 字段拒绝；过期/轮换 lease 拒绝；completed 外部回报保留 external_report/external 标识，machine API 不提供人类批准/恢复入口。                 |
 | AC-18  | partial  | 已补产物同版本双写竞争（仅一次成功）以及新版写入与两名审核者同时验收（唯一决定/事件、幂等重试、固定旧版 hash）；删除来源拒绝仍保留。当前 Artifact 仅创建者能更新，跨作者编辑策略及外部发布 Action 对旧批准/新版产物的联合矩阵仍未完成。             |
@@ -41,7 +41,7 @@
 | INV-08 | partial  | 未批/过期/参数变化/当前撤权均有执行前拒绝与零副作用断言；更完整的目标、执行主体和资源变更交叉矩阵仍待补验，不能将部分覆盖描述为完整证明。                                       |
 | INV-09 | verified | 消息、outbox、SDK 同业务键幂等；unknown Action 不重发，只读核对、一次记账，恢复孤立行动继续保留原业务键。                                                                       |
 | INV-10 | verified | domain/action 拒绝取消 unknown 或进入普通重试；UI unknown 只提供 reconcile；runtime 取消保留未知费用，迟到真实费用可记录且不发布旧结果。                                        |
-| INV-11 | partial  | 全祖先预算、四并发槽、20 步和绝对期限已有断言；委派深度及多租户混合压力边界仍待专门测试，同 AC-15。                                                                             |
+| INV-11 | partial | 全祖先预算、四并发槽、20 步和绝对期限已有断言；真实委派深度五层、200 节点上限及并发/回滚已补验。多 Agent 唤醒及多租户混合压力仍待验证。 |
 | INV-12 | verified | 消息/任务/资源/Run/工具/订阅重验当前身份与权限，移除后重新加入也不复活旧代际；离线设备无法即时得知远端撤权的边界按主动缓存策略说明。                                            |
 | INV-13 | partial  | 搜索、分页、未读计数、导出分块、推送预派发与离线缓存清理分别已有断言；真实系统推送/设备生命周期与联合撤权矩阵尚不完整。                                                         |
 | INV-14 | verified | 外部 Run 明确 external execution_location 与 external_report 来源，完成自报不改变 Task 验收；机器工具请求仍受当前 scope、主体、租约和人类恢复规则限制。                         |
