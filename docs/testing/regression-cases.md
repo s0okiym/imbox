@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 85 个测试文件、474 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 85 个测试文件、479 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -41,17 +41,21 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:133](../../apps/web/src/conversation-sync.test.ts#L133) | ordered snapshot and WebSocket synchronization → preserves the recent snapshot history boundary for explicit older-message loading |
-| [it:141](../../apps/web/src/conversation-sync.test.ts#L141) | ordered snapshot and WebSocket synchronization → does not expose a partial snapshot or subscribe before the last stable page |
-| [it:163](../../apps/web/src/conversation-sync.test.ts#L163) | ordered snapshot and WebSocket synchronization → ACKs only after applying the event and answers heartbeat without marking read |
-| [it:181](../../apps/web/src/conversation-sync.test.ts#L181) | ordered snapshot and WebSocket synchronization → clears the view before restarting snapshot on authorization resync |
-| [it:195](../../apps/web/src/conversation-sync.test.ts#L195) | ordered snapshot and WebSocket synchronization → stops and clears content on revoked access, without acknowledging the revocation as read |
-| [it:209](../../apps/web/src/conversation-sync.test.ts#L209) | ordered snapshot and WebSocket synchronization → uses the last applied opaque cursor for HTTP catchup after disconnect |
-| [it:232](../../apps/web/src/conversation-sync.test.ts#L232) | ordered snapshot and WebSocket synchronization → closes a silently stalled socket after 45 seconds without server frames |
-| [it:248](../../apps/web/src/conversation-sync.test.ts#L248) | narrow browser projection parser → accepts a valid long Unicode message above the smaller client control-frame limit |
-| [it:262](../../apps/web/src/conversation-sync.test.ts#L262) | narrow browser projection parser → never coerces malformed actor kinds, statuses or control reasons into valid strings |
-| [it:288](../../apps/web/src/conversation-sync.test.ts#L288) | narrow browser projection parser → rejects unsupported schema and mismatched projection identities |
-| [it:297](../../apps/web/src/conversation-sync.test.ts#L297) | narrow browser projection parser → removes body content whenever the authoritative envelope says remove |
+| [it:134](../../apps/web/src/conversation-sync.test.ts#L134) | ordered snapshot and WebSocket synchronization → preserves the recent snapshot history boundary for explicit older-message loading |
+| [it:142](../../apps/web/src/conversation-sync.test.ts#L142) | ordered snapshot and WebSocket synchronization → does not expose a partial snapshot or subscribe before the last stable page |
+| [it:164](../../apps/web/src/conversation-sync.test.ts#L164) | ordered snapshot and WebSocket synchronization → ACKs only after applying the event and answers heartbeat without marking read |
+| [it:182](../../apps/web/src/conversation-sync.test.ts#L182) | ordered snapshot and WebSocket synchronization → clears the view before restarting snapshot on authorization resync |
+| [it:196](../../apps/web/src/conversation-sync.test.ts#L196) | ordered snapshot and WebSocket synchronization → stops and clears content on revoked access, without acknowledging the revocation as read |
+| [it:210](../../apps/web/src/conversation-sync.test.ts#L210) | ordered snapshot and WebSocket synchronization → uses the last applied opaque cursor for HTTP catchup after disconnect |
+| [it:233](../../apps/web/src/conversation-sync.test.ts#L233) | ordered snapshot and WebSocket synchronization → closes a silently stalled socket after 45 seconds without server frames |
+| [it:249](../../apps/web/src/conversation-sync.test.ts#L249) | narrow browser projection parser → accepts a valid long Unicode message above the smaller client control-frame limit |
+| [it:263](../../apps/web/src/conversation-sync.test.ts#L263) | narrow browser projection parser → never coerces malformed actor kinds, statuses or control reasons into valid strings |
+| [it:289](../../apps/web/src/conversation-sync.test.ts#L289) | narrow browser projection parser → rejects unsupported schema and mismatched projection identities |
+| [it:298](../../apps/web/src/conversation-sync.test.ts#L298) | narrow browser projection parser → removes body content whenever the authoritative envelope says remove |
+| [it:314](../../apps/web/src/conversation-sync.test.ts#L314) | forward-compatible display projections → acknowledges an unknown display entity without interpreting its payload and keeps receiving known messages |
+| [it:334](../../apps/web/src/conversation-sync.test.ts#L334) | forward-compatible display projections → handles unknown snapshot entities without persisting their payload or restarting the snapshot |
+| [it:344](../../apps/web/src/conversation-sync.test.ts#L344) | forward-compatible display projections → counts summary length as Unicode characters like the wire schema |
+| [it:351](../../apps/web/src/conversation-sync.test.ts#L351) | forward-compatible display projections → rejects unfamiliar control frames, incompatible versions, malformed known messages and scope mismatches |
 
 ## apps/web/src/execution/execution-api.test.ts
 
@@ -408,6 +412,7 @@
 |---|---|
 | [test:23](../../tests/e2e/messaging.spec.ts#L23) | two people exchange messages, see edits/retractions, and never execute message markup |
 | [test:71](../../tests/e2e/messaging.spec.ts#L71) | a lost POST response reconciles to one persisted message and mobile layout remains usable |
+| [test:112](../../tests/e2e/messaging.spec.ts#L112) | an older client safely displays an unfamiliar projection notice and continues normal messaging |
 
 ## tests/e2e/notifications.spec.ts
 

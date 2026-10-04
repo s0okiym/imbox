@@ -1,14 +1,9 @@
-import type {
-  ProjectionEnvelope,
-  StreamEvents,
-  StreamSnapshot,
-  WsClientFrame,
-} from '@imbox/contracts';
+import type { StreamEvents, StreamSnapshot, WsClientFrame } from '@imbox/contracts';
 import type { ChatMessage } from './api.js';
 import { ApiError, isAccessLoss } from './api.js';
 import { applyMessageMutation, compareDecimal } from './message-state.js';
 import type { MessageSnapshot, ViewIdentity } from './message-state.js';
-import { parseServerFrame, projectedMessage } from './sync-parser.js';
+import { parseServerFrame, projectedMessage, type CompatibleProjection } from './sync-parser.js';
 
 export type SyncStatus = 'loading' | 'live' | 'fallback' | 'reconnecting';
 export interface SyncApi {
@@ -30,6 +25,7 @@ export interface SyncCallbacks {
   apply(message: ChatMessage): void;
   status(status: SyncStatus): void;
   accessLost(error: unknown): void;
+  unsupportedProjection?(): void;
 }
 export interface SyncOptions {
   readonly api: SyncApi;
@@ -112,9 +108,10 @@ export function startConversationSync(options: SyncOptions): () => void {
       void (cursor === null ? bootstrap() : fallback());
     });
   };
-  const consume = (envelope: ProjectionEnvelope): void => {
+  const consume = (envelope: CompatibleProjection): void => {
     const message = projectedMessage(envelope, options.view.scopeId, generation);
     if (message !== null) callbacks.apply(message);
+    else if (envelope.entity.type !== 'conversation') callbacks.unsupportedProjection?.();
     // The application updated its in-memory view synchronously before this cursor advances.
     cursor = envelope.cursor;
   };
@@ -126,6 +123,7 @@ export function startConversationSync(options: SyncOptions): () => void {
       let identity: { id: string; head: string; generation: string } | null = null;
       let snapshot: MessageSnapshot | null = null;
       let truncated = false;
+      let unsupported = false;
       const visited = new Set<string>();
       do {
         const page = await api.streamSnapshot(options.view.scopeId, controller.signal, next);
@@ -151,6 +149,7 @@ export function startConversationSync(options: SyncOptions): () => void {
         for (const envelope of page.items) {
           const message = projectedMessage(envelope, options.view.scopeId, page.authz_generation);
           if (message !== null) snapshot = applyMessageMutation(snapshot, message);
+          else if (envelope.entity.type !== 'conversation') unsupported = true;
         }
         if (snapshot.messages.length > 1_000) {
           truncated = true;
@@ -164,6 +163,7 @@ export function startConversationSync(options: SyncOptions): () => void {
       if (identity === null || snapshot === null) throw new Error('INVALID_SYNC_FRAME');
       generation = identity.generation;
       callbacks.replace(snapshot.view, snapshot.messages, truncated);
+      if (unsupported) callbacks.unsupportedProjection?.();
       cursor = identity.head;
       connect();
     } catch (error: unknown) {

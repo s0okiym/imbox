@@ -45,7 +45,7 @@ Web 默认 `http://localhost:5173`，同源代理 API 4100。修改 Web 地址�
 
 ## 验证
 
-已归档远程候选 `19e653c` 通过完整 CI：181 单元、267 集成、30 浏览器、1 项真实模型及 3 项容器验证，见 [候选证据](docs/testing/tenant-lifecycle-ci-2026-10-05.json)。新成员可通过 [账号与邀请](docs/operations/member-invitations.md) 接入；该增量另行验证，生产准出门槛独立保留。
+已归档远程候选 `c562f1c` 通过完整 CI：181 单元、277 集成、31 浏览器、1 项真实模型及 3 项容器验证，见 [候选证据](docs/testing/member-invitations-ci-2026-10-05.json)。新成员可通过 [账号与邀请](docs/operations/member-invitations.md) 接入；后续增量另行验证，生产准出门槛独立保留。
 
 ```sh
 pnpm verify

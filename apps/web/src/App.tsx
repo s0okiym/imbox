@@ -1139,6 +1139,7 @@ function ConversationPane({
   const [membersError, setMembersError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('loading');
+  const [unsupportedProjection, setUnsupportedProjection] = useState(false);
   const [pageCount, setPageCount] = useState(1);
   const [truncatedHistory, setTruncatedHistory] = useState(false);
   const [historyBusy, setHistoryBusy] = useState(false);
@@ -1215,6 +1216,7 @@ function ConversationPane({
       setHistoricalWindow(false);
       historicalWindowRef.current = false;
       setTruncatedHistory(false);
+      setUnsupportedProjection(false);
       historyCursor.current = undefined;
       historyEpoch.current += 1;
       setHistoryBusy(false);
@@ -1271,6 +1273,7 @@ function ConversationPane({
           setPending((items) => remainingPending(items, next.messages));
         },
         status: setSyncStatus,
+        unsupportedProjection: () => setUnsupportedProjection(true),
         accessLost: (failure) => accessLoss.current(failure),
       },
     });
@@ -1675,6 +1678,11 @@ function ConversationPane({
             <Icon name="info" />
           </button>
         </header>
+        {unsupportedProjection && (
+          <p className="connection-banner" role="status">
+            此会话包含当前版本无法展示的内容，请更新客户端查看。
+          </p>
+        )}
         {anchorMessageId && (
           <LinkedMessage
             key={`${anchorMessageId}:${conversation.authz_generation}`}

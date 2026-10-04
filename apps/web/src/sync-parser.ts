@@ -1,5 +1,10 @@
 import type { Message, ProjectionEnvelope, WsServerFrame } from '@imbox/contracts';
 
+export type CompatibleProjection = Omit<ProjectionEnvelope, 'entity'> & {
+  entity: { type: string; id: string; version: string };
+};
+type BrowserServerFrame = Exclude<WsServerFrame, ProjectionEnvelope> | CompatibleProjection;
+
 // Transitional browser boundary. Keep runtime Ajv compilation/eval out of the browser.
 // Replace with contracts-generated standalone validators when those are available.
 const decimal = /^(0|[1-9][0-9]{0,18})$/;
@@ -44,7 +49,7 @@ function message(value: unknown): value is Message {
   );
 }
 
-export function isProjectionEnvelope(value: unknown): value is ProjectionEnvelope {
+export function isProjectionEnvelope(value: unknown): value is CompatibleProjection {
   if (!record(value) || !record(value['entity']) || !record(value['payload'])) return false;
   const entity = value['entity'];
   const payload = value['payload'];
@@ -59,15 +64,19 @@ export function isProjectionEnvelope(value: unknown): value is ProjectionEnvelop
     !counter(value['projection_revision']) ||
     !text(entity['id']) ||
     !counter(entity['version']) ||
-    !text(payload['summary'])
+    !text(payload['summary']) ||
+    [...payload['summary']].length > 4000 ||
+    !text(entity['type']) ||
+    !/^[a-z][a-z0-9_.-]{0,63}$/.test(entity['type'])
   )
     return false;
   if (entity['type'] === 'message') return message(payload['message']);
-  // M1 consumes only the conversation boundary/version; its complete DTO is fetched by HTTP.
-  return entity['type'] === 'conversation';
+  // Projection frames are display-only. Unknown entities never become messages or commands.
+  // The client displays a fixed local notice, never the unfamiliar payload or its summary.
+  return true;
 }
 
-export function parseServerFrame(raw: unknown): WsServerFrame {
+export function parseServerFrame(raw: unknown): BrowserServerFrame {
   if (!text(raw) || new TextEncoder().encode(raw).byteLength > MAX_SERVER_FRAME_BYTES)
     throw new Error('INVALID_SYNC_FRAME');
   let value: unknown;
@@ -119,7 +128,7 @@ export function parseServerFrame(raw: unknown): WsServerFrame {
 }
 
 export function projectedMessage(
-  envelope: ProjectionEnvelope,
+  envelope: CompatibleProjection,
   scopeId: string,
   generation: string,
 ): Message | null {

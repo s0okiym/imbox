@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "commit": "c562f1cea65fd514c8ce85df956b6aed483d3bcc",
+  "run_id": 37229529283,
+  "job_id": 111516073750,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37229529283",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 181,
+    "seconds": 4.87
+  },
+  "integration": {
+    "files": 35,
+    "passed": 277,
+    "seconds": 103.22
+  },
+  "browser": {
+    "passed": 31,
+    "minutes_rounded": 3.3
+  },
+  "actual_model": {
+    "passed": 1,
+    "seconds": 4.94
+  },
+  "deployment": {
+    "passed": 3,
+    "seconds": 13.1
+  },
+  "scope": "Account-bound invitations; excludes subsequent artifact race tests and projection compatibility changes"
+}

@@ -277,12 +277,18 @@
     {
       "id": "AC-21",
       "status": "partial",
-      "tests": ["tests/integration/http.test.ts", "tests/integration/agents.test.ts"],
+      "tests": [
+        "tests/integration/http.test.ts",
+        "tests/integration/agents.test.ts",
+        "apps/web/src/conversation-sync.test.ts",
+        "tests/e2e/messaging.spec.ts"
+      ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
-        "docs/testing/provisioning-evidence-2026-10-04.json"
+        "docs/testing/provisioning-evidence-2026-10-04.json",
+        "docs/testing/projection-compatibility-2026-10-05.md"
       ],
-      "notes": "HTTP 对未知路由、畸形/超大正文和伪造字段安全拒绝，不泄漏 stack/连接串；不能据此宣称未知事件与旧客户端的完整兼容展示已通过，仍需版本矩阵测试。"
+      "notes": "Web 对协议/schema v1 内未知展示实体使用固定本地提示，不展示未知载荷；HTTP 快照和 WebSocket 保持已知消息同步，控制帧及不兼容版本拒绝。已有未知路由/非法请求拒绝。真实历史客户端与服务端滚动升级、动作 schema 版本联合矩阵仍未完成。"
     },
     {
       "id": "AC-22",

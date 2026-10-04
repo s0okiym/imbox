@@ -108,3 +108,62 @@ test('a lost POST response reconciles to one persisted message and mobile layout
     true,
   );
 });
+
+test('an older client safely displays an unfamiliar projection notice and continues normal messaging', async ({
+  page,
+}) => {
+  await login(page, 'Alice');
+  await createConversation(page, `E2E 兼容 ${Date.now()}`);
+  const body = `已知消息 ${Date.now()}`;
+  await send(page, body);
+  await expect(page.getByLabel('正在发送的消息')).toHaveCount(0);
+  let injected = false;
+  await page.route('**/v1/streams/*/snapshot?*', async (route) => {
+    const response = await route.fetch();
+    if (response.status() !== 200) return route.fulfill({ response });
+    const snapshot = await response.json();
+    const original = snapshot.items.find(
+      (item: { entity: { type: string } }) => item.entity.type === 'message',
+    );
+    if (!original) return route.fulfill({ response });
+    injected = true;
+    await route.fulfill({
+      response,
+      json: {
+        ...snapshot,
+        items: [
+          ...snapshot.items,
+          {
+            ...original,
+            projection_id: '90000000-0000-4000-8000-000000000001',
+            entity: {
+              type: 'future.card',
+              id: '90000000-0000-4000-8000-000000000001',
+              version: '1',
+            },
+            payload: {
+              summary: '<img src=x onerror="window.__futureExecuted=true">future-private-summary',
+              command: { type: 'action.execute' },
+            },
+          },
+        ],
+      },
+    });
+  });
+  await page.reload();
+  await expect(
+    page.getByText('此会话包含当前版本无法展示的内容，请更新客户端查看。', { exact: true }),
+  ).toBeVisible();
+  expect(injected).toBe(true);
+  await expect(page.getByLabel('消息记录').getByText(body, { exact: true })).toBeVisible();
+  await expect(page.getByText('future-private-summary', { exact: false })).toHaveCount(0);
+  expect(
+    await page.evaluate(() => (window as unknown as Record<string, unknown>)['__futureExecuted']),
+  ).toBeUndefined();
+  await send(page, '未知展示不阻断普通消息');
+  await expect(page.getByLabel('正在发送的消息')).toHaveCount(0);
+  await page.getByRole('button', { name: '退出登录' }).click();
+  await expect(
+    page.getByText('此会话包含当前版本无法展示的内容，请更新客户端查看。', { exact: true }),
+  ).toHaveCount(0);
+});

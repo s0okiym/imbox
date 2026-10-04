@@ -89,6 +89,7 @@ function harness(api?: Partial<SyncApi>) {
     apply: vi.fn(),
     status: vi.fn(),
     accessLost: vi.fn(),
+    unsupportedProjection: vi.fn(),
   };
   const openSocket = vi.fn(() => socket);
   const stop = startConversationSync({
@@ -298,5 +299,70 @@ describe('narrow browser projection parser', () => {
     const removed = projectedMessage(envelope({ type: 'projection.remove' }), 'conversation', '1');
     expect(removed?.deleted).toBe(true);
     expect(removed?.body).toBe('');
+  });
+});
+
+describe('forward-compatible display projections', () => {
+  const future = () => ({
+    ...envelope(),
+    entity: { type: 'future.card', id: 'future', version: '1' },
+    payload: {
+      summary: '<script>untrusted summary</script>',
+      command: { type: 'approve', token: 'never expose' },
+    },
+  });
+  it('acknowledges an unknown display entity without interpreting its payload and keeps receiving known messages', async () => {
+    const { socket, callbacks } = harness();
+    await flush();
+    subscribe(socket);
+    socket.receive(future());
+    expect(callbacks.unsupportedProjection).toHaveBeenCalledExactlyOnceWith();
+    expect(callbacks.apply).not.toHaveBeenCalled();
+    expect(callbacks.reset).not.toHaveBeenCalled();
+    expect(socket.sent.at(-1)).toEqual({
+      type: 'ack',
+      stream_id: 'conversation',
+      cursor: 'delivery-cursor',
+    });
+    socket.receive(envelope({ cursor: 'next-known' }));
+    expect(callbacks.apply).toHaveBeenCalledWith(envelope().payload.message);
+    expect(socket.sent.at(-1)?.['cursor']).toBe('next-known');
+    expect(
+      socket.sent.every((frame) => ['hello', 'subscribe', 'ack'].includes(String(frame['type']))),
+    ).toBe(true);
+  });
+  it('handles unknown snapshot entities without persisting their payload or restarting the snapshot', async () => {
+    const api = vi.fn(async () =>
+      snapshot({ items: [future() as unknown as ProjectionEnvelope, envelope()] }),
+    );
+    const { callbacks } = harness({ streamSnapshot: api });
+    await flush();
+    expect(api).toHaveBeenCalledTimes(1);
+    expect(callbacks.replace).toHaveBeenCalledWith(view, [envelope().payload.message], false);
+    expect(callbacks.unsupportedProjection).toHaveBeenCalledExactlyOnceWith();
+  });
+  it('counts summary length as Unicode characters like the wire schema', () => {
+    const frame = { ...future(), payload: { summary: '😀'.repeat(4000) } };
+    expect(parseServerFrame(JSON.stringify(frame))).toEqual(frame);
+    expect(() =>
+      parseServerFrame(JSON.stringify({ ...frame, payload: { summary: '😀'.repeat(4001) } })),
+    ).toThrow('INVALID_SYNC_FRAME');
+  });
+  it('rejects unfamiliar control frames, incompatible versions, malformed known messages and scope mismatches', () => {
+    for (const frame of [
+      { type: 'action.execute', payload: { approved: true } },
+      { ...future(), protocol_version: 2 },
+      { ...future(), schema_version: 2 },
+      { ...envelope(), payload: { summary: 'bad known message' } },
+      { ...future(), payload: { summary: 'x'.repeat(4001) } },
+    ])
+      expect(() => parseServerFrame(JSON.stringify(frame))).toThrow('INVALID_SYNC_FRAME');
+    expect(() =>
+      projectedMessage(
+        { ...future(), authz_generation: '2' } as unknown as ProjectionEnvelope,
+        'conversation',
+        '1',
+      ),
+    ).toThrow('INCONSISTENT_VIEW');
   });
 });
