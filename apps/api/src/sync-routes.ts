@@ -227,21 +227,48 @@ export async function registerSyncRoutes(
         subscriptions.clear();
       });
       socket.on('error', () => close(1011, 'Websocket error'));
+      function acknowledge(frame: Extract<ContractTypes['WsClientFrame'], { type: 'ack' }>) {
+        const subscription = subscriptions.get(frame.stream_id);
+        if (!subscription) {
+          close(1008, 'Unknown subscription');
+          return;
+        }
+        // ACK only releases an already-delivered transport window, never read state or permission.
+        if (frame.cursor === subscription.lastAck) return;
+        const index = subscription.pending.indexOf(frame.cursor);
+        if (index === -1) {
+          close(1008, 'ACK must refer to a delivered cursor');
+          return;
+        }
+        subscription.pending.splice(0, index + 1);
+        subscription.lastAck = frame.cursor;
+      }
       // Install listeners synchronously; queued frame handlers are bounded and serialized.
       socket.on('message', (raw, binary) => {
         if (closed) return;
-        if (binary || ++pendingFrames > 32) {
+        if (binary) {
+          close(1008, 'Invalid frame');
+          return;
+        }
+        const parsed = parseContract('WsClientFrame', raw.toString());
+        if (!parsed.ok) {
+          close(1008, 'Invalid frame');
+          return;
+        }
+        const frame = parsed.value;
+        // A replay can produce a full window of immediate ACKs. These bounded, local
+        // updates must not queue behind asynchronous authentication/control requests.
+        if (frame.type === 'ack') {
+          if (!ready) close(1008, 'hello required');
+          else acknowledge(frame);
+          return;
+        }
+        if (++pendingFrames > 32) {
           close(1008, 'Invalid or excessive frames');
           return;
         }
         inputChain = inputChain
           .then(async () => {
-            const parsed = parseContract('WsClientFrame', raw.toString());
-            if (!parsed.ok) {
-              close(1008, 'Invalid frame');
-              return;
-            }
-            const frame = parsed.value;
             if (!ready) {
               if (frame.type !== 'hello') {
                 close(1008, 'hello required');
@@ -298,24 +325,6 @@ export async function registerSyncRoutes(
                 }
                 throw error;
               }
-            } else if (frame.type === 'ack') {
-              const subscription = subscriptions.get(frame.stream_id);
-              if (!subscription) {
-                close(1008, 'Unknown subscription');
-                return;
-              }
-              // ACK only releases this socket's already-delivered transport window.
-              // It grants no read permission and never advances a user's read cursor.
-              // Fresh authorization remains mandatory on every subscribe and delivery tick.
-              if (frame.cursor === subscription.lastAck) return;
-              const index = subscription.pending.indexOf(frame.cursor);
-              if (index === -1) {
-                close(1008, 'ACK must refer to a delivered cursor');
-                return;
-              }
-              subscription.pending.splice(0, index + 1);
-              subscription.lastAck = frame.cursor;
-              // Transport acknowledgement deliberately never modifies read_cursors.
             }
           })
           .catch((error: unknown) => {

@@ -21,7 +21,7 @@
 | AC-13  | verified | actions/run-tool-intents 对真实受控服务注入丢响应，断言 unknown、一个 POST、核对成功后不重发；action-recovery 核对仅 GET 并且记账一次。                                         |
 | AC-14 | partial | 独立 Linux Agent 进程暂停、真实租约到期和恢复后拒绝迟到输出/确认停止已通过，已分别覆盖 Run 和 Task 取消入口；Run 级取消不伪造远端确认。Task 取消/失败到后代 Run 取消请求及待执行 Action 撤销已补齐；跨主机部署故障矩阵仍待验证。见 [任务联动](task-cancellation-propagation-2026-10-05.md) 与 [进程演练](external-process-recovery-2026-10-05.md)。 |
 | AC-15 | partial | 树预算/并发/期限、依赖防环、五层/200 节点边界已有实测；新增 8 Agent 有限计划、12 并发扫描/派发、停用、四租约和共享预算联合突发验证。模型驱动互相唤醒网络、任意事件触发和跨租户长期压力仍待完成。 |
-| AC-16  | partial  | sync 投影事务回滚后持久重试、模型丢响应挂起、checkpoint 恢复不再请求模型；浏览器离线壳可用。尚未完成模型/对象/连接故障与积压同时出现时的长期联合演练。                          |
+| AC-16 | partial | 已补同次模型/对象/WS/投影积压故障：60 条消息及 6 次同键重试，恢复后 61 条唯一消息送达，模型 unknown 不重发，S3 上传恢复。发现并修复合法 ACK 突发误断线；长期积压、独立 Worker 崩溃和数据库/队列联合故障仍待验证，见 [证据](joint-fault-recovery-2026-10-05.md)。 |
 | AC-17  | verified | agents 作者绑定认证身份，伪造 actor 字段拒绝；过期/轮换 lease 拒绝；completed 外部回报保留 external_report/external 标识，machine API 不提供人类批准/恢复入口。                 |
 | AC-18 | verified | 跨作者冲突、独立分支和显式合并已实现；验收固定引用经并发更新/审核竞争验证。批准 v1 后生成 v2 仍仅发送 v1；即使授权同时含 v1/v2，修订为 v2 也撤销旧批准、改变指纹且必须重新审批。64 相关集成、4 浏览器通过；见 [逐项审查](artifact-acceptance-audit-2026-10-05.md)。 |
 | AC-19  | partial  | knowledge、resources、notifications、exports 验证当前 ACL 与分页/计数/下载分块/导出中途撤权，推送发送前重验。真实厂商通知及离线设备得知撤权后的跨设备矩阵仍待验收。             |

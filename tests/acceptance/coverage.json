@@ -225,9 +225,10 @@
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
-        "docs/testing/provisioning-evidence-2026-10-04.json"
+        "docs/testing/provisioning-evidence-2026-10-04.json",
+        "docs/testing/joint-fault-recovery-2026-10-05.md"
       ],
-      "notes": "sync 投影事务回滚后持久重试、模型丢响应挂起、checkpoint 恢复不再请求模型；浏览器离线壳可用。尚未完成模型/对象/连接故障与积压同时出现时的长期联合演练。"
+      "notes": "已有投影事务重试、模型未知用量与 checkpoint 恢复、离线壳验证。新增同一运行的模型 HTTP 挂起/断开、S3 503、WS 断开与投影积压：60 条 HTTP 消息含 6 次同键重试，恢复后 61 条唯一消息完整送达，原上传票据恢复并核对摘要，未知模型调用不重发。发现并修复重放 ACK 突发被异步控制队列误判的问题。长期积压、独立 Worker 崩溃、数据库/队列联合故障与参考容量仍未完成。"
     },
     {
       "id": "AC-17",

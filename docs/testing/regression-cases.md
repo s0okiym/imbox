@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 89 个测试文件、536 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 89 个测试文件、538 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -931,20 +931,22 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:159](../../tests/integration/sync.test.ts#L159) | durable outbox projection and caller-bound fixed snapshots → skips delivery queries only at an authenticated current head and still rejects revoked members |
-| [it:200](../../tests/integration/sync.test.ts#L200) | durable outbox projection and caller-bound fixed snapshots → projects an independent conversation while another conversation is locked |
-| [it:247](../../tests/integration/sync.test.ts#L247) | durable outbox projection and caller-bound fixed snapshots → lets multiple workers share SKIP LOCKED leases while preserving committed stream order |
-| [it:274](../../tests/integration/sync.test.ts#L274) | durable outbox projection and caller-bound fixed snapshots → rolls back failed projection/checkpoint/receipt together and retries from durable outbox |
-| [it:324](../../tests/integration/sync.test.ts#L324) | durable outbox projection and caller-bound fixed snapshots → defers out-of-order events and attributes current content to its real authoritative event/version |
-| [it:388](../../tests/integration/sync.test.ts#L388) | durable outbox projection and caller-bound fixed snapshots → deduplicates replayed delivery and fences an expired/stolen worker lease |
-| [it:426](../../tests/integration/sync.test.ts#L426) | durable outbox projection and caller-bound fixed snapshots → keeps all snapshot pages at one materialized view while edits/new messages arrive, then catches up from its fixed head |
-| [it:459](../../tests/integration/sync.test.ts#L459) | durable outbox projection and caller-bound fixed snapshots → invalidates snapshots/cursors immediately on content withdrawal and never exposes stale projected bodies |
-| [it:482](../../tests/integration/sync.test.ts#L482) | durable outbox projection and caller-bound fixed snapshots → enforces since-join history, workspace membership, permission generation, snapshot TTL and retention generation |
-| [it:540](../../tests/integration/sync.test.ts#L540) | HTTP snapshots and real WebSocket delivery/recovery → delivers persistent events, accepts transport ACK without changing read state, and resumes after disconnection |
-| [it:589](../../tests/integration/sync.test.ts#L589) | HTTP snapshots and real WebSocket delivery/recovery → notifies revoked subscribers and rejects a cross-origin upgrade |
-| [it:628](../../tests/integration/sync.test.ts#L628) | HTTP snapshots and real WebSocket delivery/recovery → rejects an ACK never delivered on this socket without granting read state |
-| [it:654](../../tests/integration/sync.test.ts#L654) | HTTP snapshots and real WebSocket delivery/recovery → bounds unacknowledged deliveries and closes slow consumers with a resync signal |
-| [it:678](../../tests/integration/sync.test.ts#L678) | materializes at most 200 recent visible messages at a fixed head and binds snapshot cursors to their window |
+| [it:173](../../tests/integration/sync.test.ts#L173) | durable outbox projection and caller-bound fixed snapshots → skips delivery queries only at an authenticated current head and still rejects revoked members |
+| [it:214](../../tests/integration/sync.test.ts#L214) | durable outbox projection and caller-bound fixed snapshots → projects an independent conversation while another conversation is locked |
+| [it:261](../../tests/integration/sync.test.ts#L261) | durable outbox projection and caller-bound fixed snapshots → lets multiple workers share SKIP LOCKED leases while preserving committed stream order |
+| [it:288](../../tests/integration/sync.test.ts#L288) | durable outbox projection and caller-bound fixed snapshots → rolls back failed projection/checkpoint/receipt together and retries from durable outbox |
+| [it:338](../../tests/integration/sync.test.ts#L338) | durable outbox projection and caller-bound fixed snapshots → defers out-of-order events and attributes current content to its real authoritative event/version |
+| [it:402](../../tests/integration/sync.test.ts#L402) | durable outbox projection and caller-bound fixed snapshots → deduplicates replayed delivery and fences an expired/stolen worker lease |
+| [it:440](../../tests/integration/sync.test.ts#L440) | durable outbox projection and caller-bound fixed snapshots → keeps all snapshot pages at one materialized view while edits/new messages arrive, then catches up from its fixed head |
+| [it:473](../../tests/integration/sync.test.ts#L473) | durable outbox projection and caller-bound fixed snapshots → invalidates snapshots/cursors immediately on content withdrawal and never exposes stale projected bodies |
+| [it:496](../../tests/integration/sync.test.ts#L496) | durable outbox projection and caller-bound fixed snapshots → enforces since-join history, workspace membership, permission generation, snapshot TTL and retention generation |
+| [it:554](../../tests/integration/sync.test.ts#L554) | HTTP snapshots and real WebSocket delivery/recovery → preserves HTTP messages through simultaneous model, object upload, socket and projector outages |
+| [it:780](../../tests/integration/sync.test.ts#L780) | HTTP snapshots and real WebSocket delivery/recovery → delivers persistent events, accepts transport ACK without changing read state, and resumes after disconnection |
+| [it:829](../../tests/integration/sync.test.ts#L829) | HTTP snapshots and real WebSocket delivery/recovery → notifies revoked subscribers and rejects a cross-origin upgrade |
+| [it:868](../../tests/integration/sync.test.ts#L868) | HTTP snapshots and real WebSocket delivery/recovery → rejects an ACK pipelined with hello before any subscription or delivery |
+| [it:881](../../tests/integration/sync.test.ts#L881) | HTTP snapshots and real WebSocket delivery/recovery → rejects an ACK never delivered on this socket without granting read state |
+| [it:907](../../tests/integration/sync.test.ts#L907) | HTTP snapshots and real WebSocket delivery/recovery → bounds unacknowledged deliveries and closes slow consumers with a resync signal |
+| [it:931](../../tests/integration/sync.test.ts#L931) | materializes at most 200 recent visible messages at a fixed head and binds snapshot cursors to their window |
 
 ## tests/integration/tasks.test.ts
 

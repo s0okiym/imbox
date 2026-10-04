@@ -1,4 +1,10 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
+import { createServer, request as httpRequest, type ServerResponse } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { createModelDriver, createOllamaAdapter } from '@imbox/model-runtime';
+import { createResourceService, createS3ObjectStore } from '@imbox/resources';
+import { modelFixture } from '../helpers/model.js';
+import { registerMessagingRoutes } from '../../apps/api/src/messaging-routes.js';
 import { once } from 'node:events';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
@@ -72,7 +78,7 @@ async function drain() {
   }
   throw new Error('Outbox did not drain');
 }
-async function server(maxPendingAcks = 256) {
+async function server(maxPendingAcks = 256, includeMessaging = false) {
   const identity = createIdentityService({
     db: databases.db,
     identityDb: databases.identityDb,
@@ -85,6 +91,7 @@ async function server(maxPendingAcks = 256) {
   const app = createApp({ readiness: async () => {} });
   app.register(async (scope) => {
     await registerAuthRoutes(scope, { identity });
+    if (includeMessaging) await registerMessagingRoutes(scope, { identity, messaging });
     await registerSyncRoutes(scope, { identity, sync, pollIntervalMs: 20, maxPendingAcks });
   });
   apps.push(app);
@@ -104,6 +111,7 @@ function connect(address: string, token: string) {
     stream_id?: string;
     reason?: string;
   };
+  let closed = false;
   const inbox: Frame[] = [];
   const waiters: Array<{
     predicate: (frame: Frame) => boolean;
@@ -122,14 +130,16 @@ function connect(address: string, token: string) {
     }
   });
   socket.on('close', () => {
+    closed = true;
     for (const waiter of waiters.splice(0)) {
       clearTimeout(waiter.timer);
       waiter.reject(new Error('Socket closed before expected frame'));
     }
   });
-  function next(predicate: (frame: Frame) => boolean) {
+  function next(predicate: (frame: Frame) => boolean, label = 'frame') {
     const index = inbox.findIndex(predicate);
     if (index !== -1) return Promise.resolve(inbox.splice(index, 1)[0]!);
+    if (closed) return Promise.reject(new Error(`Socket closed before expected ${label}`));
     return new Promise<Frame>((resolve, reject) => {
       const entry = {
         predicate,
@@ -138,7 +148,11 @@ function connect(address: string, token: string) {
         timer: setTimeout(() => {
           const i = waiters.indexOf(entry);
           if (i !== -1) waiters.splice(i, 1);
-          reject(new Error('Expected websocket frame timed out'));
+          reject(
+            new Error(
+              `Expected websocket ${label} timed out; queued frame types: ${inbox.map((frame) => frame.type).join(',')}`,
+            ),
+          );
         }, 5000),
       };
       waiters.push(entry);
@@ -537,6 +551,232 @@ describe('durable outbox projection and caller-bound fixed snapshots', () => {
 });
 
 describe('HTTP snapshots and real WebSocket delivery/recovery', () => {
+  it('preserves HTTP messages through simultaneous model, object upload, socket and projector outages', async () => {
+    const modelContext = await modelFixture(databases);
+    fixture = modelContext;
+    const conversation = await group();
+    await drain();
+    const baseline = await sync.snapshot(fixture.bob, conversation.id);
+    const host = await server(256, true);
+    const alice = await host.identity.devLogin({ principalId: fixture.alice.principalId, origin });
+    const bob = await host.identity.devLogin({ principalId: fixture.bob.principalId, origin });
+    const first = connect(host.address, bob.token);
+    await first.hello();
+    first.socket.send(
+      JSON.stringify({ type: 'subscribe', stream_id: conversation.id, cursor: baseline.cursor }),
+    );
+    await first.next((frame) => frame.type === 'subscribed', 'initial subscription');
+    first.socket.terminate();
+    await once(first.socket, 'close');
+
+    let blocked = true;
+    let objectFailures = 0;
+    const s3Target = new URL(process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:18333');
+    const objectProxy = createServer((request, response) => {
+      if (blocked) {
+        objectFailures++;
+        request.resume();
+        response.writeHead(503).end('Injected object transport outage');
+        return;
+      }
+      // Preserve the signed Host header while forwarding to the real isolated S3 service.
+      const upstream = httpRequest(
+        new URL(request.url!, s3Target),
+        {
+          method: request.method,
+          headers: request.headers,
+        },
+        (reply) => {
+          response.writeHead(reply.statusCode!, reply.headers);
+          reply.pipe(response);
+        },
+      );
+      upstream.on('error', () => {
+        response.writeHead(502).end();
+      });
+      request.pipe(upstream);
+    });
+    let modelRequests = 0;
+    let heldResponse: ServerResponse | undefined;
+    let observed!: () => void;
+    const generationStarted = new Promise<void>((resolve) => {
+      observed = resolve;
+    });
+    const digest = 'sha256:' + 'a'.repeat(64);
+    const modelServer = createServer((request, response) => {
+      if (request.url === '/api/tags') {
+        response.end(JSON.stringify({ models: [{ name: 'qwen3:0.6b', digest }] }));
+        return;
+      }
+      request.resume();
+      request.on('end', () => {
+        modelRequests++;
+        heldResponse = response;
+        observed();
+      });
+    });
+    let store: ReturnType<typeof createS3ObjectStore> | undefined;
+    let execution: Promise<unknown> | undefined;
+    try {
+      objectProxy.listen(0, '127.0.0.1');
+      modelServer.listen(0, '127.0.0.1');
+      await Promise.all([once(objectProxy, 'listening'), once(modelServer, 'listening')]);
+      store = createS3ObjectStore({
+        endpoint: `http://127.0.0.1:${(objectProxy.address() as AddressInfo).port}`,
+        region: 'us-east-1',
+        bucket: 'imbox-resources-test',
+        accessKeyId: 'imbox_local_s3_app',
+        secretAccessKey: 'imbox_local_s3_app_secret',
+      });
+      const resources = createResourceService({ db: databases.db, store, cursorSecret: secret });
+      const bytes = Buffer.from('Resource survives isolated transport recovery');
+      const sha256 = createHash('sha256').update(bytes).digest('hex');
+      const upload = await resources.createUpload(
+        fixture.alice,
+        {
+          conversation_id: conversation.id,
+          filename: 'joint-fault.txt',
+          content_type: 'text/plain',
+          byte_size: bytes.length,
+          sha256,
+        },
+        key(),
+      );
+      const adapter = createOllamaAdapter({
+        origin: `http://127.0.0.1:${(modelServer.address() as AddressInfo).port}`,
+        model: 'qwen3:0.6b',
+        digest,
+        allowLoopbackHttp: true,
+        timeoutMs: 20000,
+      });
+      const driver = createModelDriver({
+        worker: modelContext.worker,
+        models: new Map([['local', adapter]]),
+        heartbeatMs: 25,
+      });
+      const run = await modelContext.createRun();
+      execution = driver.execute(fixture.tenantId, run.id);
+      await Promise.race([
+        generationStarted,
+        execution.then(() => {
+          throw new Error('Model ended before generation barrier');
+        }),
+      ]);
+      const failedUpload = await fetch(upload.upload_url, {
+        method: 'PUT',
+        headers: upload.upload_headers,
+        body: bytes,
+      });
+      expect(failedUpload.status).toBe(503);
+      await failedUpload.arrayBuffer();
+      const saved: Array<{ id: string; body: string }> = [];
+      const post = async (body: string, command: string, clientId: string) => {
+        const reply = await fetch(`${host.address}/v1/conversations/${conversation.id}/messages`, {
+          method: 'POST',
+          headers: {
+            origin,
+            cookie: `imbox_session=${alice.token}`,
+            'x-csrf-token': alice.csrfToken,
+            'x-imbox-tenant-id': fixture.tenantId,
+            'idempotency-key': command,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ client_message_id: clientId, body }),
+        });
+        expect(reply.status).toBe(201);
+        return (await reply.json()) as { id: string; body: string };
+      };
+      // The projection worker remains stopped throughout the fault interval.
+      for (let index = 0; index < 60; index++) {
+        const command = key(),
+          clientId = key(),
+          body = `joint-fault-message-${index}`;
+        const message = await post(body, command, clientId);
+        saved.push(message);
+        if (index % 10 === 0) expect((await post(body, command, clientId)).id).toBe(message.id);
+      }
+      expect(objectFailures).toBe(1);
+      expect(modelRequests).toBe(1);
+      expect(
+        (await sync.events(fixture.bob, conversation.id, { cursor: baseline.cursor })).items,
+      ).toHaveLength(0);
+      const pending = await withTenant(databases.db, fixture.tenantId, (tx) =>
+        sql<{
+          count: string;
+        }>`select count(*)::text as count from outbox where status='pending'`.execute(tx),
+      );
+      expect(Number(pending.rows[0]!.count)).toBeGreaterThanOrEqual(60);
+      heldResponse!.destroy();
+      expect(await execution).toBe('waiting');
+      expect(await modelContext.runtime.getRun(fixture.alice, run.id)).toMatchObject({
+        status: 'waiting_dependency',
+        output: null,
+      });
+      const reservations = await withTenant(databases.db, fixture.tenantId, (tx) =>
+        sql`select status from runtime_reservations where run_id=${run.id}`.execute(tx),
+      );
+      expect(reservations.rows).toEqual([{ status: 'unknown' }]);
+      await driver.execute(fixture.tenantId, run.id);
+      expect(modelRequests).toBe(1);
+
+      blocked = false;
+      const uploaded = await fetch(upload.upload_url, {
+        method: 'PUT',
+        headers: upload.upload_headers,
+        body: bytes,
+      });
+      expect(uploaded.status).toBe(200);
+      await uploaded.arrayBuffer();
+      const resource = await resources.completeUpload(fixture.alice, upload.id, key());
+      expect(resource.sha256).toBe(sha256);
+      worker = createOutboxProcessor({ db: databases.db });
+      await drain();
+      const second = connect(host.address, bob.token);
+      const delivered: string[] = [];
+      second.socket.on('message', (data) => {
+        const frame = JSON.parse(data.toString()) as { payload?: { message?: { id: string } } };
+        if (frame.payload?.message?.id) delivered.push(frame.payload.message.id);
+      });
+      await second.hello();
+      second.socket.send(
+        JSON.stringify({ type: 'subscribe', stream_id: conversation.id, cursor: baseline.cursor }),
+      );
+      await second.next((frame) => frame.type === 'subscribed', 'recovered subscription');
+      for (const message of saved) {
+        const delivery = await second.next(
+          (frame) => frame.payload?.message?.id === message.id,
+          `replayed message ${saved.indexOf(message)}`,
+        );
+        expect(delivery.payload?.message?.body).toBe(message.body);
+        second.socket.send(
+          JSON.stringify({ type: 'ack', stream_id: conversation.id, cursor: delivery.cursor }),
+        );
+      }
+      const live = await post('after-joint-recovery', key(), key());
+      await drain();
+      await second.next((frame) => frame.payload?.message?.id === live.id, 'live message');
+      second.socket.send(JSON.stringify({ type: 'ping', nonce: 'recovery-barrier' }));
+      await second.next((frame) => frame.type === 'pong', 'recovery barrier');
+      expect(delivered).toHaveLength(61);
+      expect(new Set(delivered)).toEqual(new Set([...saved.map((message) => message.id), live.id]));
+      const rows = await withTenant(databases.db, fixture.tenantId, (tx) =>
+        sql`select id from messages where conversation_id=${conversation.id}`.execute(tx),
+      );
+      expect(rows.rows).toHaveLength(61);
+      expect(modelRequests).toBe(1);
+    } finally {
+      heldResponse?.destroy();
+      modelServer.closeAllConnections();
+      objectProxy.closeAllConnections();
+      await Promise.all([
+        new Promise<void>((done) => modelServer.close(() => done())),
+        new Promise<void>((done) => objectProxy.close(() => done())),
+      ]);
+      await execution?.catch(() => {});
+      store?.destroy();
+    }
+  }, 60000);
+
   it('delivers persistent events, accepts transport ACK without changing read state, and resumes after disconnection', async () => {
     const conversation = await group();
     await drain();
@@ -624,6 +864,19 @@ describe('HTTP snapshots and real WebSocket delivery/recovery', () => {
       malicious.on('error', () => {});
     });
     expect(status).toBe(403);
+  });
+  it('rejects an ACK pipelined with hello before any subscription or delivery', async () => {
+    const host = await server();
+    const session = await host.identity.devLogin({
+      principalId: fixture.alice.principalId,
+      origin,
+    });
+    const client = connect(host.address, session.token);
+    await once(client.socket, 'open');
+    const closed = once(client.socket, 'close');
+    client.socket.send(JSON.stringify({ type: 'hello', protocol_version: 1, client_id: key() }));
+    client.socket.send(JSON.stringify({ type: 'ack', stream_id: key(), cursor: 'not-delivered' }));
+    expect((await closed)[0]).toBe(1008);
   });
   it('rejects an ACK never delivered on this socket without granting read state', async () => {
     const conversation = await group();
