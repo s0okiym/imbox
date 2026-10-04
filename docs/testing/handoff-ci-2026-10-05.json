@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "recorded_at": "2026-10-05T00:37:53.207416+08:00",
+  "commit": "7e9c3c20803d6639658771201d6f8c7bb69b49b0",
+  "run_id": 37217037797,
+  "job_id": 111479540717,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37217037797",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 180
+  },
+  "integration": {
+    "files": 33,
+    "passed": 249
+  },
+  "browser": {
+    "passed": 24,
+    "minutes_rounded": 1.9
+  },
+  "actual_model": {
+    "passed": 1
+  },
+  "scope": "Handoff integration regressions and corrected handoff wording; excludes subsequent delegation browser case"
+}

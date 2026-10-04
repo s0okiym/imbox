@@ -10,7 +10,7 @@
 | AC-02  | verified | messaging 的并发重复发送只有一条；sync 的固定快照衔接、断线补齐与 ACK 不写 read_cursors；agents 的 ACK 后请求仍 pending；offline 浏览器验证重连后仅发送一次。                   |
 | AC-03  | verified | promotion 逐断言确认原 Run 对象不变、task_id 仍为空、原预算不变，产生唯一新 Task，继续执行必须重新授予 Agent 任务参与权限，撤销来源后重放拒绝。                                 |
 | AC-04  | verified | agents 中 human→agent→agent 交接测试在 acknowledgeRequest 后断言 received_at 存在、status=pending、原 owner 不变，只有 decide accept 后才切换负责权。                           |
-| AC-05  | partial  | 委派接受后仅一个 child，父 owner 不变；拒绝/过期不创建 child，维护扫描幂等处理超时。仍缺少“委派被拒绝后用户找到后续处理者”的专用浏览器闭环。                                    |
+| AC-05 | verified | 委派拒绝/过期不创建 child，接受仅创建一个 child；三人浏览器闭环验证 Bob 拒绝后 Alice 改派 Charlie，Charlie 接受并获得子任务且不获得父任务入口，刷新后父 owner 仍为 Alice，子 accountable 仍为 Alice。 |
 | AC-06  | verified | tasks 的 concurrent competing handoffs 断言仅一次成功、owner 为胜出者、version/epoch=2、唯一 owner/accept/agreement；同键五次接受返回同一协议，写入处于同一事务。               |
 | AC-07 | verified | 真实交接后旧 Worker 心跳、预占、结果提交均拒绝；已持久化意图尚未派发的 Action 被旧 epoch 围栏拒绝并释放预占；真实 HTTP 副作用发生后交接且丢响应，新 owner 只读核对、一次 POST 与一次费用结算。 |
 | AC-08  | verified | maintenance 并发扫描只升级一次，保持显式 blocked 和 owner_unavailable，审计 actor 为维护身份，原指派管理员离开时重新路由；源码只变阻塞/代际，不置空 owner。                     |
@@ -48,6 +48,6 @@
 | INV-15 | partial  | message/Memory/Run/资源/评论与分享的删除、保留、独立重放有测试；生产备份链及所有组织身份变更无法仅由本地四条事实恢复证明。                                                      |
 | INV-16 | pending  | 本地 HTTP 试用不构成生产 TLS、静态加密或密钥托管证据。V1 不提供 E2EE；服务端/配置模型可见授权明文的说明保留，生产加密承诺待目标部署验收。                                       |
 
-2026-10-05 交接补验后结果：26 项 verified、14 项 partial、1 项 pending，新增实际运行与边界见 [交接证据](handoff-evidence-2026-10-05.md)。`pnpm test:acceptance` 预期仍非零退出；其余已通过的工程、集成和浏览器测试不因此作废。
+2026-10-05 交接和委派补验后结果：27 项 verified、13 项 partial、1 项 pending，新增实际运行与边界见 [交接证据](handoff-evidence-2026-10-05.md) 和 [委派证据](delegation-evidence-2026-10-05.md)。`pnpm test:acceptance` 预期仍非零退出；其余已通过的工程、集成和浏览器测试不因此作废。
 
 后续按完整用户流程补验，优先交接包行动清单、组织生命周期与兼容性；真机、生产 IdP/TLS、灾备和参考容量使用真实环境证据。上述补验边界与当前可运行主体一并交付，遵循先完成主体、再细化的优先级。

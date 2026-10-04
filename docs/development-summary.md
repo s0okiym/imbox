@@ -37,4 +37,4 @@
 
 新组织不再只能依赖固定开发 seed。离线 `workspace:provision` 使用已有有效 human 身份，在同一事务创建组织、工作区、唯一 owner 和初始成员，并保存仅运维可读的数据库操作者回执；同清单重试不会恢复已撤销权限。这是首次开户入口，日常组织管理台仍按 [后续优先级](delivery-backlog.md) 推进。
 
-对 41 项 AC/INV 的本轮断言审查结果为 26 项 verified、14 项 partial、1 项 pending，详见 [逐项审查](testing/acceptance-review-2026-10-04.md)。已补私聊专用回归；剩余联合故障、竞争、兼容与真实部署验证逐项保留，不把功能试用候选描述为生产准出。
+对 41 项 AC/INV 的本轮断言审查结果为 27 项 verified、13 项 partial、1 项 pending，详见 [逐项审查](testing/acceptance-review-2026-10-04.md)。已补私聊专用回归；剩余联合故障、竞争、兼容与真实部署验证逐项保留，不把功能试用候选描述为生产准出。

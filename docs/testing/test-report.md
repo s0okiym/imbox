@@ -96,3 +96,9 @@ Node.js 24.21.0、pnpm 10.34.6，PostgreSQL 18、SeaweedFS S3、Ollama 固定模
 ## 真实交接补验（2026-10-05）
 
 新增 3 个跨模块集成场景，覆盖旧 Worker 权限失效、prepared Action 拒绝派发和已发生外部副作用的 unknown 核对。任务、运行与行动 3 文件共 52 项通过（25.36 秒），详见 [交接证据](handoff-evidence-2026-10-05.md)。AC-07 / INV-04 更新为 verified，总登记为 26 verified / 14 partial / 1 pending，完整生产门禁仍未通过。交接包 pending_action_ids 仍为空数组的限制已单独记录，不用执行安全测试替代交接体验完成度。
+
+交接候选 7e9c3c2 的完整 [远程 CI](https://github.com/s0okiym/imbox/actions/runs/37217037797) 全部通过：180 单元、33 文件 249 集成、24 浏览器（1.9 分钟）、1 真实模型。证据见 [结构化记录](handoff-ci-2026-10-05.json)。
+
+## 委派拒绝后改派（2026-10-05）
+
+三人浏览器闭环通过，完整 tasks.spec.ts 批次 3 项成功（52.0 秒），新增场景 17.5 秒。验证拒绝不创建子任务、重新派发由另一人明确接受、子 owner/accountable 正确、父任务权限隔离和刷新后的父 owner 不变。编写过程三次失败与选择器/刷新导航假设修正保留在 [委派证据](delegation-evidence-2026-10-05.md)。测试类型、ESLint、目录检查通过；434 个具名回归声明，验收登记 27 verified / 13 partial / 1 pending。此新增测试不包含在此前 7e9c3c2 的完整 CI 中。

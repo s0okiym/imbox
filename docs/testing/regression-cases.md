@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 80 个测试文件、433 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 80 个测试文件、434 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -448,8 +448,9 @@
 
 | 声明 | 用例 |
 |---|---|
-| [test:15](../../tests/e2e/tasks.spec.ts#L15) | a human explicitly submits fixed evidence and separately accepts it before a task completes |
-| [test:22](../../tests/e2e/tasks.spec.ts#L22) | reading a handoff proposal does not change ownership; explicit acceptance changes both views |
+| [test:24](../../tests/e2e/tasks.spec.ts#L24) | a human explicitly submits fixed evidence and separately accepts it before a task completes |
+| [test:45](../../tests/e2e/tasks.spec.ts#L45) | reading a handoff proposal does not change ownership; explicit acceptance changes both views |
+| [test:99](../../tests/e2e/tasks.spec.ts#L99) | a rejected delegation leaves the parent owned and lets its owner delegate to another person |
 
 ## tests/integration/action-journal.test.ts
 

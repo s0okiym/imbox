@@ -53,13 +53,18 @@
     },
     {
       "id": "AC-05",
-      "status": "partial",
-      "tests": ["tests/integration/tasks.test.ts", "tests/integration/maintenance.test.ts"],
+      "status": "verified",
+      "tests": [
+        "tests/integration/tasks.test.ts",
+        "tests/integration/maintenance.test.ts",
+        "tests/e2e/tasks.spec.ts"
+      ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
-        "docs/testing/provisioning-evidence-2026-10-04.json"
+        "docs/testing/provisioning-evidence-2026-10-04.json",
+        "docs/testing/delegation-evidence-2026-10-05.md"
       ],
-      "notes": "委派接受后仅一个 child，父 owner 不变；拒绝/过期不创建 child，维护扫描幂等处理超时。仍缺少“委派被拒绝后用户找到后续处理者”的专用浏览器闭环。"
+      "notes": "委派拒绝/过期不创建 child，接受仅创建一个 child；三人浏览器闭环验证 Bob 拒绝后 Alice 改派 Charlie，Charlie 接受并获得子任务且不获得父任务入口，刷新后父 owner 仍为 Alice，子 accountable 仍为 Alice。"
     },
     {
       "id": "AC-06",
