@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 87 个测试文件、516 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 87 个测试文件、517 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -475,15 +475,16 @@
 
 | 声明 | 用例 |
 |---|---|
-| [test:358](../../tests/e2e/runtime-actions.spec.ts#L358) | runtime UI discloses fixed context and budget, controls real runs, and restores scoped history |
-| [test:392](../../tests/e2e/runtime-actions.spec.ts#L392) | runtime UI shows worker stop confirmation separately from the cancellation request |
-| [test:427](../../tests/e2e/runtime-actions.spec.ts#L427) | task cancellation signals the running worker and displays its later stop acknowledgement |
-| [test:468](../../tests/e2e/runtime-actions.spec.ts#L468) | grant → proposal → exact human approval → lost response → lookup has one external effect |
-| [test:535](../../tests/e2e/runtime-actions.spec.ts#L535) | fixed artifact selection → new head → original approved publication → receipt lookup without resending |
-| [test:624](../../tests/e2e/runtime-actions.spec.ts#L624) | a revoked source removes previously visible run context from the browser |
-| [test:645](../../tests/e2e/runtime-actions.spec.ts#L645) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
-| [test:726](../../tests/e2e/runtime-actions.spec.ts#L726) | handoff UI requires explicit disclosure of the outstanding action manifest |
-| [test:805](../../tests/e2e/runtime-actions.spec.ts#L805) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
+| [test:364](../../tests/e2e/runtime-actions.spec.ts#L364) | runtime UI discloses fixed context and budget, controls real runs, and restores scoped history |
+| [test:398](../../tests/e2e/runtime-actions.spec.ts#L398) | runtime UI shows worker stop confirmation separately from the cancellation request |
+| [test:433](../../tests/e2e/runtime-actions.spec.ts#L433) | task cancellation signals the running worker and displays its later stop acknowledgement |
+| [test:474](../../tests/e2e/runtime-actions.spec.ts#L474) | grant → proposal → exact human approval → lost response → lookup has one external effect |
+| [test:541](../../tests/e2e/runtime-actions.spec.ts#L541) | fixed artifact selection → new head → original approved publication → receipt lookup without resending |
+| [test:630](../../tests/e2e/runtime-actions.spec.ts#L630) | a revoked source removes previously visible run context from the browser |
+| [test:651](../../tests/e2e/runtime-actions.spec.ts#L651) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
+| [test:732](../../tests/e2e/runtime-actions.spec.ts#L732) | artifact Run UI discloses fixed text, requires approval and resume, and reconciles once |
+| [test:823](../../tests/e2e/runtime-actions.spec.ts#L823) | handoff UI requires explicit disclosure of the outstanding action manifest |
+| [test:902](../../tests/e2e/runtime-actions.spec.ts#L902) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
 
 ## tests/e2e/scheduling-promotion.spec.ts
 

@@ -46,6 +46,11 @@ export function CreateRunForm({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
   const [toolGrantId, setToolGrantId] = useState('');
+  const [publication, setPublication] = useState<{
+    grantId: string;
+    versionId: string;
+    text: string;
+  } | null>(null);
   const [includeTask, setIncludeTask] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,11 +73,46 @@ export function CreateRunForm({
       grant.allow_disclosure &&
       grant.approver_principal_ids.length > 0 &&
       Date.parse(grant.expires_at) > Date.now() &&
+      grant.resource_versions.some((ref) => ref.type === 'task' && ref.id === task.id) &&
+      grant.resource_versions.filter((ref) => ref.type === 'artifact_version').length <= 1 &&
       grant.resource_versions.every(
-        (ref) => ref.type === 'task' && ref.id === task.id && ref.version === task.version,
+        (ref) =>
+          ref.type === 'artifact_version' || (ref.id === task.id && ref.version === task.version),
       ),
   );
   const selectedGrant = eligibleGrants.find((grant) => grant.id === toolGrantId);
+  const artifactRef = selectedGrant?.resource_versions.find(
+    (ref) => ref.type === 'artifact_version',
+  );
+  const publicationReady =
+    !artifactRef ||
+    (publication !== null &&
+      publication.grantId === selectedGrant?.id &&
+      publication.versionId === artifactRef.id);
+  useEffect(() => {
+    const controller = new AbortController();
+    setPublication(null);
+    setConfirmed(false);
+    if (!selectedGrant || !artifactRef) return () => controller.abort();
+    void api
+      .publicationSource(selectedGrant.id, artifactRef.id, controller.signal)
+      .then((source) => {
+        if (!controller.signal.aborted)
+          setPublication({
+            grantId: selectedGrant.id,
+            versionId: artifactRef.id,
+            text: source.text,
+          });
+      })
+      .catch((failure: unknown) => {
+        if (!controller.signal.aborted) {
+          if (isAccessLoss(failure)) accessLost(failure);
+          else setError(executionError(failure));
+        }
+      });
+    return () => controller.abort();
+  }, [api, selectedGrant?.id, selectedGrant?.revision, artifactRef?.id, accessLost]);
+
   const grantBudgetMatches = (() => {
     if (!selectedGrant) return true;
     try {
@@ -152,14 +192,17 @@ export function CreateRunForm({
               !agent ||
               !scopeId ||
               !confirmed ||
-              (toolGrantId && (!selectedGrant || !includeTask || !grantBudgetMatches))
+              (toolGrantId &&
+                (!selectedGrant || !includeTask || !grantBudgetMatches || !publicationReady))
             )
               return;
             try {
               const context: CreateRuntimeRunInput['context'] =
                 scope === 'task'
                   ? includeTask && task
-                    ? [{ type: 'task', id: task.id, version: task.version, required: true }]
+                    ? selectedGrant
+                      ? selectedGrant.resource_versions.map((ref) => ({ ...ref, required: true }))
+                      : [{ type: 'task', id: task.id, version: task.version, required: true }]
                     : []
                   : selectedMessages.map((id) => {
                       const message = messages.find((item) => item.id === id)!;
@@ -349,6 +392,23 @@ export function CreateRunForm({
             )}
           </Field>
         )}
+        {artifactRef && (
+          <section className="task-section" aria-label="将披露的固定产物">
+            <h3>将披露的固定产物</h3>
+            <p>
+              版本 {artifactRef.version} · {artifactRef.id}
+            </p>
+            <p>SHA-256 {artifactRef.sha256}</p>
+            {publicationReady && publication ? (
+              <pre className="execution-output">{publication.text}</pre>
+            ) : (
+              <p>正在验证并读取所选版本，完成前不能创建运行。</p>
+            )}
+            <p className="execution-note">
+              只发布此版本完整原文；新版本不会替换本次输入，模型提案仍需人工审批。
+            </p>
+          </section>
+        )}
         {selectedGrant && !grantBudgetMatches && (
           <p role="alert">
             运行预算必须与授权币种一致，并至少覆盖授权上限 {selectedGrant.budget.currency}{' '}
@@ -427,7 +487,8 @@ export function CreateRunForm({
             !agent ||
             !scopeId ||
             loading ||
-            (!!toolGrantId && (!selectedGrant || !includeTask || !grantBudgetMatches))
+            (!!toolGrantId &&
+              (!selectedGrant || !includeTask || !grantBudgetMatches || !publicationReady))
           }
           onClose={onClose}
           onAdopt={() => setConfirmed(false)}

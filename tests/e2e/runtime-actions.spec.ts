@@ -267,7 +267,7 @@ async function fixture(page: Page) {
     tasks,
     databases,
     driver: createModelDriver({
-      worker: createRuntimeWorker({ db: databases.db, workerId: 'browser-hosted-model' }),
+      worker: createRuntimeWorker({ db: databases.db, workerId: 'browser-hosted-model', sources }),
       actions,
       models: new Map([
         [
@@ -331,7 +331,12 @@ async function artifact(f: Awaited<ReturnType<typeof fixture>>, body: string) {
     randomUUID(),
   );
 }
-async function createRun(page: Page, f: Awaited<ReturnType<typeof fixture>>, grantId?: string) {
+async function createRun(
+  page: Page,
+  f: Awaited<ReturnType<typeof fixture>>,
+  grantId?: string,
+  artifactText?: string,
+) {
   await page.getByRole('button', { name: '新建运行', exact: true }).first().click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('combobox', { name: '执行 Agent', exact: true }).selectOption(f.agent.id);
@@ -348,6 +353,7 @@ async function createRun(page: Page, f: Awaited<ReturnType<typeof fixture>>, gra
   }
   await dialog.getByRole('textbox', { name: '处理目的', exact: true }).fill('检查明确输入');
   await expect(dialog.getByRole('textbox', { name: /^处理目的地/ })).toHaveValue('model:local');
+  if (artifactText) await expect(dialog.getByLabel('将披露的固定产物')).toContainText(artifactText);
   await dialog.getByRole('checkbox', { name: /我已核对 Agent/ }).check();
   await dialog.getByRole('button', { name: '创建运行', exact: true }).click();
   await expect(
@@ -694,6 +700,97 @@ test('Run-bound tool UI requires human approval and explicit resume, reconciles 
     expect(await f.driver.execute(f.f.tenantId, run.id)).toBe('waiting');
     expect(f.effects()).toBe(1);
     expect(f.sends()).toBe(1);
+    await page.getByRole('button', { name: '刷新运行', exact: true }).click();
+    await page.getByRole('button', { name: '查看并审批关联行动', exact: true }).click();
+    await expect(
+      page.getByLabel('行动详情').getByRole('heading', { name: '结果未知', exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: '查询外部结果', exact: true }).click();
+    dialog = page.getByRole('dialog');
+    await dialog.getByLabel('查询理由', { exact: true }).fill('核对原回执，不重发');
+    await dialog.getByRole('checkbox').check();
+    await dialog.getByRole('button', { name: '仅查询已有结果', exact: true }).click();
+    await expect(dialog.getByRole('status')).toContainText('没有再次发送');
+    await dialog.getByRole('button', { name: '关闭', exact: true }).last().click();
+    await resume();
+    expect(await f.driver.execute(f.f.tenantId, run.id)).toBe('completed');
+    await page.getByRole('button', { name: '刷新运行', exact: true }).click();
+    await expect(page.getByLabel('运行详情')).toContainText(
+      'Provider confirmed the original delivery; no second send.',
+    );
+    expect(f.sends()).toBe(1);
+    expect(f.effects()).toBe(1);
+    expect((await f.runtime.getRun(f.f.alice, run.id)).budget).toMatchObject({
+      spent_microunits: '7',
+      reserved_microunits: '0',
+    });
+  } finally {
+    await f.close();
+  }
+});
+
+test('artifact Run UI discloses fixed text, requires approval and resume, and reconciles once', async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  const f = await fixture(page);
+  try {
+    const file = await artifact(f, 'Browser fixed tool delivery');
+    const grant = await f.actions.createGrant(
+      f.f.alice,
+      {
+        task_id: f.task.id,
+        executor_principal_id: f.agent.principal_id,
+        tool_id: 'demo.delivery',
+        tool_version: '1',
+        target_id: 'demo-provider',
+        allow_execute: true,
+        allow_disclosure: true,
+        resource_versions: [
+          { type: 'task', id: f.task.id, version: f.task.version },
+          {
+            type: 'artifact_version',
+            id: file.version_id,
+            version: file.head_version,
+            sha256: file.resource.sha256,
+          },
+        ],
+        approver_principal_ids: [f.f.alice.principalId],
+        budget: { currency: 'USD', limit_microunits: '1000' },
+        expires_at: new Date(Date.now() + 3600000).toISOString(),
+      },
+      randomUUID(),
+    );
+    await page.reload();
+    await createRun(page, f, grant.id, 'Browser fixed tool delivery');
+    const run = (await f.runtime.listRuns(f.f.alice, { task_id: f.task.id })).items[0]!;
+    expect(run.tool_grant_id).toBe(grant.id);
+    expect(await f.driver.execute(f.f.tenantId, run.id)).toBe('waiting');
+    await page.getByRole('button', { name: '刷新运行', exact: true }).click();
+    await page.getByRole('button', { name: '查看并审批关联行动', exact: true }).click();
+    await page.getByRole('button', { name: '核对并批准', exact: true }).click();
+    let dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Browser fixed tool delivery', { exact: true })).toBeVisible();
+    await dialog.getByLabel('决定说明', { exact: true }).fill('核对固定内容、目标、上下文与费用');
+    await dialog.getByRole('checkbox', { name: /我已逐项核对/ }).check();
+    await dialog.getByRole('button', { name: '提交明确决定', exact: true }).click();
+    expect(await f.driver.execute(f.f.tenantId, run.id)).toBe('fenced');
+    expect(f.effects()).toBe(0);
+    const resume = async () => {
+      await page.goto(`/runs/${run.id}`);
+      await page.getByRole('button', { name: '继续运行', exact: true }).click();
+      const control = page.getByRole('dialog');
+      await control.getByRole('checkbox').check();
+      await control.getByRole('button', { name: '确认继续运行', exact: true }).click();
+      await expect(
+        page.getByLabel('运行详情').getByRole('heading', { name: '排队中', exact: true }),
+      ).toBeVisible();
+    };
+    await resume();
+    expect(await f.driver.execute(f.f.tenantId, run.id)).toBe('waiting');
+    expect(f.effects()).toBe(1);
+    expect(f.sends()).toBe(1);
+    expect(f.sentTexts).toEqual(['Browser fixed tool delivery']);
     await page.getByRole('button', { name: '刷新运行', exact: true }).click();
     await page.getByRole('button', { name: '查看并审批关联行动', exact: true }).click();
     await expect(
