@@ -20,10 +20,16 @@ let tasks: TaskService;
 let messaging: MessagingService;
 const secret = 'a-task-cursor-secret-longer-than-thirty-two-characters';
 const key = () => randomUUID();
-function nonempty<T>(values:T[]):[T,...T[]] { if (!values.length) throw new Error('Expected nonempty test fixture'); return [values[0]!,...values.slice(1)]; }
+function nonempty<T>(values: T[]): [T, ...T[]] {
+  if (!values.length) throw new Error('Expected nonempty test fixture');
+  return [values[0]!, ...values.slice(1)];
+}
 beforeAll(async () => {
   databases = await testDatabases();
-  tasks = createTaskService(databases.db, secret, {requiredActionsClosed:async(tx,id)=>await runtimeCompletionGate(tx,id)&&await requiredActionsClosed(tx,id)});
+  tasks = createTaskService(databases.db, secret, {
+    requiredActionsClosed: async (tx, id) =>
+      (await runtimeCompletionGate(tx, id)) && (await requiredActionsClosed(tx, id)),
+  });
   messaging = createMessagingService(databases.db, secret);
 });
 afterAll(async () => {
@@ -287,6 +293,9 @@ describe('real PostgreSQL M2 collaboration and task fences', () => {
     const accepted = await decide(revised);
     expect(accepted.agreement!.terms.goal).toBe('Clarified scope');
     expect(accepted.agreement!.accepted_version).toBe('2');
+    const afterConsultation = await tasks.getTask(fixture.alice, t.id);
+    expect(afterConsultation.owner_principal_id).toBe(fixture.alice.principalId);
+    expect(afterConsultation.accountable_principal_id).toBe(fixture.alice.principalId);
     await withTenant(databases.db, fixture.tenantId, async (tx) =>
       expect(
         (await sql`select * from request_proposals order by proposal_version`.execute(tx)).rows,

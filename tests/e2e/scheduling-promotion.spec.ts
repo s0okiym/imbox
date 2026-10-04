@@ -85,13 +85,16 @@ async function fixture(page: Page) {
     scheduling,
     maintenance,
     close: async () => {
-      if (!page.isClosed()) await page.close().catch(() => {});
       stopped = true;
       if (timer !== undefined) clearTimeout(timer);
+      // route.fetch owns the BrowserContext's API request connection pool. Closing
+      // only the page can leave a late keep-alive connection racing server.close.
+      // Closing the whole per-test context destroys that pool before server teardown.
+      await page
+        .context()
+        .close()
+        .catch(() => {});
       await pumping.catch(() => {});
-      // route.fetch uses Playwright's API request transport, whose connections can
-      // outlive the browser page. All business commands are awaited above; only
-      // the fixture's background reads may still own a socket at this point.
       app.server.closeAllConnections();
       await app.close().catch(() => {});
       await databases.close();

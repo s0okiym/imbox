@@ -1,3 +1,4 @@
+import { workspaceProvisioningSql } from './migrations/030-workspace-provisioning.js';
 import { webPushSql } from './migrations/029-web-push.js';
 import { recentSnapshotsSql } from './migrations/028-recent-snapshots.js';
 import { notificationsSql } from './migrations/027-notifications.js';
@@ -59,6 +60,7 @@ export const migrations = [
   { id: '027-notifications', sql: notificationsSql },
   { id: '028-recent-snapshots', sql: recentSnapshotsSql },
   { id: '029-web-push', sql: webPushSql },
+  { id: '030-workspace-provisioning', sql: workspaceProvisioningSql },
 ] as const;
 
 /** Explicit command only. Atomic migration batch, immutable checksums, serialized owner DDL. */

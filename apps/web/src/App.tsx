@@ -1758,6 +1758,7 @@ function ConversationPane({
                             <div
                               className={`message-bubble ${deleted ? 'deleted-message' : ''}`}
                               data-message-seq={message.seq}
+                              data-message-version={message.version}
                             >
                               {deleted ? '这条消息已被删除' : message.body}
                             </div>

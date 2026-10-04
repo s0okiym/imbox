@@ -42,7 +42,8 @@
     "test:catalog:check": "node scripts/regression-catalog.mjs --check",
     "pilot:setup": "node scripts/pilot.mjs setup",
     "pilot": "node scripts/pilot.mjs start",
-    "pilot:status": "node scripts/pilot.mjs status"
+    "pilot:status": "node scripts/pilot.mjs status",
+    "workspace:provision": "tsx scripts/provision-workspace-cli.ts"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

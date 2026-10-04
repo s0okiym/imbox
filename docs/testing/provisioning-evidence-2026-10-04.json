@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "recorded_at_utc": "2026-10-04T15:53:03.235670+00:00",
+  "parent_commit": "618f495ffebc4a90eab12069985222ac22d8f70d",
+  "source_index_sha256": "d3915a905549c105ea6530dff2362bada635b29dc0edb8f5418798cd6f450434",
+  "source_index_command": "git ls-files -s -- . ':!docs/**' ':!README.md' | sha256sum",
+  "lock_sha256": "18543dbd50b7294533d136164f8b94777281864bc6df97e1992784cb6dbb6d55",
+  "node": "v24.21.0",
+  "verification": {
+    "engineering_full": {
+      "status": "passed",
+      "unit_files": 32,
+      "unit_passed": 180,
+      "before_final_ui_metadata_and_test_changes": true
+    },
+    "final_incremental_checks": [
+      "Web production build",
+      "test typecheck",
+      "changed source and test ESLint",
+      "regression catalog check"
+    ],
+    "integration_full": {
+      "files": 32,
+      "passed": 245,
+      "seconds": 215.3
+    },
+    "additional_direct_message_test": {
+      "files": 1,
+      "passed": 1
+    },
+    "final_related_integration": {
+      "files": 3,
+      "passed": 22,
+      "seconds": 11.45
+    },
+    "browser_initial_full": {
+      "passed": 23,
+      "failed": 1,
+      "failure": "test fixture teardown timeout after successful business assertions"
+    },
+    "browser_fixture_repair": {
+      "unique_scenarios": 3,
+      "repeats_each": 3,
+      "passed": 9,
+      "minutes_rounded": 1.5
+    },
+    "browser_quote_repair": {
+      "unique_scenarios": 1,
+      "repeats_each": 5,
+      "passed": 5,
+      "minutes_rounded": 1.6
+    },
+    "operator_cli": ["planned", "applied", "already_applied"],
+    "model_local": "not repeated in this batch; retain the separate prior evidence"
+  },
+  "regression_catalog": {
+    "files": 80,
+    "named_declarations": 430
+  },
+  "acceptance": {
+    "verified": 24,
+    "partial": 16,
+    "pending": 1,
+    "production_gate": "blocked"
+  },
+  "remote_ci": {
+    "status": "pending_push_and_verification"
+  },
+  "prior_ci": {
+    "commit": "618f495",
+    "run_id": 37212959410,
+    "conclusion": "failure",
+    "step": "browser quoted-message regression",
+    "model_step": "skipped"
+  },
+  "recovery": {
+    "result": "passed",
+    "policy_facts_replayed": 4,
+    "completed_at": "2026-10-04T15:34:34.688Z"
+  }
+}

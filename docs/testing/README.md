@@ -88,7 +88,7 @@ Playwright 使用独立测试会话与固定种子主体，自动启动本地 AP
 
 `pnpm test:capacity` 使用独立随机数据库，默认百万历史消息、1,000 个实际 WebSocket、30 秒 / 50 消息每秒，同时运行聊天与通知派发。探针报告 `.artifacts/capacity-probe.json`，共享开发机结果不得替代设计环境或生产容量证明；当前不覆盖重连风暴及慢模型/文件并发。`pnpm test:recovery` 报告 `.artifacts/recovery-drill.json`，实际恢复不等于 WAL PITR 已验证。
 
-历史浏览器入口 `tests/e2e/recent-history.spec.ts` 使用 205 条真实消息与真实投影，验证 recent 快照、显式旧页、窗口外深链及删除。容量增量记录见 [容量工作记录](capacity-report.md)。
+历史浏览器入口 `tests/e2e/recent-history.spec.ts` 使用 1,055 条真实消息与真实投影，验证 recent 快照、显式旧页、窗口外深链及删除。容量增量记录见 [容量工作记录](capacity-report.md)。
 
 - `tests/e2e/offline.spec.ts`：真实 API + PostgreSQL；明确同意、草稿跨刷新恢复、断网 IndexedDB 排队、联网重新认证后单次提交、退出清除。
 - `tests/e2e/pwa.spec.ts`：先运行 `pnpm build`；测试自建静态服务器提供 `apps/web/dist` 并代理真实 API，验证实际 Service Worker 离线重载和缓存隔离，不使用 Vite 开发模式替代。
@@ -106,3 +106,5 @@ CI 现已编排 PostgreSQL 和真实 SeaweedFS、固定测试桶及精确 CORS�
 Web Push 故障注入夹具把 Node ECDH 导出的私钥左侧补零到 32 字节后编码；不能直接假设 `getPrivateKey()` 始终返回固定宽度。曾复现 1,024 次生成中 2 次返回 31 字节，已修复由此导致的随机 VAPID 夹具失败。生产配置仍严格验证 VAPID 密钥，未为测试放宽要求。
 
 所有具名用例的可再生静态索引见 [回归用例目录](regression-cases.md)。新增或移动测试后运行 `pnpm test:catalog`，`pnpm test:catalog:check` 可核对目录与源文件一致；静态目录不会更改 AC/INV 的验收状态。
+
+组织接入回归见 `tests/integration/workspace-provisioning.test.ts`：只计划不写入、权限边界、原子初始化、并发重试不恢复撤权、真实认证与会话入口。私聊专用回归见 `direct-messaging.test.ts`。本轮验收逐项审查见 [AC/INV 审查记录](acceptance-review-2026-10-04.md)，其中 partial 和 pending 仍阻止完整生产准出。

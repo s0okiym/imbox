@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 78 个测试文件、424 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 80 个测试文件、430 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -385,7 +385,7 @@
 
 | 声明 | 用例 |
 |---|---|
-| [test:14](../../tests/e2e/message-interactions.spec.ts#L14) | human replies bind fixed text, thread replies share the root, and reaction removal affects only oneself |
+| [test:19](../../tests/e2e/message-interactions.spec.ts#L19) | human replies bind fixed text, thread replies share the root, and reaction removal affects only oneself |
 
 ## tests/e2e/messaging.spec.ts
 
@@ -440,9 +440,9 @@
 
 | 声明 | 用例 |
 |---|---|
-| [test:111](../../tests/e2e/scheduling-promotion.spec.ts#L111) | finite wakeup UI creates, revises and disables a plan without resetting or resuming the original run |
-| [test:212](../../tests/e2e/scheduling-promotion.spec.ts#L212) | conversation run promotion requires a new goal and explicit authorization; revoked origin disappears |
-| [test:273](../../tests/e2e/scheduling-promotion.spec.ts#L273) | administrator sees escalation metadata only until explicitly taking responsibility for the private task |
+| [test:114](../../tests/e2e/scheduling-promotion.spec.ts#L114) | finite wakeup UI creates, revises and disables a plan without resetting or resuming the original run |
+| [test:215](../../tests/e2e/scheduling-promotion.spec.ts#L215) | conversation run promotion requires a new goal and explicit authorization; revoked origin disappears |
+| [test:276](../../tests/e2e/scheduling-promotion.spec.ts#L276) | administrator sees escalation metadata only until explicitly taking responsibility for the private task |
 
 ## tests/e2e/tasks.spec.ts
 
@@ -524,6 +524,12 @@
 |---|---|
 | [it:12](../../tests/integration/database-observation.test.ts#L12) | measures real acquisition contention and query failures without emitting SQL, values or callback errors |
 | [it:72](../../tests/integration/database-observation.test.ts#L72) | isolates asynchronous diagnostic rejection from successful database work |
+
+## tests/integration/direct-messaging.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:13](../../tests/integration/direct-messaging.test.ts#L13) | keeps direct conversations to two authorized participants and prevents conversion through member mutation |
 
 ## tests/integration/exports.test.ts
 
@@ -795,22 +801,32 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:131](../../tests/integration/tasks.test.ts#L131) | real PostgreSQL M2 collaboration and task fences → creates one independent task with self owner, exact bigint budget and one durable event |
-| [it:158](../../tests/integration/tasks.test.ts#L158) | real PostgreSQL M2 collaboration and task fences → conversation summary discloses only its explicit text and never grants task ACL, including another tenant |
-| [it:183](../../tests/integration/tasks.test.ts#L183) | real PostgreSQL M2 collaboration and task fences → revoked task and workspace membership defeat existing task references and idempotent replays |
-| [it:211](../../tests/integration/tasks.test.ts#L211) | real PostgreSQL M2 collaboration and task fences → only the actual recipient accepts; concurrent competing handoffs yield one owner and fixed agreement |
-| [it:241](../../tests/integration/tasks.test.ts#L241) | real PostgreSQL M2 collaboration and task fences → same acceptance idempotency key returns exactly one accepted version and never a second handoff |
-| [it:261](../../tests/integration/tasks.test.ts#L261) | real PostgreSQL M2 collaboration and task fences → clarification and revision retain immutable proposals and reject a stale proposal number |
-| [it:296](../../tests/integration/tasks.test.ts#L296) | real PostgreSQL M2 collaboration and task fences → rejection and expiry never create a child or transfer ownership |
-| [it:313](../../tests/integration/tasks.test.ts#L313) | real PostgreSQL M2 collaboration and task fences → delegation creates one child only after acceptance and preserves parent ownership |
-| [it:335](../../tests/integration/tasks.test.ts#L335) | real PostgreSQL M2 collaboration and task fences → terminal and reopen advance epochs and make old pending proposals permanently unusable |
-| [it:358](../../tests/integration/tasks.test.ts#L358) | real PostgreSQL M2 collaboration and task fences → a parent close/reopen invalidates a previously issued child proposal through complete ancestor fences |
-| [it:382](../../tests/integration/tasks.test.ts#L382) | real PostgreSQL M2 collaboration and task fences → serializes cross-root dependency mutation before sorted root locks and rejects the combined cycle |
-| [it:397](../../tests/integration/tasks.test.ts#L397) | real PostgreSQL M2 collaboration and task fences → pins submission text/hash/goal version, restricts acceptance to designated reviewers and completes separately |
-| [it:437](../../tests/integration/tasks.test.ts#L437) | real PostgreSQL M2 collaboration and task fences → does not complete a parent while an accepted child remains open |
-| [it:455](../../tests/integration/tasks.test.ts#L455) | real PostgreSQL M2 collaboration and task fences → rejects old goal submissions and artifact refs until their storage/authorization implementation exists |
-| [it:492](../../tests/integration/tasks.test.ts#L492) | real PostgreSQL M2 collaboration and task fences → takeover is an explicit admin command with a reason, new owner and epoch |
-| [it:510](../../tests/integration/tasks.test.ts#L510) | M2 HTTP commands with real cookie authentication and contracts → creates, reads, proposes and accepts with authoritative identity, version headers and CSRF |
+| [it:137](../../tests/integration/tasks.test.ts#L137) | real PostgreSQL M2 collaboration and task fences → creates one independent task with self owner, exact bigint budget and one durable event |
+| [it:164](../../tests/integration/tasks.test.ts#L164) | real PostgreSQL M2 collaboration and task fences → conversation summary discloses only its explicit text and never grants task ACL, including another tenant |
+| [it:189](../../tests/integration/tasks.test.ts#L189) | real PostgreSQL M2 collaboration and task fences → revoked task and workspace membership defeat existing task references and idempotent replays |
+| [it:217](../../tests/integration/tasks.test.ts#L217) | real PostgreSQL M2 collaboration and task fences → only the actual recipient accepts; concurrent competing handoffs yield one owner and fixed agreement |
+| [it:247](../../tests/integration/tasks.test.ts#L247) | real PostgreSQL M2 collaboration and task fences → same acceptance idempotency key returns exactly one accepted version and never a second handoff |
+| [it:267](../../tests/integration/tasks.test.ts#L267) | real PostgreSQL M2 collaboration and task fences → clarification and revision retain immutable proposals and reject a stale proposal number |
+| [it:305](../../tests/integration/tasks.test.ts#L305) | real PostgreSQL M2 collaboration and task fences → rejection and expiry never create a child or transfer ownership |
+| [it:322](../../tests/integration/tasks.test.ts#L322) | real PostgreSQL M2 collaboration and task fences → delegation creates one child only after acceptance and preserves parent ownership |
+| [it:344](../../tests/integration/tasks.test.ts#L344) | real PostgreSQL M2 collaboration and task fences → terminal and reopen advance epochs and make old pending proposals permanently unusable |
+| [it:367](../../tests/integration/tasks.test.ts#L367) | real PostgreSQL M2 collaboration and task fences → a parent close/reopen invalidates a previously issued child proposal through complete ancestor fences |
+| [it:391](../../tests/integration/tasks.test.ts#L391) | real PostgreSQL M2 collaboration and task fences → serializes cross-root dependency mutation before sorted root locks and rejects the combined cycle |
+| [it:406](../../tests/integration/tasks.test.ts#L406) | real PostgreSQL M2 collaboration and task fences → pins submission text/hash/goal version, restricts acceptance to designated reviewers and completes separately |
+| [it:446](../../tests/integration/tasks.test.ts#L446) | real PostgreSQL M2 collaboration and task fences → does not complete a parent while an accepted child remains open |
+| [it:464](../../tests/integration/tasks.test.ts#L464) | real PostgreSQL M2 collaboration and task fences → rejects old goal submissions and artifact refs until their storage/authorization implementation exists |
+| [it:501](../../tests/integration/tasks.test.ts#L501) | real PostgreSQL M2 collaboration and task fences → takeover is an explicit admin command with a reason, new owner and epoch |
+| [it:519](../../tests/integration/tasks.test.ts#L519) | M2 HTTP commands with real cookie authentication and contracts → creates, reads, proposes and accepts with authoritative identity, version headers and CSRF |
+
+## tests/integration/workspace-provisioning.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:29](../../tests/integration/workspace-provisioning.test.ts#L29) | operator workspace provisioning → plans without writes and atomically provisions current human identities with restricted roles and an operator receipt |
+| [it:69](../../tests/integration/workspace-provisioning.test.ts#L69) | operator workspace provisioning → serializes concurrent retries and never reactivates revoked grants on replay |
+| [it:99](../../tests/integration/workspace-provisioning.test.ts#L99) | operator workspace provisioning → refuses existing tenants and missing identities without leaving a tenant or receipt |
+| [it:120](../../tests/integration/workspace-provisioning.test.ts#L120) | operator workspace provisioning → rejects runtime credentials, duplicate principals, unknown fields and disabled identities |
+| [it:147](../../tests/integration/workspace-provisioning.test.ts#L147) | operator workspace provisioning → admits provisioned members through normal session and conversation APIs while rejecting an unlisted human |
 
 ## tests/model/ollama.test.ts
 

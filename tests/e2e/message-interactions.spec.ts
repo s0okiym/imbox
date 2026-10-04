@@ -7,9 +7,14 @@ async function login(page: Page, name: 'Alice' | 'Bob') {
 async function send(page: Page, body: string) {
   await page.getByRole('textbox', { name: '消息内容', exact: true }).fill(body);
   await page.getByRole('button', { name: '发送消息', exact: true }).click();
-  await expect(
-    page.getByLabel('消息记录').locator('.message-bubble').filter({ hasText: body }),
-  ).toBeVisible();
+  const row = page
+    .getByLabel('消息记录')
+    .getByRole('article')
+    .filter({
+      has: page.locator('.message-bubble').filter({ hasText: body }),
+    });
+  // An optimistic bubble is not a committed message (a stale fixed quote can be rejected).
+  await expect(row.locator('.saved-label')).toBeVisible();
 }
 test('human replies bind fixed text, thread replies share the root, and reaction removal affects only oneself', async ({
   browser,
@@ -56,6 +61,16 @@ test('human replies bind fixed text, thread replies share the root, and reaction
     await expect(
       source(alice).getByRole('button', { name: '查看 👍 回应，共 1 人', exact: true }),
     ).toBeVisible();
+    // Reactions advance the message version even when the displayed body is unchanged.
+    // Wait for Bob's replica to receive Alice's final removal before fixing the quote.
+    const version = await source(alice)
+      .locator('.message-bubble')
+      .getAttribute('data-message-version');
+    expect(version).not.toBeNull();
+    await expect(source(bob).locator('.message-bubble')).toHaveAttribute(
+      'data-message-version',
+      version!,
+    );
     await source(bob).getByRole('button', { name: '引用回复', exact: true }).click();
     await expect(bob.locator('.composer-quote')).toContainText('原始约定：交付三项');
     await send(bob, '我按这个版本处理');
