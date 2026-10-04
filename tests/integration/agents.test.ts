@@ -277,6 +277,104 @@ describe('M4 machine identity and real HTTP external execution', () => {
       code: 'UNAUTHENTICATED',
     });
   });
+  it('distinguishes platform cancellation from a reconnected external worker acknowledgement and retries a lost receipt once', async () => {
+    const a = await agent();
+    const { created } = await run(a);
+    const claim = await a.client.claim(created.id, key());
+    const running = await runtime.getRun(f.alice, created.id);
+    const cancelling = await runtime.controlRun(
+      f.alice,
+      created.id,
+      'cancel',
+      running.version,
+      key(),
+    );
+    expect(cancelling).toMatchObject({ status: 'cancelling', cancellation_acknowledged_at: null });
+    let reports = 0;
+    const recovered = new ImboxAgentClient({
+      origin,
+      tenantId: f.tenantId,
+      allowLoopbackHttp: true,
+      fetch: async (input, init) => {
+        const response = await fetch(input, init);
+        if (String(input).endsWith(`/agent-runs/${created.id}/reports`) && response.ok) {
+          reports++;
+          if (reports === 1) {
+            await response.body?.cancel();
+            throw new TypeError('Receipt lost after cancellation acknowledgement commit');
+          }
+        }
+        return response;
+      },
+    });
+    await recovered.exchange({ credential: a.credential.secret!, scopes: [...MACHINE_SCOPES] });
+    expect(
+      (await recovered.heartbeat(created.id, claim.lease!.generation)).cancellation_requested,
+    ).toBe(true);
+    await expect(
+      recovered.report(
+        created.id,
+        {
+          generation: claim.lease!.generation,
+          status: 'completed',
+          checkpoint: {},
+          output: 'Must not publish after cancellation',
+        },
+        key(),
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    const reportKey = key();
+    const body: C['MachineReportInput'] = {
+      generation: claim.lease!.generation,
+      status: 'cancelled',
+      checkpoint: { stopped: true },
+    };
+    const stopped = await recovered.report(created.id, body, reportKey);
+    expect(reports).toBe(2);
+    expect(stopped).toMatchObject({
+      status: 'cancelled',
+      execution_location: 'external',
+      report_source: 'external_report',
+      output: null,
+      cancellation_acknowledged_at: expect.any(String),
+    });
+    expect((await recovered.report(created.id, body, reportKey)).cancellation_acknowledged_at).toBe(
+      stopped.cancellation_acknowledged_at,
+    );
+    const stored = await withTenant(databases.db, f.tenantId, (tx) =>
+      sql<{ count: string }>`select count(*) from run_reports where run_id=${created.id}`.execute(
+        tx,
+      ),
+    );
+    expect(stored.rows[0]!.count).toBe('1');
+    const offline = await run(a);
+    const stale = await a.client.claim(offline.created.id, key());
+    await withTenant(databases.owner, f.tenantId, (tx) =>
+      sql`update agent_runs set lease_expires_at=clock_timestamp()-interval '1 second' where id=${offline.created.id}`.execute(
+        tx,
+      ),
+    );
+    const before = await runtime.getRun(f.alice, offline.created.id);
+    const platformCancelled = await runtime.controlRun(
+      f.alice,
+      before.id,
+      'cancel',
+      before.version,
+      key(),
+    );
+    expect(platformCancelled).toMatchObject({
+      status: 'cancelled',
+      cancellation_acknowledged_at: null,
+    });
+    await expect(
+      a.client.report(
+        before.id,
+        { generation: stale.lease!.generation, status: 'cancelled', checkpoint: { stopped: true } },
+        key(),
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    expect((await runtime.getRun(f.alice, before.id)).cancellation_acknowledged_at).toBeNull();
+  });
   it('does not revive old tokens after global disable/re-enable or installation disable', async () => {
     const a = await agent();
     await databases.identityDb

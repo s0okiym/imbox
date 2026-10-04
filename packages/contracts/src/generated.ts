@@ -1407,6 +1407,7 @@ export interface RuntimeRun {
     | 'expired';
   version: Version;
   lease_generation: Counter;
+  cancellation_acknowledged_at?: UtcTimestamp | null;
   cancellation_requested: boolean;
   pause_requested: boolean;
   context_manifest_id: Identifier;

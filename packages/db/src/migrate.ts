@@ -1,3 +1,4 @@
+import { runCancellationAckSql } from './migrations/034-run-cancellation-ack.js';
 import { artifactBranchesSql } from './migrations/033-artifact-branches.js';
 import { organizationInvitationsSql } from './migrations/032-organization-invitations.js';
 import { tenantMembershipPolicySql } from './migrations/031-tenant-membership-policy.js';
@@ -67,6 +68,7 @@ export const migrations = [
   { id: '031-tenant-membership-policy', sql: tenantMembershipPolicySql },
   { id: '032-organization-invitations', sql: organizationInvitationsSql },
   { id: '033-artifact-branches', sql: artifactBranchesSql },
+  { id: '034-run-cancellation-ack', sql: runCancellationAckSql },
 ] as const;
 
 /** Explicit command only. Atomic migration batch, immutable checksums, serialized owner DDL. */

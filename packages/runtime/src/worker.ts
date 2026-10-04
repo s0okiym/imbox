@@ -451,7 +451,7 @@ export function createRuntimeWorker(options: {
         else if (input.status !== 'running') fail('VERSION_CONFLICT', 409);
         const stillRunning = input.status === 'running';
         const updated = (
-          await sql<RunRow>`update agent_runs set status=${input.status},version=version+1,checkpoint_seq=checkpoint_seq+1,summary=${input.summary ?? run.summary},output=${input.output ?? run.output},pause_requested=false,
+          await sql<RunRow>`update agent_runs set status=${input.status},version=version+1,checkpoint_seq=checkpoint_seq+1,cancellation_acknowledged_at=case when ${input.status === 'cancelled'} then clock_timestamp() else cancellation_acknowledged_at end,summary=${input.summary ?? run.summary},output=${input.output ?? run.output},pause_requested=false,
      lease_holder=case when ${stillRunning} then lease_holder else null end,lease_expires_at=case when ${stillRunning} then lease_expires_at else null end,updated_at=clock_timestamp()
      where id=${run.id} and lease_holder=${claim.holder} and lease_generation=${claim.generation} and lease_expires_at>clock_timestamp() returning *`.execute(
             tx,

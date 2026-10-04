@@ -24,6 +24,7 @@ export interface RunRow {
   status: RunStatus;
   version: string;
   cancellation_requested: boolean;
+  cancellation_acknowledged_at: Date | null;
   pause_requested: boolean;
   lease_holder: string | null;
   lease_generation: string;

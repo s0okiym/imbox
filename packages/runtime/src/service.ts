@@ -44,6 +44,7 @@ export const runDto = (run: RunRow) => ({
   version: run.version,
   lease_generation: run.lease_generation,
   cancellation_requested: run.cancellation_requested,
+  cancellation_acknowledged_at: run.cancellation_acknowledged_at?.toISOString() ?? null,
   pause_requested: run.pause_requested,
   context_manifest_id: run.context_manifest_id,
   tool_grant_id: run.tool_grant_id,

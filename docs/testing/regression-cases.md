@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 87 个测试文件、499 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 87 个测试文件、501 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -476,11 +476,12 @@
 | 声明 | 用例 |
 |---|---|
 | [test:282](../../tests/e2e/runtime-actions.spec.ts#L282) | runtime UI discloses fixed context and budget, controls real runs, and restores scoped history |
-| [test:315](../../tests/e2e/runtime-actions.spec.ts#L315) | grant → proposal → exact human approval → lost response → lookup has one external effect |
-| [test:380](../../tests/e2e/runtime-actions.spec.ts#L380) | a revoked source removes previously visible run context from the browser |
-| [test:401](../../tests/e2e/runtime-actions.spec.ts#L401) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
-| [test:482](../../tests/e2e/runtime-actions.spec.ts#L482) | handoff UI requires explicit disclosure of the outstanding action manifest |
-| [test:561](../../tests/e2e/runtime-actions.spec.ts#L561) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
+| [test:316](../../tests/e2e/runtime-actions.spec.ts#L316) | runtime UI shows worker stop confirmation separately from the cancellation request |
+| [test:351](../../tests/e2e/runtime-actions.spec.ts#L351) | grant → proposal → exact human approval → lost response → lookup has one external effect |
+| [test:416](../../tests/e2e/runtime-actions.spec.ts#L416) | a revoked source removes previously visible run context from the browser |
+| [test:437](../../tests/e2e/runtime-actions.spec.ts#L437) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
+| [test:518](../../tests/e2e/runtime-actions.spec.ts#L518) | handoff UI requires explicit disclosure of the outstanding action manifest |
+| [test:597](../../tests/e2e/runtime-actions.spec.ts#L597) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
 
 ## tests/e2e/scheduling-promotion.spec.ts
 
@@ -557,10 +558,11 @@
 | [it:208](../../tests/integration/agents.test.ts#L208) | M4 machine identity and real HTTP external execution → revokes already-authenticated contexts inside business transactions and expires tokens by database clock |
 | [it:228](../../tests/integration/agents.test.ts#L228) | M4 machine identity and real HTTP external execution → idempotently claims a lease, rejects other agents and fences expired/rotated workers |
 | [it:257](../../tests/integration/agents.test.ts#L257) | M4 machine identity and real HTTP external execution → marks completed external reports as unverified and rechecks authorization on report replay |
-| [it:280](../../tests/integration/agents.test.ts#L280) | M4 machine identity and real HTTP external execution → does not revive old tokens after global disable/re-enable or installation disable |
-| [it:299](../../tests/integration/agents.test.ts#L299) | M4 machine identity and real HTTP external execution → requires explicit handoff acceptance for human→agent and agent→agent ownership changes |
-| [it:406](../../tests/integration/agents.test.ts#L406) | SDK retries a lost command response with identical key/body and produces one message |
-| [it:444](../../tests/integration/agents.test.ts#L444) | human Agent management read boundaries → lists credential metadata with actor-bound paging, never hashes or recoverable secrets |
+| [it:280](../../tests/integration/agents.test.ts#L280) | M4 machine identity and real HTTP external execution → distinguishes platform cancellation from a reconnected external worker acknowledgement and retries a lost receipt once |
+| [it:378](../../tests/integration/agents.test.ts#L378) | M4 machine identity and real HTTP external execution → does not revive old tokens after global disable/re-enable or installation disable |
+| [it:397](../../tests/integration/agents.test.ts#L397) | M4 machine identity and real HTTP external execution → requires explicit handoff acceptance for human→agent and agent→agent ownership changes |
+| [it:504](../../tests/integration/agents.test.ts#L504) | SDK retries a lost command response with identical key/body and produces one message |
+| [it:542](../../tests/integration/agents.test.ts#L542) | human Agent management read boundaries → lists credential metadata with actor-bound paging, never hashes or recoverable secrets |
 
 ## tests/integration/artifact-collaboration.test.ts
 

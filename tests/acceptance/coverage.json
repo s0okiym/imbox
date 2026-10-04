@@ -174,13 +174,15 @@
       "tests": [
         "tests/integration/runtime.test.ts",
         "tests/integration/agents.test.ts",
-        "tests/integration/actions.test.ts"
+        "tests/integration/actions.test.ts",
+        "tests/e2e/runtime-actions.spec.ts"
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
-        "docs/testing/provisioning-evidence-2026-10-04.json"
+        "docs/testing/provisioning-evidence-2026-10-04.json",
+        "docs/testing/cancellation-ack-2026-10-05.md"
       ],
-      "notes": "runtime 分开记录 cancelling 与 worker acknowledged cancelled；未派发 Action 随 Run 取消，已发生/unknown 保留。真实外部 Agent 失联后恢复及远端确认的部署演练仍未完成。"
+      "notes": "平台取消与执行器停止确认时间独立；只有有效租约的 cancelled 回报写确认，外部确认标注自报。真实 HTTP 新 SDK 重连、取消后输出拒绝、回执丢失幂等确认及过期旧 Worker 拒绝有断言；浏览器验证未确认与已确认分别展示。独立迟到确认通道和真实远端部署失联恢复仍待完成。"
     },
     {
       "id": "AC-15",

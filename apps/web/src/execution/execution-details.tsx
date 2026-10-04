@@ -130,6 +130,15 @@ export function RunDetail({
             : '结果来源：平台运行记录。'}{' '}
           运行结束后，任务仍需独立提交和验收。
         </p>
+        {(run.cancellation_requested || run.status === 'cancelled') && (
+          <p className="execution-note" role="status">
+            {run.cancellation_acknowledged_at
+              ? `${run.execution_location === 'external' ? '远端 Agent 自报已停止（未独立验证）' : '执行器已确认停止'}：${fullTime(run.cancellation_acknowledged_at)}。`
+              : run.execution_location === 'external'
+                ? '尚无执行器停止确认；平台侧取消不代表远端进程已停止。'
+                : '尚无执行器停止确认。'}
+          </p>
+        )}
         {run.pause_requested && run.status !== 'paused' && (
           <p className="execution-warning" role="status">
             已请求暂停，正在等待执行器到达安全停止点。

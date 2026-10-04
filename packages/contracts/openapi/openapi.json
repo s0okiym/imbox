@@ -18188,6 +18188,16 @@
           "lease_generation": {
             "$ref": "#/components/schemas/Counter"
           },
+          "cancellation_acknowledged_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UtcTimestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "cancellation_requested": {
             "type": "boolean"
           },

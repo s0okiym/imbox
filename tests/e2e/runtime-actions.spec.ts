@@ -300,6 +300,7 @@ test('runtime UI discloses fixed context and budget, controls real runs, and res
         page.getByLabel('运行详情').getByRole('heading', { name: state, exact: true }),
       ).toBeVisible();
     }
+    await expect(page.getByText('尚无执行器停止确认。', { exact: true })).toBeVisible();
     await page.reload();
     await page.getByRole('button', { name: '运行与行动', exact: true }).click();
     await page
@@ -308,6 +309,41 @@ test('runtime UI discloses fixed context and budget, controls real runs, and res
     await expect(
       page.getByRole('navigation', { name: '运行列表' }).getByText('已取消', { exact: true }),
     ).toBeVisible();
+  } finally {
+    await f.close();
+  }
+});
+test('runtime UI shows worker stop confirmation separately from the cancellation request', async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  try {
+    await createRun(page, f);
+    const run = (await f.runtime.listRuns(f.f.alice, { task_id: f.task.id })).items[0]!;
+    const worker = createRuntimeWorker({
+      db: f.databases.db,
+      workerId: 'browser-cancellation-ack',
+    });
+    const claim = await worker.claim(f.f.tenantId, run.id);
+    expect(claim).not.toBeNull();
+    await page.getByRole('button', { name: '刷新运行', exact: true }).click();
+    await expect(
+      page.getByLabel('运行详情').getByRole('heading', { name: '运行中', exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: '取消运行', exact: true }).click();
+    await page.getByRole('dialog').getByRole('checkbox').check();
+    await page.getByRole('button', { name: '确认取消运行', exact: true }).click();
+    await expect(page.getByText('尚无执行器停止确认。', { exact: true })).toBeVisible();
+    await worker.report(
+      claim!,
+      { status: 'cancelled', checkpoint: { stopped: true } },
+      randomUUID(),
+    );
+    await page.getByRole('button', { name: '刷新运行', exact: true }).click();
+    await expect(
+      page.getByLabel('运行详情').getByRole('heading', { name: '已取消', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText(/^执行器已确认停止：/)).toBeVisible();
   } finally {
     await f.close();
   }

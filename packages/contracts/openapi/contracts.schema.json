@@ -5082,6 +5082,16 @@
         "lease_generation": {
           "$ref": "#/$defs/Counter"
         },
+        "cancellation_acknowledged_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "cancellation_requested": {
           "type": "boolean"
         },
