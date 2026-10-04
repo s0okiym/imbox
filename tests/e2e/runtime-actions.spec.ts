@@ -14,10 +14,16 @@ import {
   createHttpToolRegistry,
   createToolRunner,
   requiredActionsClosed,
+  cancelPendingTaskActions,
 } from '@imbox/actions';
 import { createIdentityService } from '@imbox/auth';
 import { createMessagingService, createTaskService } from '@imbox/application';
-import { createRuntimeService, createRuntimeWorker, runtimeCompletionGate } from '@imbox/runtime';
+import {
+  createRuntimeService,
+  createRuntimeWorker,
+  runtimeCompletionGate,
+  stopTaskRuns,
+} from '@imbox/runtime';
 import type { Action } from '@imbox/contracts';
 import { sql, withTenant } from '@imbox/db';
 import { createApp } from '../../apps/api/src/app.js';
@@ -121,6 +127,10 @@ async function fixture(page: Page) {
     ]),
   });
   const tasks = createTaskService(databases.db, secret, {
+    stopTaskExecution: async (tx, auth, id) => {
+      await stopTaskRuns(tx, auth, id);
+      await cancelPendingTaskActions(tx, auth, id);
+    },
     requiredActionsClosed: async (tx, id) =>
       (await runtimeCompletionGate(tx, id)) && (await requiredActionsClosed(tx, id)),
   });
@@ -215,6 +225,7 @@ async function fixture(page: Page) {
     agent,
     actions,
     runtime,
+    tasks,
     databases,
     driver: createModelDriver({
       worker: createRuntimeWorker({ db: databases.db, workerId: 'browser-hosted-model' }),
@@ -333,6 +344,47 @@ test('runtime UI shows worker stop confirmation separately from the cancellation
     await page.getByRole('button', { name: '取消运行', exact: true }).click();
     await page.getByRole('dialog').getByRole('checkbox').check();
     await page.getByRole('button', { name: '确认取消运行', exact: true }).click();
+    await expect(page.getByText('尚无执行器停止确认。', { exact: true })).toBeVisible();
+    await worker.report(
+      claim!,
+      { status: 'cancelled', checkpoint: { stopped: true } },
+      randomUUID(),
+    );
+    await page.getByRole('button', { name: '刷新运行', exact: true }).click();
+    await expect(
+      page.getByLabel('运行详情').getByRole('heading', { name: '已取消', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText(/^执行器已确认停止：/)).toBeVisible();
+  } finally {
+    await f.close();
+  }
+});
+test('task cancellation signals the running worker and displays its later stop acknowledgement', async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  try {
+    await createRun(page, f);
+    const run = (await f.runtime.listRuns(f.f.alice, { task_id: f.task.id })).items[0]!;
+    const worker = createRuntimeWorker({
+      db: f.databases.db,
+      workerId: 'browser-cancellation-ack',
+    });
+    const claim = await worker.claim(f.f.tenantId, run.id);
+    expect(claim).not.toBeNull();
+    await page.getByRole('button', { name: '刷新运行', exact: true }).click();
+    await expect(
+      page.getByLabel('运行详情').getByRole('heading', { name: '运行中', exact: true }),
+    ).toBeVisible();
+    await f.tasks.cancelTask(
+      f.f.alice,
+      f.task.id,
+      { reason: 'Cancel task and execution' },
+      f.task.version,
+      randomUUID(),
+    );
+    await page.getByRole('button', { name: '刷新运行', exact: true }).click();
+    expect((await worker.heartbeat(claim!)).cancellation_requested).toBe(true);
     await expect(page.getByText('尚无执行器停止确认。', { exact: true })).toBeVisible();
     await worker.report(
       claim!,

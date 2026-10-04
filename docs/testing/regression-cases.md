@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 87 个测试文件、504 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 87 个测试文件、507 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -475,13 +475,14 @@
 
 | 声明 | 用例 |
 |---|---|
-| [test:282](../../tests/e2e/runtime-actions.spec.ts#L282) | runtime UI discloses fixed context and budget, controls real runs, and restores scoped history |
-| [test:316](../../tests/e2e/runtime-actions.spec.ts#L316) | runtime UI shows worker stop confirmation separately from the cancellation request |
-| [test:351](../../tests/e2e/runtime-actions.spec.ts#L351) | grant → proposal → exact human approval → lost response → lookup has one external effect |
-| [test:416](../../tests/e2e/runtime-actions.spec.ts#L416) | a revoked source removes previously visible run context from the browser |
-| [test:437](../../tests/e2e/runtime-actions.spec.ts#L437) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
-| [test:518](../../tests/e2e/runtime-actions.spec.ts#L518) | handoff UI requires explicit disclosure of the outstanding action manifest |
-| [test:597](../../tests/e2e/runtime-actions.spec.ts#L597) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
+| [test:293](../../tests/e2e/runtime-actions.spec.ts#L293) | runtime UI discloses fixed context and budget, controls real runs, and restores scoped history |
+| [test:327](../../tests/e2e/runtime-actions.spec.ts#L327) | runtime UI shows worker stop confirmation separately from the cancellation request |
+| [test:362](../../tests/e2e/runtime-actions.spec.ts#L362) | task cancellation signals the running worker and displays its later stop acknowledgement |
+| [test:403](../../tests/e2e/runtime-actions.spec.ts#L403) | grant → proposal → exact human approval → lost response → lookup has one external effect |
+| [test:468](../../tests/e2e/runtime-actions.spec.ts#L468) | a revoked source removes previously visible run context from the browser |
+| [test:489](../../tests/e2e/runtime-actions.spec.ts#L489) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
+| [test:570](../../tests/e2e/runtime-actions.spec.ts#L570) | handoff UI requires explicit disclosure of the outstanding action manifest |
+| [test:649](../../tests/e2e/runtime-actions.spec.ts#L649) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
 
 ## tests/e2e/scheduling-promotion.spec.ts
 
@@ -528,25 +529,26 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:230](../../tests/integration/actions.test.ts#L230) | controlled actions with real PostgreSQL, HTTP and independent signed journal → requires explicit approval, records durable intent before the effect, and settles once |
-| [it:260](../../tests/integration/actions.test.ts#L260) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retains an unknown result after response loss, queries it, and never resends the business action |
-| [it:304](../../tests/integration/actions.test.ts#L304) | controlled actions with real PostgreSQL, HTTP and independent signed journal → discloses only explicit same-task action references and rejects omitted or foreign references |
-| [it:361](../../tests/integration/actions.test.ts#L361) | controlled actions with real PostgreSQL, HTTP and independent signed journal → refuses oversized outstanding manifests instead of silently dropping action references |
-| [it:395](../../tests/integration/actions.test.ts#L395) | controlled actions with real PostgreSQL, HTTP and independent signed journal → requires renewed agreement for actions added after a handoff offer and permits already completed references |
-| [it:455](../../tests/integration/actions.test.ts#L455) | controlled actions with real PostgreSQL, HTTP and independent signed journal → serializes accepting a handoff against creating newly undisclosed work |
-| [it:478](../../tests/integration/actions.test.ts#L478) | controlled actions with real PostgreSQL, HTTP and independent signed journal → fences a prepared dispatch after real handoff and releases its unused reservation |
-| [it:504](../../tests/integration/actions.test.ts#L504) | controlled actions with real PostgreSQL, HTTP and independent signed journal → hands off during a committed external effect and lets the new owner reconcile without resending |
-| [it:553](../../tests/integration/actions.test.ts#L553) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retries confirmed no-effect attempts under the same action, fingerprint and business key |
-| [it:571](../../tests/integration/actions.test.ts#L571) | controlled actions with real PostgreSQL, HTTP and independent signed journal → invalidates old approval after changing parameters and refuses revoked grants before effects |
-| [it:589](../../tests/integration/actions.test.ts#L589) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an approved stale task version before claim and permits newly authorized work |
-| [it:615](../../tests/integration/actions.test.ts#L615) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rechecks the task version after durable intent and releases an unsent reservation |
-| [it:644](../../tests/integration/actions.test.ts#L644) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects expired leases even before takeover and retains unresolved attempts |
-| [it:659](../../tests/integration/actions.test.ts#L659) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive a grant or action when a disabled global identity is re-enabled |
-| [it:680](../../tests/integration/actions.test.ts#L680) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive old authority after task membership removal/reinvitation or epoch changes |
-| [it:723](../../tests/integration/actions.test.ts#L723) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an expired approval before opening a network attempt |
-| [it:736](../../tests/integration/actions.test.ts#L736) | controlled actions with real PostgreSQL, HTTP and independent signed journal → deduplicates the same receipt and preserves a conflicting late receipt as an open case |
-| [it:760](../../tests/integration/actions.test.ts#L760) | controlled actions with real PostgreSQL, HTTP and independent signed journal → enforces human HTTP approval contracts and never exposes internal execution/report capabilities |
-| [it:872](../../tests/integration/actions.test.ts#L872) | controlled actions with real PostgreSQL, HTTP and independent signed journal → finds a whole action lost across a simulated database recovery and freezes new execution |
+| [it:235](../../tests/integration/actions.test.ts#L235) | controlled actions with real PostgreSQL, HTTP and independent signed journal → cancels pending task actions and revokes approvals while preserving unknown effects |
+| [it:261](../../tests/integration/actions.test.ts#L261) | controlled actions with real PostgreSQL, HTTP and independent signed journal → requires explicit approval, records durable intent before the effect, and settles once |
+| [it:291](../../tests/integration/actions.test.ts#L291) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retains an unknown result after response loss, queries it, and never resends the business action |
+| [it:335](../../tests/integration/actions.test.ts#L335) | controlled actions with real PostgreSQL, HTTP and independent signed journal → discloses only explicit same-task action references and rejects omitted or foreign references |
+| [it:392](../../tests/integration/actions.test.ts#L392) | controlled actions with real PostgreSQL, HTTP and independent signed journal → refuses oversized outstanding manifests instead of silently dropping action references |
+| [it:426](../../tests/integration/actions.test.ts#L426) | controlled actions with real PostgreSQL, HTTP and independent signed journal → requires renewed agreement for actions added after a handoff offer and permits already completed references |
+| [it:486](../../tests/integration/actions.test.ts#L486) | controlled actions with real PostgreSQL, HTTP and independent signed journal → serializes accepting a handoff against creating newly undisclosed work |
+| [it:509](../../tests/integration/actions.test.ts#L509) | controlled actions with real PostgreSQL, HTTP and independent signed journal → fences a prepared dispatch after real handoff and releases its unused reservation |
+| [it:535](../../tests/integration/actions.test.ts#L535) | controlled actions with real PostgreSQL, HTTP and independent signed journal → hands off during a committed external effect and lets the new owner reconcile without resending |
+| [it:584](../../tests/integration/actions.test.ts#L584) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retries confirmed no-effect attempts under the same action, fingerprint and business key |
+| [it:602](../../tests/integration/actions.test.ts#L602) | controlled actions with real PostgreSQL, HTTP and independent signed journal → invalidates old approval after changing parameters and refuses revoked grants before effects |
+| [it:620](../../tests/integration/actions.test.ts#L620) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an approved stale task version before claim and permits newly authorized work |
+| [it:646](../../tests/integration/actions.test.ts#L646) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rechecks the task version after durable intent and releases an unsent reservation |
+| [it:675](../../tests/integration/actions.test.ts#L675) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects expired leases even before takeover and retains unresolved attempts |
+| [it:690](../../tests/integration/actions.test.ts#L690) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive a grant or action when a disabled global identity is re-enabled |
+| [it:711](../../tests/integration/actions.test.ts#L711) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive old authority after task membership removal/reinvitation or epoch changes |
+| [it:754](../../tests/integration/actions.test.ts#L754) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an expired approval before opening a network attempt |
+| [it:767](../../tests/integration/actions.test.ts#L767) | controlled actions with real PostgreSQL, HTTP and independent signed journal → deduplicates the same receipt and preserves a conflicting late receipt as an open case |
+| [it:791](../../tests/integration/actions.test.ts#L791) | controlled actions with real PostgreSQL, HTTP and independent signed journal → enforces human HTTP approval contracts and never exposes internal execution/report capabilities |
+| [it:903](../../tests/integration/actions.test.ts#L903) | controlled actions with real PostgreSQL, HTTP and independent signed journal → finds a whole action lost across a simulated database recovery and freezes new execution |
 
 ## tests/integration/agents.test.ts
 
@@ -843,29 +845,30 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:166](../../tests/integration/runtime.test.ts#L166) | durable runtime identity, leases and context → rejects owner credentials, binds immutable agent revisions, and creates an idempotent task-free conversation run |
-| [it:210](../../tests/integration/runtime.test.ts#L210) | durable runtime identity, leases and context → scans hosted durable candidates and exposes only the fixed execution revision and explicit manifest |
-| [it:226](../../tests/integration/runtime.test.ts#L226) | durable runtime identity, leases and context → rejects old worker heartbeat, budget reservation and completion after real handoff |
-| [it:311](../../tests/integration/runtime.test.ts#L311) | durable runtime identity, leases and context → rejects heartbeat/report after expiry even before takeover, increments generation on recovery, and rejects the old holder |
-| [it:331](../../tests/integration/runtime.test.ts#L331) | durable runtime identity, leases and context → invalidates old runs after an ancestor closes and reopens, and checks all ancestor deadlines |
-| [it:362](../../tests/integration/runtime.test.ts#L362) | durable runtime identity, leases and context → captures only explicit source versions/hashes and refuses context use/submission after source revocation |
-| [it:400](../../tests/integration/runtime.test.ts#L400) | durable runtime identity, leases and context → rejects private task input in conversation runs, oversized context and stale source versions without persisting partial runs |
-| [it:442](../../tests/integration/runtime.test.ts#L442) | durable runtime identity, leases and context → freezes global creator and agent identity revisions so disabling and re-enabling never revives an old run |
-| [it:473](../../tests/integration/runtime.test.ts#L473) | durable runtime identity, leases and context → rejects prior task participation after removal and reinvitation even with current tenant membership |
-| [it:489](../../tests/integration/runtime.test.ts#L489) | durable runtime identity, leases and context → withholds previously generated output when a separate context source is later revoked |
-| [it:518](../../tests/integration/runtime.test.ts#L518) | durable runtime identity, leases and context → persists pause/checkpoint/resume and requires an explicit worker cancellation acknowledgement |
-| [it:572](../../tests/integration/runtime.test.ts#L572) | atomic root-shared budget and late accounting facts → concurrent child reservations share the root limit without double counting usage |
-| [it:622](../../tests/integration/runtime.test.ts#L622) | atomic root-shared budget and late accounting facts → retains unknown reservations, refuses unproven release, and records overspend after task cancellation |
-| [it:682](../../tests/integration/runtime.test.ts#L682) | atomic root-shared budget and late accounting facts → gates completion on live runs and unresolved accounting across the complete task subtree |
-| [it:706](../../tests/integration/runtime.test.ts#L706) | atomic root-shared budget and late accounting facts → atomically persists usage and a result checkpoint, then resumes after a crash without dispatching again |
-| [it:756](../../tests/integration/runtime.test.ts#L756) | atomic root-shared budget and late accounting facts → refuses expired result checkpoints while accepting the late accounting fact separately |
-| [it:786](../../tests/integration/runtime.test.ts#L786) | atomic root-shared budget and late accounting facts → does not blindly reclaim a crashed model step with outstanding usage |
-| [it:812](../../tests/integration/runtime.test.ts#L812) | exposes only human authorization/control routes; worker completion and budget writes have no public endpoint |
-| [it:883](../../tests/integration/runtime.test.ts#L883) | retries a real PostgreSQL deadlock without duplicating committed transaction writes |
-| [it:916](../../tests/integration/runtime.test.ts#L916) | bounded V1 execution → serializes concurrent claims across the entire root tree and releases a slot on terminal report |
-| [it:932](../../tests/integration/runtime.test.ts#L932) | bounded V1 execution → bounds zero-cost invocations and durable progress steps without blocking final completion |
-| [it:964](../../tests/integration/runtime.test.ts#L964) | bounded V1 execution → does not renew an execution beyond its absolute lifetime even when its lease is current |
-| [it:983](../../tests/integration/runtime.test.ts#L983) | paginates authorized run history with cursors bound to the current scope |
+| [it.each:167](../../tests/integration/runtime.test.ts#L167) | durable runtime identity, leases and context → propagates task %s through descendant runs without fabricating acknowledgements or releasing holds |
+| [it:257](../../tests/integration/runtime.test.ts#L257) | durable runtime identity, leases and context → rejects owner credentials, binds immutable agent revisions, and creates an idempotent task-free conversation run |
+| [it:301](../../tests/integration/runtime.test.ts#L301) | durable runtime identity, leases and context → scans hosted durable candidates and exposes only the fixed execution revision and explicit manifest |
+| [it:317](../../tests/integration/runtime.test.ts#L317) | durable runtime identity, leases and context → rejects old worker heartbeat, budget reservation and completion after real handoff |
+| [it:402](../../tests/integration/runtime.test.ts#L402) | durable runtime identity, leases and context → rejects heartbeat/report after expiry even before takeover, increments generation on recovery, and rejects the old holder |
+| [it:422](../../tests/integration/runtime.test.ts#L422) | durable runtime identity, leases and context → invalidates old runs after an ancestor closes and reopens, and checks all ancestor deadlines |
+| [it:453](../../tests/integration/runtime.test.ts#L453) | durable runtime identity, leases and context → captures only explicit source versions/hashes and refuses context use/submission after source revocation |
+| [it:491](../../tests/integration/runtime.test.ts#L491) | durable runtime identity, leases and context → rejects private task input in conversation runs, oversized context and stale source versions without persisting partial runs |
+| [it:533](../../tests/integration/runtime.test.ts#L533) | durable runtime identity, leases and context → freezes global creator and agent identity revisions so disabling and re-enabling never revives an old run |
+| [it:564](../../tests/integration/runtime.test.ts#L564) | durable runtime identity, leases and context → rejects prior task participation after removal and reinvitation even with current tenant membership |
+| [it:580](../../tests/integration/runtime.test.ts#L580) | durable runtime identity, leases and context → withholds previously generated output when a separate context source is later revoked |
+| [it:609](../../tests/integration/runtime.test.ts#L609) | durable runtime identity, leases and context → persists pause/checkpoint/resume and requires an explicit worker cancellation acknowledgement |
+| [it:663](../../tests/integration/runtime.test.ts#L663) | atomic root-shared budget and late accounting facts → concurrent child reservations share the root limit without double counting usage |
+| [it:713](../../tests/integration/runtime.test.ts#L713) | atomic root-shared budget and late accounting facts → retains unknown reservations, refuses unproven release, and records overspend after task cancellation |
+| [it:773](../../tests/integration/runtime.test.ts#L773) | atomic root-shared budget and late accounting facts → gates completion on live runs and unresolved accounting across the complete task subtree |
+| [it:797](../../tests/integration/runtime.test.ts#L797) | atomic root-shared budget and late accounting facts → atomically persists usage and a result checkpoint, then resumes after a crash without dispatching again |
+| [it:847](../../tests/integration/runtime.test.ts#L847) | atomic root-shared budget and late accounting facts → refuses expired result checkpoints while accepting the late accounting fact separately |
+| [it:877](../../tests/integration/runtime.test.ts#L877) | atomic root-shared budget and late accounting facts → does not blindly reclaim a crashed model step with outstanding usage |
+| [it:903](../../tests/integration/runtime.test.ts#L903) | exposes only human authorization/control routes; worker completion and budget writes have no public endpoint |
+| [it:974](../../tests/integration/runtime.test.ts#L974) | retries a real PostgreSQL deadlock without duplicating committed transaction writes |
+| [it:1007](../../tests/integration/runtime.test.ts#L1007) | bounded V1 execution → serializes concurrent claims across the entire root tree and releases a slot on terminal report |
+| [it:1023](../../tests/integration/runtime.test.ts#L1023) | bounded V1 execution → bounds zero-cost invocations and durable progress steps without blocking final completion |
+| [it:1055](../../tests/integration/runtime.test.ts#L1055) | bounded V1 execution → does not renew an execution beyond its absolute lifetime even when its lease is current |
+| [it:1074](../../tests/integration/runtime.test.ts#L1074) | paginates authorized run history with cursors bound to the current scope |
 
 ## tests/integration/scheduling.test.ts
 

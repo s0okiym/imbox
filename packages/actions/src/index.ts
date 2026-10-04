@@ -24,3 +24,4 @@ export type {
 export type { ActionClaim } from './types.js';
 export { configuredActions } from './configuration.js';
 export type { ActionRecoveryService } from './recovery.js';
+export { cancelPendingTaskActions } from './task-stop.js';

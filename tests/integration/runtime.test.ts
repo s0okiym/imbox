@@ -4,6 +4,7 @@ import {
   createRuntimeService,
   createRuntimeWorker,
   runtimeCompletionGate,
+  stopTaskRuns,
   type RuntimeService,
   type RuntimeWorker,
   type CreateRunInput,
@@ -111,7 +112,7 @@ async function task(parentId?: string, limit = '100') {
         created_by: fixture.alice.principalId,
         title: 'Runtime task',
         goal: 'Work within explicit scope',
-        acceptance_criteria: {},
+        acceptance_criteria: sql`${JSON.stringify(['Explicit result'])}::jsonb`,
         reviewer_ids: sql`${JSON.stringify([fixture.alice.principalId])}::jsonb`,
       })
       .execute();
@@ -163,6 +164,96 @@ async function start(
 }
 
 describe('durable runtime identity, leases and context', () => {
+  it.each(['cancelled', 'failed'] as const)(
+    'propagates task %s through descendant runs without fabricating acknowledgements or releasing holds',
+    async (terminal) => {
+      const root = await task();
+      const child = await task(root);
+      const other = await task();
+      const live = await start({ task_id: child }, [
+        { type: 'task', id: root, version: '1', required: true },
+      ]);
+      await withTenant(databases.owner, fixture.tenantId, (tx) =>
+        sql`update agent_runs set summary='Old private summary',output='Old private output' where id=${live.run.id}`.execute(
+          tx,
+        ),
+      );
+      const queued = await runtime.createRun(fixture.alice, input({ task_id: root }), key());
+      const unrelated = await runtime.createRun(fixture.alice, input({ task_id: other }), key());
+      const reservation = await worker.reserve(live.claim, {
+        reservation_key: key(),
+        amount_microunits: '5',
+        currency: 'USD',
+      });
+      const plain = createTaskService(databases.db, secret);
+      const before = await plain.getTask(fixture.alice, root);
+      await expect(
+        plain.cancelTask(fixture.alice, root, { reason: 'Stop' }, before.version, key()),
+      ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+      expect(await plain.getTask(fixture.alice, root)).toMatchObject({
+        version: before.version,
+        status: before.status,
+      });
+      const tasks = createTaskService(databases.db, secret, {
+        stopTaskExecution: async (tx, auth, id) => {
+          await stopTaskRuns(tx, auth, id);
+        },
+      });
+      const requestKey = key();
+      const stop = () =>
+        terminal === 'cancelled'
+          ? tasks.cancelTask(
+              fixture.alice,
+              root,
+              { reason: 'Stop tree' },
+              before.version,
+              requestKey,
+            )
+          : tasks.changeState(
+              fixture.alice,
+              root,
+              { state: 'failed', reason: 'Cannot proceed' },
+              before.version,
+              requestKey,
+            );
+      const stopped = await stop();
+      expect(await stop()).toEqual(stopped);
+      expect(await runtime.getRun(fixture.alice, live.run.id)).toMatchObject({
+        status: 'cancelling',
+        summary: '',
+        output: null,
+        cancellation_requested: true,
+        cancellation_acknowledged_at: null,
+      });
+      expect(await runtime.getRun(fixture.alice, queued.id)).toMatchObject({
+        status: 'cancelled',
+        cancellation_requested: true,
+        cancellation_acknowledged_at: null,
+      });
+      expect((await runtime.getRun(fixture.alice, unrelated.id)).status).toBe('queued');
+      expect((await worker.heartbeat(live.claim)).cancellation_requested).toBe(true);
+      await expect(
+        worker.report(
+          live.claim,
+          { status: 'completed', checkpoint: {}, output: 'Late result' },
+          key(),
+        ),
+      ).rejects.toBeDefined();
+      const acknowledged = await worker.report(
+        live.claim,
+        { status: 'cancelled', checkpoint: {} },
+        key(),
+      );
+      expect(acknowledged.status).toBe('cancelled');
+      expect(acknowledged.cancellation_acknowledged_at).toEqual(expect.any(String));
+      const held = await withTenant(databases.db, fixture.tenantId, (tx) =>
+        sql<{
+          status: string;
+        }>`select status from runtime_reservations where id=${reservation.id}`.execute(tx),
+      );
+      expect(held.rows[0]?.status).toBe('held');
+    },
+  );
   it('rejects owner credentials, binds immutable agent revisions, and creates an idempotent task-free conversation run', async () => {
     await expect(assertRuntimeRole(databases.owner)).rejects.toThrow('Runtime database role');
     await assertRuntimeRole(databases.db);

@@ -25,8 +25,13 @@ import {
   replayPolicyLedger,
 } from '@imbox/application';
 import { createIdentityService } from '@imbox/auth';
-import { createRuntimeService, runtimeCompletionGate, runtimePromotionPort } from '@imbox/runtime';
-import { requiredActionsClosed, configuredActions } from '@imbox/actions';
+import {
+  createRuntimeService,
+  runtimeCompletionGate,
+  runtimePromotionPort,
+  stopTaskRuns,
+} from '@imbox/runtime';
+import { requiredActionsClosed, configuredActions, cancelPendingTaskActions } from '@imbox/actions';
 import { createApp } from './app.js';
 
 config({ path: new URL('../../../.env', import.meta.url), quiet: true });
@@ -55,6 +60,10 @@ const messaging = createMessagingService(db, secret, {
   ...(resourceHooks ? { resources: resourceHooks.messages } : {}),
 });
 const tasks = createTaskService(db, secret, {
+  stopTaskExecution: async (tx, auth, id) => {
+    await stopTaskRuns(tx, auth, id);
+    await cancelPendingTaskActions(tx, auth, id);
+  },
   ...policyOptions,
   promotion: runtimePromotionPort({ sources }),
   ...(resourceHooks ? { artifacts: resourceHooks.artifacts } : {}),

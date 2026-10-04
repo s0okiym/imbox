@@ -12,11 +12,12 @@ import {
   createHttpToolRegistry,
   createToolRunner,
   requiredActionsClosed,
+  cancelPendingTaskActions,
   type ActionService,
   type JournalPort,
 } from '@imbox/actions';
 import { createTaskService, type TaskService } from '@imbox/application';
-import { runtimeCompletionGate } from '@imbox/runtime';
+import { runtimeCompletionGate, stopTaskRuns } from '@imbox/runtime';
 import type { ContractTypes as C } from '@imbox/contracts';
 import { sql, withTenant } from '@imbox/db';
 import { tenantFixture, testDatabases } from '../helpers/database.js';
@@ -146,6 +147,10 @@ beforeEach(async () => {
     ]),
   });
   tasks = createTaskService(databases.db, secret, {
+    stopTaskExecution: async (tx, auth, id) => {
+      await stopTaskRuns(tx, auth, id);
+      await cancelPendingTaskActions(tx, auth, id);
+    },
     requiredActionsClosed: async (tx, id) =>
       (await runtimeCompletionGate(tx, id)) && (await requiredActionsClosed(tx, id)),
   });
@@ -227,6 +232,32 @@ const approve = (action: C['Action']) =>
 const runner = () => createToolRunner({ actions, workerId: 'test-tool-worker' });
 
 describe('controlled actions with real PostgreSQL, HTTP and independent signed journal', () => {
+  it('cancels pending task actions and revokes approvals while preserving unknown effects', async () => {
+    const pending = (await proposed()).action;
+    const ready = await approve((await proposed()).action);
+    const uncertain = await approve((await proposed()).action);
+    mode = 'drop';
+    await runner().runOnce(fixture.tenantId, uncertain.id);
+    expect((await actions.getAction(fixture.alice, uncertain.id)).status).toBe('unknown');
+    const plain = createTaskService(databases.db, secret);
+    await expect(
+      plain.cancelTask(fixture.alice, task.id, { reason: 'Stop' }, task.version, key()),
+    ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+    await tasks.cancelTask(fixture.alice, task.id, { reason: 'Stop' }, task.version, key());
+    expect((await actions.getAction(fixture.alice, pending.id)).status).toBe('cancelled');
+    expect((await actions.getAction(fixture.alice, ready.id)).status).toBe('cancelled');
+    expect((await actions.getAction(fixture.alice, uncertain.id)).status).toBe('unknown');
+    const approvals = await withTenant(databases.db, fixture.tenantId, (tx) =>
+      sql<{
+        status: string;
+      }>`select status from action_approvals where action_id in (${pending.id},${ready.id})`.execute(
+        tx,
+      ),
+    );
+    expect(approvals.rows.length).toBeGreaterThan(0);
+    expect(approvals.rows.every((row) => row.status === 'revoked')).toBe(true);
+    expect(sideEffects).toBe(1);
+  });
   it('requires explicit approval, records durable intent before the effect, and settles once', async () => {
     const { action } = await proposed();
     await expect(runner().runOnce(fixture.tenantId, action.id)).rejects.toMatchObject({

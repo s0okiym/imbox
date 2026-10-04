@@ -194,3 +194,8 @@ Artifact collaboration 8/8 集成通过（10.25 秒）。真实对象字节证�
 ## 2026-10-05 独立 Agent 进程暂停恢复
 
 真实子进程/SDK/HTTP 回归通过：SIGSTOP 确认暂停，平台 Run 取消，等待真实 60 秒租约到期，SIGCONT 后拒绝迟到输出、记录停止确认、进程正常退出。agents 14/14 通过（85.89 秒），类型/静态检查通过，详见 [进程演练](external-process-recovery-2026-10-05.md)。本轮识别出 Task 取消到相关 Run 取消状态的联动仍缺少实现，AC-14 继续 partial。
+
+
+## 任务终止执行联动（2026-10-05）
+
+Task 取消/失败在同一事务中通知后代 Run 停止、撤销待执行 Action 和审批；保留执行中/unknown 外部结果与费用。旧 Task 输入版本失效时，运行状态仍可在当前授权下读取，旧摘要/输出不返回；不伪造执行器停止确认。最终单元 191、相关集成分批 63 后 runtime 25、浏览器 2 项通过，测试类型/Lint 通过；详见 [任务联动证据](task-cancellation-propagation-2026-10-05.md)。AC-14 保持 partial，整体 27 verified / 13 partial / 1 pending。

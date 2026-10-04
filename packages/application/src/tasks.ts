@@ -154,6 +154,7 @@ export function createTaskService(
   db: Db,
   cursorSecret: string,
   options: {
+    stopTaskExecution?: (tx: Tx, auth: AuthContext, taskId: string) => Promise<void>;
     requiredActionsClosed?: (tx: Tx, taskId: string) => Promise<boolean>;
     artifacts?: ArtifactEvidencePort;
     promotion?: RunPromotionPort;
@@ -627,6 +628,32 @@ export function createTaskService(
       tx,
     );
   }
+  async function stopExecution(tx: Tx, auth: AuthContext, id: string) {
+    if (options.stopTaskExecution) return options.stopTaskExecution(tx, auth, id);
+    const installed = (
+      await sql<{
+        runs: boolean;
+        actions: boolean;
+      }>`select to_regclass('agent_runs') is not null as runs,to_regclass('actions') is not null as actions`.execute(
+        tx,
+      )
+    ).rows[0]!;
+    for (const table of ['agent_runs', 'actions'] as const) {
+      if (!(table === 'agent_runs' ? installed.runs : installed.actions)) continue;
+      const pending =
+        table === 'agent_runs'
+          ? sql`status not in ('completed','failed','cancelled','expired')`
+          : sql`status in ('proposed','awaiting_approval','ready')`;
+      const result = (
+        await sql<{
+          pending: boolean;
+        }>`with recursive tree as (select id from tasks where id=${id} union all select t.id from tasks t join tree p on t.parent_task_id=p.id) select exists(select 1 from ${sql.table(table)} where task_id in(select id from tree) and ${pending}) as pending`.execute(
+          tx,
+        )
+      ).rows[0]!;
+      if (result.pending) fail('SERVICE_UNAVAILABLE', 503);
+    }
+  }
   async function actionsClosed(tx: Tx, id: string): Promise<boolean> {
     if (options.requiredActionsClosed) return options.requiredActionsClosed(tx, id);
     // M2 has no Action persistence. A later installation of that table must supply its admission gate.
@@ -968,7 +995,10 @@ export function createTaskService(
               reason: input.reason ?? '',
             });
           const next = await save(tx, t, state);
-          if (terminal(next.status)) await supersede(tx, auth, id);
+          if (terminal(next.status)) {
+            await supersede(tx, auth, id);
+            await stopExecution(tx, auth, id);
+          }
           await event(tx, auth, next, 'task.state_changed');
           return id;
         });
@@ -998,6 +1028,7 @@ export function createTaskService(
             }),
           );
           await supersede(tx, auth, id);
+          await stopExecution(tx, auth, id);
           await event(tx, auth, next, 'task.cancelled');
           return id;
         });

@@ -247,6 +247,11 @@ Run 由服务器生成 lease_generation 和执行资格；外部 Agent 自报 pr
 
 取消通过 inbox/Run 状态传达，同时平台立即失效新资源/工具授权。远端没有确认时显示 cancellation_requested/unconfirmed 等观察字段；平台 lease 结束不证明远端进程已停止。外部 Agent 带自身凭证执行的行为标为其自主边界，平台不能声称被完全拦截。
 
+Task cancel/failed 在任务根锁保护的同一事务中将本任务及后代任务的非终态 Run 标记 cancellation_requested：仍持有效运行租约的置 cancelling，其余置 cancelled 并清除租约。不会生成停止确认、恢复执行代际或释放未结费用。相同事务撤销 proposed/awaiting_approval/ready Action 及其审批；executing/unknown 和回执保留待核对。该联动由 API 显式注入 Task 服务；缺少联动且存在待处理执行时返回 SERVICE_UNAVAILABLE 并回滚任务状态。后代 Task 自身合同状态不自动改写，祖先终态/epoch 仍负责阻断执行。完成验收使用独立闭合门禁。
+
+取消观察补充：Task 终止可能令 Run 固定输入版本失效。Run 状态读取仍验证当前调用者权限、创建者和 Agent 身份；仅已请求取消且输入版本冲突时返回不含 summary/output 的运行状态与费用元数据。上下文接口不豁免原内容/权限校验，避免用观察取消状态绕过历史内容访问限制。
+
+
 V1 提供最小 TS SDK 和独立示例 Agent，以 HTTP/WS 契约接入。Python 等实现可以直接调用 API；后续再发布语言 SDK、设备连接和外部标准适配器。SDK 自动处理传输退避，不自动接受任务、审批或重试未知 Action。
 
 ## 9. Schedule 与触发规则

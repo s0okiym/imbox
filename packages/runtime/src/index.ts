@@ -24,3 +24,4 @@ export { runtimePromotionPort } from './promotion.js';
 export { createRuntimeMaintenance } from './maintenance.js';
 
 export { lockRunToolAuthority, assertRunToolLease, runToolState } from './tool-intents.js';
+export { stopTaskRuns } from './task-stop.js';

@@ -19,7 +19,7 @@
 | AC-11  | verified | actions 验证无批准、过期批准、参数修改后旧批准失效且外部调用为零；machine-run-tools 验证审批后仍须人工 resume 与新租约。                                                        |
 | AC-12  | partial  | 批准后撤销 grant、身份/参与代际改变会拒绝执行；来源撤回阻止模型输出。仍需针对已批准 Action 的每种资源版本变更补齐独立组合测试。                                                 |
 | AC-13  | verified | actions/run-tool-intents 对真实受控服务注入丢响应，断言 unknown、一个 POST、核对成功后不重发；action-recovery 核对仅 GET 并且记账一次。                                         |
-| AC-14 | partial | 独立 Linux Agent 进程暂停、真实租约到期和恢复后拒绝迟到输出/确认停止已通过；Run 级取消不伪造远端确认。Task 取消到相关 Run 取消请求/显示状态的联动，以及跨主机部署故障矩阵仍待补齐；见 [进程演练](external-process-recovery-2026-10-05.md)。 |
+| AC-14 | partial | 独立 Linux Agent 进程暂停、真实租约到期和恢复后拒绝迟到输出/确认停止已通过；Run 级取消不伪造远端确认。Task 取消/失败到后代 Run 取消请求及待执行 Action 撤销已补齐；跨主机部署故障矩阵仍待验证。见 [任务联动](task-cancellation-propagation-2026-10-05.md) 与 [进程演练](external-process-recovery-2026-10-05.md)。 |
 | AC-15 | partial | 树预算/并发/期限、依赖防环、五层/200 节点边界已有实测；新增 8 Agent 有限计划、12 并发扫描/派发、停用、四租约和共享预算联合突发验证。模型驱动互相唤醒网络、任意事件触发和跨租户长期压力仍待完成。 |
 | AC-16  | partial  | sync 投影事务回滚后持久重试、模型丢响应挂起、checkpoint 恢复不再请求模型；浏览器离线壳可用。尚未完成模型/对象/连接故障与积压同时出现时的长期联合演练。                          |
 | AC-17  | verified | agents 作者绑定认证身份，伪造 actor 字段拒绝；过期/轮换 lease 拒绝；completed 外部回报保留 external_report/external 标识，machine API 不提供人类批准/恢复入口。                 |

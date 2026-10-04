@@ -3,6 +3,7 @@ import { bindRunToolGrant, assertRunToolProgress, cancelPendingRunTool } from '.
 import { RUNTIME_LIMITS } from './limits.js';
 import { randomUUID, randomBytes } from 'node:crypto';
 import {
+  ApplicationError,
   appendEvent,
   authorizeConversation,
   authorizeTenant,
@@ -79,6 +80,23 @@ export function createRuntimeService(options: {
     maxItems > 50
   )
     throw new Error('Context limits must be within the public contract bounds');
+  async function readableRun(tx: Parameters<typeof authorizeTenant>[0], run: RunRow) {
+    const actors = await liveActors(tx, run);
+    try {
+      await verifyContext(tx, run, actors.creator, actors.agent, options.sources);
+      return runDto(run);
+    } catch (error) {
+      // Task cancellation changes input versions. Status remains observable, but stale
+      // source-derived content must not be exposed. Identity/access failures still propagate.
+      if (
+        run.cancellation_requested &&
+        error instanceof ApplicationError &&
+        error.code === 'VERSION_CONFLICT'
+      )
+        return { ...runDto(run), summary: '', output: null };
+      throw error;
+    }
+  }
   async function publicAccess(
     tx: Parameters<typeof authorizeTenant>[0],
     auth: AuthContext,
@@ -384,9 +402,7 @@ export function createRuntimeService(options: {
           // Never expose stale output when its manifest sources or execution identities were revoked.
           try {
             await publicAccess(tx, auth, run);
-            const actors = await liveActors(tx, run);
-            await verifyContext(tx, run, actors.creator, actors.agent, options.sources);
-            items.push(runDto(run));
+            items.push(await readableRun(tx, run));
           } catch (error) {
             if (!(
               error instanceof Error &&
@@ -408,9 +424,7 @@ export function createRuntimeService(options: {
       return runtimeTransaction(options.db, auth.tenantId, async (tx) => {
         const run = await runRow(tx, id(runId));
         await publicAccess(tx, auth, run);
-        const actors = await liveActors(tx, run);
-        await verifyContext(tx, run, actors.creator, actors.agent, options.sources);
-        return runDto(run);
+        return readableRun(tx, run);
       });
     },
     async getContextManifest(auth: AuthContext, runId: string) {
