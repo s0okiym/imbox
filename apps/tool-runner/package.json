@@ -11,7 +11,8 @@
   "dependencies": {
     "@imbox/actions": "workspace:*",
     "@imbox/db": "workspace:*",
-    "dotenv": "catalog:"
+    "dotenv": "catalog:",
+    "@imbox/knowledge": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

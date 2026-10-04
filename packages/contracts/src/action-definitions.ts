@@ -22,6 +22,17 @@ const view = {
   projection_revision: ref('Version'),
 };
 export const actionDefinitions = {
+  ActionResourceRef: {
+    oneOf: [
+      ref('TaskVersionRef'),
+      obj({
+        type: { type: 'string', const: 'artifact_version' },
+        id: ref('Identifier'),
+        version: ref('Version'),
+        sha256: fingerprint,
+      }),
+    ],
+  },
   ActionParameters: obj({ text: str(4000) }),
   CreateGrantInput: obj({
     task_id: ref('Identifier'),
@@ -31,7 +42,7 @@ export const actionDefinitions = {
     target_id: str(100),
     allow_execute: { type: 'boolean' },
     allow_disclosure: { type: 'boolean' },
-    resource_versions: arr(ref('TaskVersionRef'), 20),
+    resource_versions: arr(ref('ActionResourceRef'), 20),
     approver_principal_ids: { ...arr(ref('Identifier'), 20, 1), uniqueItems: true },
     budget: ref('InitialBudget'),
     expires_at: ref('UtcTimestamp'),
@@ -46,7 +57,7 @@ export const actionDefinitions = {
     target_id: str(100),
     allow_execute: { type: 'boolean' },
     allow_disclosure: { type: 'boolean' },
-    resource_versions: arr(ref('TaskVersionRef'), 20),
+    resource_versions: arr(ref('ActionResourceRef'), 20),
     approver_principal_ids: arr(ref('Identifier'), 20),
     budget: ref('InitialBudget'),
     status: en('active', 'revoked'),
@@ -64,7 +75,7 @@ export const actionDefinitions = {
       tool_version: ref('Version'),
       target_id: str(100),
       parameters: ref('ActionParameters'),
-      resource_versions: arr(ref('TaskVersionRef'), 20),
+      resource_versions: arr(ref('ActionResourceRef'), 20),
       business_key: ref('IdempotencyKey'),
       estimate: ref('InitialBudget'),
       required: { type: 'boolean' },
@@ -84,7 +95,7 @@ export const actionDefinitions = {
   ),
   ReviseActionInput: obj({
     parameters: ref('ActionParameters'),
-    resource_versions: arr(ref('TaskVersionRef'), 20),
+    resource_versions: arr(ref('ActionResourceRef'), 20),
   }),
   ActionApprovalDecisionInput: obj({
     decision: en('approve', 'reject'),
@@ -127,7 +138,8 @@ export const actionDefinitions = {
       tool_version: ref('Version'),
       target_id: str(100),
       parameters: ref('ActionParameters'),
-      resource_versions: arr(ref('TaskVersionRef'), 20),
+      content_restricted: { type: 'boolean' },
+      resource_versions: arr(ref('ActionResourceRef'), 20),
       business_key: ref('IdempotencyKey'),
       fingerprint,
       status: en(

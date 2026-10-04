@@ -35,3 +35,6 @@ TypeScript workspace 包含 API、Web、Worker、独立工具执行器、机器 
 
 
 产物外部发布缺口（2026-10-05 审查）：`packages/contracts/src/action-definitions.ts` 的 resource_versions 仅引用 TaskVersionRef，`packages/actions/src/service.ts` 的 validateResources 也只接受本任务版本。因此 AC-18 的剩余项包括实际实现，不能只补测试后标为通过。下一阶段需新增不可变产物版本引用，批准指纹绑定版本/内容哈希，重验请求者与执行者当前来源读取及披露权限，在领取和外部派发前检查来源仍有效，并在 Web 显示明确批准的产物版本。新 head 不得静默替换旧批准内容；若用户要求发布新版，必须新建或修订 Action 并重新审批。还需覆盖删除/撤权、并发版本、旧批准与新版、unknown 只读核对的真实 HTTP/浏览器流程。
+
+
+产物发布基础进展：ActionResourceRef 后端已支持固定产物版本与 SHA-256，原文一致性及领取/派发前当前来源校验；旧 head 批准不替换新版，删除后正文隐藏且保留 unknown 核对。24 项 Action 集成通过。上段所述实现缺口正在分阶段消除，仍需 Web 选择/发布完整体验及 Agent Run 产物工具授权，见 [功能约定](development/artifact-publication.md)。

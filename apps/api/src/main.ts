@@ -50,11 +50,11 @@ await Promise.all([assertRuntimeRole(db), assertRuntimeRole(identityDb)]);
 const policyLedger = await configuredPolicyLedger(process.env);
 if (policyLedger) await replayPolicyLedger(db, policyLedger);
 const policyOptions = policyLedger ? { policyLedger } : {};
-const actions = await configuredActions(db, process.env);
 const resourceStore = configuredResourceStore(process.env);
 const resourceHooks = resourceStore ? resourceApplicationHooks() : null;
 const knowledge = createKnowledgeService({ db, cursorSecret: secret, ...policyOptions });
 const sources = knowledgeRuntimeSourcePort(knowledge);
+const actions = await configuredActions(db, process.env, sources);
 const messaging = createMessagingService(db, secret, {
   ...policyOptions,
   ...(resourceHooks ? { resources: resourceHooks.messages } : {}),

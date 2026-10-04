@@ -86,3 +86,8 @@ CI 编排已补齐真实 SeaweedFS、受限测试桶 CORS、Chromium 及实际�
 ## 任务终止执行联动（2026-10-05）
 
 Task 取消/失败在同一事务中通知后代 Run 停止、撤销待执行 Action 和审批；保留执行中/unknown 外部结果与费用。旧 Task 输入版本失效时，运行状态仍可在当前授权下读取，旧摘要/输出不返回；不伪造执行器停止确认。最终单元 191、相关集成分批 63 后 runtime 25、浏览器 2 项通过，测试类型/Lint 通过；详见 [任务联动证据](testing/task-cancellation-propagation-2026-10-05.md)。AC-14 保持 partial，整体 27 verified / 13 partial / 1 pending。
+
+
+## 固定产物发布基础（2026-10-05）
+
+ActionResourceRef 扩展为任务或不可变产物版本引用；发布正文与固定来源完全匹配，批准指纹包括 SHA-256，新 head 不替换已批准内容。删除后阻止新派发，隐藏历史正文并保留回执核对。后端与部署入口已接通，24 Action 集成、191 单元及既有浏览器兼容回归通过。产物选择/发布 UI 与 Agent 工具上下文尚待完成，不将基础能力计作 AC-18 完整通过。详见 [开发约定](development/artifact-publication.md)。

@@ -237,12 +237,64 @@ export function createActionService(options: Options) {
       return fail('VALIDATION_FAILED', 400);
     }
   }
-  function validateResources(t: TaskRow, refs: C['TaskVersionRef'][]) {
+  async function artifactBodies(
+    tx: Tx,
+    t: TaskRow,
+    refs: C['ActionResourceRef'][],
+    readerIds: string[],
+  ) {
+    const artifacts = refs.filter((ref) => ref.type === 'artifact_version');
+    if (!artifacts.length) return [];
+    if (!options.sources) fail('SERVICE_UNAVAILABLE', 503);
+    const readers: AuthContext[] = [];
+    for (const id of readerIds) {
+      const person = await principal(tx, id);
+      readers.push({
+        tenantId: (
+          await sql<{ tenant_id: string }>`select tenant_id from tasks where id=${t.id}`.execute(tx)
+        ).rows[0]!.tenant_id,
+        principalId: id,
+        kind: person.kind,
+        authzRevision: person.authz_revision,
+      });
+    }
+    const bodies: string[] = [];
+    for (const ref of artifacts) {
+      const source = await options.sources!.read(tx, {
+        creator: readers[0]!,
+        agent: readers.at(-1)!,
+        reference: { ...ref, required: true },
+        scope: { taskId: t.id, conversationId: null },
+      });
+      if (typeof source.payload.body !== 'string') fail('VALIDATION_FAILED', 400);
+      bodies.push(source.payload.body as string);
+    }
+    return bodies;
+  }
+  async function validateResources(
+    tx: Tx,
+    t: TaskRow,
+    refs: C['ActionResourceRef'][],
+    readerIds: string[],
+    parameters?: C['ActionParameters'],
+  ) {
+    if (new Set(refs.map((ref) => `${ref.type}:${ref.id}:${ref.version}`)).size !== refs.length)
+      fail('VALIDATION_FAILED', 400);
     for (const ref of refs) {
-      if (ref.type !== 'task' || ref.id !== t.id) fail('DISCLOSURE_DENIED', 403);
+      if (ref.type !== 'task') continue;
+      if (ref.id !== t.id) fail('DISCLOSURE_DENIED', 403);
       expectedVersion(t.version, ref.version);
     }
+    const bodies = await artifactBodies(tx, t, refs, readerIds);
+    // One explicit immutable artifact per publication; never silently join or truncate contents.
+    if (parameters && bodies.length && (bodies.length !== 1 || bodies[0] !== parameters.text))
+      fail('VERSION_CONFLICT', 409);
   }
+  const sameReference = (a: C['ActionResourceRef'], b: C['ActionResourceRef']) =>
+    a.type === b.type &&
+    a.id === b.id &&
+    a.version === b.version &&
+    (a.type !== 'artifact_version' || (b.type === 'artifact_version' && a.sha256 === b.sha256));
   async function installation(tx: Tx, p: Principal) {
     if (p.kind !== 'agent') return null;
     const row = (
@@ -295,11 +347,7 @@ export function createActionService(options: Options) {
     if (g.currency !== a.currency || BigInt(a.estimate_microunits) > BigInt(g.limit_microunits))
       fail('BUDGET_EXCEEDED', 409);
     for (const ref of a.resource_versions)
-      if (
-        !g.resource_versions.some(
-          (item) => item.type === ref.type && item.id === ref.id && item.version === ref.version,
-        )
-      )
+      if (!g.resource_versions.some((item) => sameReference(item, ref)))
         fail('DISCLOSURE_DENIED', 403);
     const chain = await lockedChain(tx, g.tenant_id, g.task_id);
     assertTaskFencesCurrent(
@@ -364,7 +412,13 @@ export function createActionService(options: Options) {
       t.status !== 'active'
     )
       fail('FORBIDDEN', 403);
-    validateResources(t, a.resource_versions);
+    await validateResources(
+      tx,
+      t,
+      a.resource_versions,
+      [a.requester_id, a.executor_id],
+      a.parameters,
+    );
     const deps = (
       await sql<{
         blocked: boolean;
@@ -465,6 +519,14 @@ export function createActionService(options: Options) {
     const a = await action(tx, id);
     const t = await task(tx, a.task_id);
     await access(tx, t, auth.principalId);
+    let restricted = false;
+    try {
+      await artifactBodies(tx, t, a.resource_versions, [auth.principalId]);
+    } catch (error) {
+      if (!(error instanceof ApplicationError) || ![403, 404, 409, 503].includes(error.status))
+        throw error;
+      restricted = true;
+    }
     const p = (
       await sql<ApprovalRow>`select * from action_approvals where action_id=${id} and action_version=${a.approval_binding_version}`.execute(
         tx,
@@ -480,7 +542,8 @@ export function createActionService(options: Options) {
       tool_id: a.tool_id,
       tool_version: a.tool_version,
       target_id: a.target_id,
-      parameters: a.parameters,
+      parameters: restricted ? { text: '来源已不可用；正文已隐藏。' } : a.parameters,
+      ...(restricted ? { content_restricted: true } : {}),
       resource_versions: a.resource_versions,
       business_key: a.business_key,
       fingerprint: a.fingerprint,
@@ -528,7 +591,7 @@ export function createActionService(options: Options) {
     toolVersion: string;
     targetId: string;
     parameters: C['ActionParameters'];
-    resources: C['TaskVersionRef'][];
+    resources: C['ActionResourceRef'][];
     currency: string;
     estimate: string;
   }) {
@@ -798,7 +861,13 @@ export function createActionService(options: Options) {
       t.status !== 'active'
     )
       fail('FORBIDDEN', 403);
-    validateResources(t, input.resource_versions);
+    await validateResources(
+      tx,
+      t,
+      input.resource_versions,
+      [auth.principalId, input.executor_principal_id],
+      input.parameters,
+    );
     const g = await grant(tx, input.grant_id);
     const tool = registered(input.tool_id, input.tool_version, input.target_id);
     if (
@@ -845,8 +914,7 @@ export function createActionService(options: Options) {
       businessKey: input.business_key,
       parameterFingerprint: fp,
     });
-    if (runId && !tool.definition.approvalRequired)
-      fail('FORBIDDEN', 403);
+    if (runId && !tool.definition.approvalRequired) fail('FORBIDDEN', 403);
     const state = prepareAction(initial, initial.version, tool.definition.approvalRequired);
     await grantCurrent(tx, {
       grant_id: g.id,
@@ -882,7 +950,10 @@ export function createActionService(options: Options) {
           const t = chain.at(-1)!;
           await admin(tx, auth, t);
           registered(input.tool_id, input.tool_version, input.target_id);
-          validateResources(t, input.resource_versions);
+          await validateResources(tx, t, input.resource_versions, [
+            auth.principalId,
+            input.executor_principal_id,
+          ]);
           const executor = await principal(tx, input.executor_principal_id);
           await installation(tx, executor);
           const participant = await access(tx, t, executor.principal_id);
@@ -1129,7 +1200,13 @@ export function createActionService(options: Options) {
           expectedVersion(a.version, version);
           if (a.attempt_count !== 0 || !['awaiting_approval', 'ready'].includes(a.status))
             fail('INVALID_STATE_TRANSITION', 409);
-          validateResources(t, input.resource_versions);
+          await validateResources(
+            tx,
+            t,
+            input.resource_versions,
+            [auth.principalId, a.executor_id],
+            input.parameters,
+          );
           const g = await verifyAdmission(tx, a, chain);
           const fp = fingerprint({
             taskId: a.task_id,
@@ -1145,7 +1222,7 @@ export function createActionService(options: Options) {
             estimate: a.estimate_microunits,
           });
           for (const ref of input.resource_versions)
-            if (!g.resource_versions.some((v) => v.id === ref.id && v.version === ref.version))
+            if (!g.resource_versions.some((v) => sameReference(v, ref)))
               fail('DISCLOSURE_DENIED', 403);
           const nextVersion = (BigInt(a.version) + 1n).toString();
           await sql`update action_approvals set status='revoked' where action_id=${id} and status in ('pending','approved')`.execute(

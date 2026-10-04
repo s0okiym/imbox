@@ -204,3 +204,8 @@ Task 取消/失败在同一事务中通知后代 Run 停止、撤销待执行 Ac
 ## Task 取消与独立进程恢复联合验证（2026-10-05）
 
 在 41f3e12 基线上将独立外部 Agent 演练参数化为 Run/Task 两种取消入口；Task 路径包含真实 Task 创建、Agent 授权、固定输入、SIGSTOP、自然租约过期、SIGCONT、迟到输出拒绝和停止确认。agents 15/15 通过（150.77 秒），测试类型与修改文件 Lint 通过；仍为同主机 loopback，跨主机验收未完成。详见 [进程恢复证据](external-process-recovery-2026-10-05.md)。同时源码审查确认外部 Action 尚仅接受 TaskVersionRef，AC-18 产物发布需要功能实现，已更新交付缺口而非仅标作测试缺口。
+
+
+## 产物发布后端基础（2026-10-05）
+
+Action 新增不可变产物版本/哈希引用和原文一致性校验；API 与独立 tool-runner 均配置来源重验，删除后行动正文隐藏但可核对 unknown。完整 verify 与 191 单元通过，真实 S3/数据库/HTTP 的 Action 集成 24 项通过（36.92 秒），既有审批/撤权浏览器 2 项通过（55.7 秒）。新产物选择 UI、Agent 上下文工具绑定及其完整端到端流程仍待实现，AC-18 保持 partial。见 [基础验证](artifact-publication-foundation-2026-10-05.md)。

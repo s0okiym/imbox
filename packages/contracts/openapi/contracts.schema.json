@@ -4154,6 +4154,42 @@
       ],
       "additionalProperties": false
     },
+    "ActionResourceRef": {
+      "title": "ActionResourceRef",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TaskVersionRef"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "artifact_version"
+            },
+            "id": {
+              "$ref": "#/$defs/Identifier"
+            },
+            "version": {
+              "$ref": "#/$defs/Version"
+            },
+            "sha256": {
+              "type": "string",
+              "minLength": 64,
+              "maxLength": 64,
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version",
+            "sha256"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
     "ActionParameters": {
       "title": "ActionParameters",
       "type": "object",
@@ -4201,7 +4237,7 @@
         "resource_versions": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/TaskVersionRef"
+            "$ref": "#/$defs/ActionResourceRef"
           },
           "maxItems": 20,
           "minItems": 0
@@ -4275,7 +4311,7 @@
         "resource_versions": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/TaskVersionRef"
+            "$ref": "#/$defs/ActionResourceRef"
           },
           "maxItems": 20,
           "minItems": 0
@@ -4378,7 +4414,7 @@
         "resource_versions": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/TaskVersionRef"
+            "$ref": "#/$defs/ActionResourceRef"
           },
           "maxItems": 20,
           "minItems": 0
@@ -4417,7 +4453,7 @@
         "resource_versions": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/TaskVersionRef"
+            "$ref": "#/$defs/ActionResourceRef"
           },
           "maxItems": 20,
           "minItems": 0
@@ -4556,10 +4592,13 @@
         "parameters": {
           "$ref": "#/$defs/ActionParameters"
         },
+        "content_restricted": {
+          "type": "boolean"
+        },
         "resource_versions": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/TaskVersionRef"
+            "$ref": "#/$defs/ActionResourceRef"
           },
           "maxItems": 20,
           "minItems": 0

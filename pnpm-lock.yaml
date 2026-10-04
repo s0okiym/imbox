@@ -270,6 +270,9 @@ importers:
       '@imbox/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@imbox/knowledge':
+        specifier: workspace:*
+        version: link:../../packages/knowledge
       dotenv:
         specifier: 'catalog:'
         version: 18.0.5

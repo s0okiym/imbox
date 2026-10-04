@@ -469,12 +469,16 @@ function ActionTerms({ action }: { readonly action: Action }) {
       </Facts>
       <section className="task-section">
         <h2>将披露给目标的完整参数</h2>
+        {action.content_restricted && (
+          <ErrorNotice>来源已不可用，正文已隐藏；仍可核对既有外部结果。</ErrorNotice>
+        )}
         <pre className="execution-output">{action.parameters.text}</pre>
         <details>
           <summary>固定资源版本与参数指纹</summary>
           {action.resource_versions.map((ref) => (
             <code key={ref.id}>
-              任务 {ref.id} · 版本 {ref.version}
+              {ref.type === 'task' ? '任务' : '产物固定版本'} {ref.id} · 版本 {ref.version}
+              {ref.type === 'artifact_version' && ` · SHA-256 ${ref.sha256}`}
             </code>
           ))}
           <code>{action.fingerprint}</code>
@@ -707,7 +711,8 @@ export function GrantDetail({
           <h2>固定资源范围</h2>
           {grant.resource_versions.map((ref) => (
             <p className="execution-note" key={ref.id}>
-              任务 {ref.id} · 版本 {ref.version}
+              {ref.type === 'task' ? '任务' : '产物固定版本'} {ref.id} · 版本 {ref.version}
+              {ref.type === 'artifact_version' && ` · SHA-256 ${ref.sha256}`}
             </p>
           ))}
         </section>

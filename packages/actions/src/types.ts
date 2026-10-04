@@ -29,7 +29,7 @@ export interface GrantRow {
   target_id: string;
   allow_execute: boolean;
   allow_disclosure: boolean;
-  resource_versions: C['TaskVersionRef'][];
+  resource_versions: C['ActionResourceRef'][];
   approver_ids: string[];
   currency: string;
   limit_microunits: string;
@@ -54,7 +54,7 @@ export interface ActionRow {
   grant_id: string;
   grant_revision: string;
   ancestor_fences: Fence[];
-  resource_versions: C['TaskVersionRef'][];
+  resource_versions: C['ActionResourceRef'][];
   tool_id: string;
   tool_version: string;
   target_id: string;

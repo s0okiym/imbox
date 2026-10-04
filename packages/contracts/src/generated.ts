@@ -30,6 +30,14 @@ export type TaskRunOrigin =
       context_manifest_id: Identifier;
       created_at: UtcTimestamp;
     };
+export type ActionResourceRef =
+  | TaskVersionRef
+  | {
+      type: 'artifact_version';
+      id: Identifier;
+      version: Version;
+      sha256: string;
+    };
 export type ModelToolDecision =
   | {
       kind: 'final';
@@ -173,6 +181,7 @@ export interface ContractTypes {
   MachineCancellationAck: MachineCancellationAck;
   MachineReportInput: MachineReportInput;
   MachineRunPage: MachineRunPage;
+  ActionResourceRef: ActionResourceRef;
   ActionParameters: ActionParameters;
   CreateGrantInput: CreateGrantInput;
   CapabilityGrant: CapabilityGrant;
@@ -1436,6 +1445,11 @@ export interface RuntimeBudget {
   spent_microunits: Counter;
   blocked: boolean;
 }
+export interface TaskVersionRef {
+  type: 'task';
+  id: Identifier;
+  version: Version;
+}
 export interface ActionParameters {
   text: string;
 }
@@ -1451,7 +1465,7 @@ export interface CreateGrantInput {
    * @minItems 0
    * @maxItems 20
    */
-  resource_versions: TaskVersionRef[];
+  resource_versions: ActionResourceRef[];
   /**
    * @minItems 1
    * @maxItems 20
@@ -1459,11 +1473,6 @@ export interface CreateGrantInput {
   approver_principal_ids: [Identifier, ...Identifier[]];
   budget: InitialBudget;
   expires_at: UtcTimestamp;
-}
-export interface TaskVersionRef {
-  type: 'task';
-  id: Identifier;
-  version: Version;
 }
 export interface CapabilityGrant {
   id: Identifier;
@@ -1479,7 +1488,7 @@ export interface CapabilityGrant {
    * @minItems 0
    * @maxItems 20
    */
-  resource_versions: TaskVersionRef[];
+  resource_versions: ActionResourceRef[];
   /**
    * @minItems 0
    * @maxItems 20
@@ -1510,7 +1519,7 @@ export interface CreateActionInput {
    * @minItems 0
    * @maxItems 20
    */
-  resource_versions: TaskVersionRef[];
+  resource_versions: ActionResourceRef[];
   business_key: IdempotencyKey;
   estimate: InitialBudget;
   required?: boolean;
@@ -1521,7 +1530,7 @@ export interface ReviseActionInput {
    * @minItems 0
    * @maxItems 20
    */
-  resource_versions: TaskVersionRef[];
+  resource_versions: ActionResourceRef[];
 }
 export interface ActionApprovalDecisionInput {
   decision: 'approve' | 'reject';
@@ -1551,11 +1560,12 @@ export interface Action {
   tool_version: Version;
   target_id: string;
   parameters: ActionParameters;
+  content_restricted?: boolean;
   /**
    * @minItems 0
    * @maxItems 20
    */
-  resource_versions: TaskVersionRef[];
+  resource_versions: ActionResourceRef[];
   business_key: IdempotencyKey;
   fingerprint: string;
   status:

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createServer, type ServerResponse } from 'node:http';
 import { once } from 'node:events';
 import type { AddressInfo } from 'node:net';
@@ -16,6 +16,12 @@ import {
   type ActionService,
   type JournalPort,
 } from '@imbox/actions';
+import {
+  createKnowledgeService,
+  knowledgeRuntimeSourcePort,
+  knowledgeResourceIndex,
+} from '@imbox/knowledge';
+import { createResourceService, createS3ObjectStore, type ResourceService } from '@imbox/resources';
 import { createTaskService, type TaskService } from '@imbox/application';
 import { runtimeCompletionGate, stopTaskRuns } from '@imbox/runtime';
 import type { ContractTypes as C } from '@imbox/contracts';
@@ -29,6 +35,22 @@ let databases: Awaited<ReturnType<typeof testDatabases>>,
   actions: ActionService,
   tasks: TaskService,
   journal: JournalPort;
+const store = createS3ObjectStore({
+  endpoint: process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:18333',
+  region: 'us-east-1',
+  bucket: 'imbox-resources-test',
+  accessKeyId: 'imbox_local_s3_app',
+  secretAccessKey: 'imbox_local_s3_app_secret',
+});
+const adminStore = createS3ObjectStore({
+  endpoint: process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:18333',
+  region: 'us-east-1',
+  bucket: 'imbox-resources-test',
+  accessKeyId: 'imbox_local_s3_admin',
+  secretAccessKey: 'imbox_local_s3_admin_secret',
+});
+let resources: ResourceService;
+let deliveredTexts: string[];
 let task: C['Task'];
 let directory: string;
 let sideEffects: number;
@@ -52,14 +74,24 @@ const secret = 'actions-cursor-test-secret-at-least-thirty-two-characters';
 const key = () => randomUUID();
 beforeAll(async () => {
   databases = await testDatabases();
+  await adminStore.ensureDevelopmentBucket('test');
 });
 afterAll(async () => {
+  store.destroy();
+  adminStore.destroy();
   await databases?.close();
 });
 beforeEach(async () => {
   fixture = await tenantFixture(databases.owner);
   directory = await mkdtemp(join(tmpdir(), 'imbox-action-journal-'));
   journal = await createFileJournal({ directory, signingKey: secret });
+  deliveredTexts = [];
+  resources = createResourceService({
+    db: databases.db,
+    store,
+    cursorSecret: secret,
+    textIndex: knowledgeResourceIndex(),
+  });
   sideEffects = 0;
   attempts = 0;
   mode = 'normal';
@@ -85,7 +117,12 @@ beforeEach(async () => {
     request.setEncoding('utf8');
     request.on('data', (part) => (body += part));
     request.on('end', () => {
-      const input = JSON.parse(body) as { business_key: string; fingerprint: string };
+      const input = JSON.parse(body) as {
+        business_key: string;
+        fingerprint: string;
+        input: { text: string };
+      };
+      deliveredTexts.push(input.input.text);
       attempts++;
       if (mode === 'no_effect' && attempts === 1) {
         send(response, {
@@ -133,6 +170,9 @@ beforeEach(async () => {
   actions = createActionService({
     db: databases.db,
     journal,
+    sources: knowledgeRuntimeSourcePort(
+      createKnowledgeService({ db: databases.db, cursorSecret: secret }),
+    ),
     cursorSecret: secret,
     tools: createHttpToolRegistry([
       {
@@ -180,7 +220,10 @@ afterEach(async () => {
   for (const close of cleanup.splice(0)) await close();
   if (directory) await rm(directory, { recursive: true, force: true });
 });
-async function proposed() {
+async function proposed(
+  refs: C['ActionResourceRef'][] = [{ type: 'task', id: task.id, version: task.version }],
+  text = 'A deliberately approved delivery',
+) {
   const grant = await actions.createGrant(
     fixture.alice,
     {
@@ -191,7 +234,7 @@ async function proposed() {
       target_id: 'demo',
       allow_execute: true,
       allow_disclosure: true,
-      resource_versions: [{ type: 'task', id: task.id, version: task.version }],
+      resource_versions: refs,
       approver_principal_ids: [fixture.alice.principalId],
       budget: { currency: 'USD', limit_microunits: '10' },
       expires_at: new Date(Date.now() + 3600000).toISOString(),
@@ -207,14 +250,46 @@ async function proposed() {
       tool_id: 'demo.delivery',
       tool_version: '1',
       target_id: 'demo',
-      parameters: { text: 'A deliberately approved delivery' },
-      resource_versions: [{ type: 'task', id: task.id, version: task.version }],
+      parameters: { text },
+      resource_versions: refs,
       business_key: key(),
       estimate: { currency: 'USD', limit_microunits: '10' },
     },
     key(),
   );
   return { grant, action };
+}
+async function artifact(body: string) {
+  const bytes = Buffer.from(body);
+  const ticket = await resources.createUpload(
+    fixture.alice,
+    {
+      task_id: task.id,
+      filename: 'publish.md',
+      content_type: 'text/markdown',
+      byte_size: bytes.byteLength,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    },
+    key(),
+  );
+  expect(
+    (await fetch(ticket.upload_url, { method: 'PUT', headers: ticket.upload_headers, body: bytes }))
+      .status,
+  ).toBe(200);
+  const content = await resources.completeUpload(fixture.alice, ticket.id, key());
+  return resources.createArtifact(
+    fixture.alice,
+    { resource_id: content.id, title: 'Explicit publication' },
+    key(),
+  );
+}
+function artifactRef(a: C['StoredArtifact']): C['ActionResourceRef'] {
+  return {
+    type: 'artifact_version',
+    id: a.version_id,
+    version: a.head_version,
+    sha256: a.resource.sha256,
+  };
 }
 const approve = (action: C['Action']) =>
   actions.decideApproval(
@@ -232,6 +307,93 @@ const approve = (action: C['Action']) =>
 const runner = () => createToolRunner({ actions, workerId: 'test-tool-worker' });
 
 describe('controlled actions with real PostgreSQL, HTTP and independent signed journal', () => {
+  it('publishes the approved immutable artifact despite a new head and requires new authority for the new version', async () => {
+    const old = await artifact('Approved original text');
+    const first = await proposed([artifactRef(old)], 'Approved original text');
+    const approved = await approve(first.action);
+    const replacement = await artifact('New text needs new approval');
+    const latest = await resources.createArtifactVersion(
+      fixture.alice,
+      old.id,
+      { resource_id: replacement.resource.id },
+      old.version,
+      key(),
+    );
+    await expect(
+      actions.reviseAction(
+        fixture.bob,
+        first.action.id,
+        {
+          parameters: { text: 'New text needs new approval' },
+          resource_versions: [artifactRef(latest)],
+        },
+        approved.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'DISCLOSURE_DENIED' });
+    await expect(
+      actions.reviseAction(
+        fixture.bob,
+        first.action.id,
+        { parameters: { text: 'Altered text' }, resource_versions: [artifactRef(old)] },
+        approved.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    expect((await runner().runOnce(fixture.tenantId, first.action.id)).status).toBe('succeeded');
+    const next = await proposed([artifactRef(latest)], 'New text needs new approval');
+    await expect(runner().runOnce(fixture.tenantId, next.action.id)).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+    await approve(next.action);
+    expect((await runner().runOnce(fixture.tenantId, next.action.id)).status).toBe('succeeded');
+    expect(deliveredTexts).toEqual(['Approved original text', 'New text needs new approval']);
+  });
+  it.each(['before_claim', 'after_intent'] as const)(
+    'blocks deleted artifact disclosure %s and hides retained action text',
+    async (phase) => {
+      const file = await artifact('Sensitive artifact body');
+      const { action } = await proposed([artifactRef(file)], 'Sensitive artifact body');
+      await approve(action);
+      const claim =
+        phase === 'after_intent'
+          ? await actions.claim(fixture.tenantId, action.id, 'artifact-worker')
+          : null;
+      if (claim) await actions.persistIntent(claim);
+      await resources.deleteResource(fixture.alice, file.resource.id, file.resource.version, key());
+      await expect(
+        claim ? actions.dispatch(claim) : runner().runOnce(fixture.tenantId, action.id),
+      ).rejects.toBeDefined();
+      if (claim) await actions.abortPrepared(claim);
+      const view = await actions.getAction(fixture.alice, action.id);
+      expect(view.content_restricted).toBe(true);
+      expect(JSON.stringify(view)).not.toContain('Sensitive artifact body');
+      expect(deliveredTexts).toEqual([]);
+    },
+  );
+  it('reconciles an unknown artifact publication after source deletion without revealing or resending its body', async () => {
+    const file = await artifact('Once-only private publication');
+    const { action } = await proposed([artifactRef(file)], 'Once-only private publication');
+    await approve(action);
+    mode = 'drop';
+    expect((await runner().runOnce(fixture.tenantId, action.id)).status).toBe('unknown');
+    await resources.deleteResource(fixture.alice, file.resource.id, file.resource.version, key());
+    const hidden = await actions.getAction(fixture.alice, action.id);
+    expect(hidden.content_restricted).toBe(true);
+    const result = await actions.reconcile(
+      fixture.alice,
+      action.id,
+      { reason: 'Only query the existing receipt' },
+      hidden.version,
+      key(),
+    );
+    expect(result.outcome).toBe('succeeded');
+    const list = await actions.listActions(fixture.alice);
+    expect(JSON.stringify(list)).not.toContain('Once-only private publication');
+    expect(list.items[0]?.content_restricted).toBe(true);
+    expect(deliveredTexts).toEqual(['Once-only private publication']);
+    expect(sideEffects).toBe(1);
+  });
   it('cancels pending task actions and revokes approvals while preserving unknown effects', async () => {
     const pending = (await proposed()).action;
     const ready = await approve((await proposed()).action);
