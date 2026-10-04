@@ -1,0 +1,100 @@
+{
+  "run_id": 37234308638,
+  "commit": "1330c43aa9ff70e39b123b91b6bff7168de06b7b",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37234308638",
+  "jobs": [
+    {
+      "id": 111530275845,
+      "name": "verify",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm install --frozen-lockfile",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run cp .env.example .env",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm infra:up",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm verify",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm test:catalog:check",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm infra:setup:test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm db:setup:test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm test:integration",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm exec playwright install --with-deps chromium",
+          "conclusion": "success"
+        },
+        {
+          "name": "Browser regression (redact credentials)",
+          "conclusion": "success"
+        },
+        {
+          "name": "Start pinned local model and verify actual inference",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build application images and verify TLS container workflow",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run docker compose -f infra/compose.yaml --profile model down -v",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}

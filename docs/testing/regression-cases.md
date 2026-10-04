@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 87 个测试文件、496 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 87 个测试文件、499 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -467,9 +467,9 @@
 | 声明 | 用例 |
 |---|---|
 | [test:186](../../tests/e2e/resources.spec.ts#L186) | real browser S3 upload creates immutable versions and submits the selected version as task evidence |
-| [test:252](../../tests/e2e/resources.spec.ts#L252) | conversation attachments publish after verification and deletion removes the usable attachment |
-| [test:308](../../tests/e2e/resources.spec.ts#L308) | fixed-version comments anchor selected Unicode text and a controlled share grants only its download until revoked |
-| [test:386](../../tests/e2e/resources.spec.ts#L386) | task contributor appends an Artifact version and loses the edit entry after demotion |
+| [test:285](../../tests/e2e/resources.spec.ts#L285) | conversation attachments publish after verification and deletion removes the usable attachment |
+| [test:341](../../tests/e2e/resources.spec.ts#L341) | fixed-version comments anchor selected Unicode text and a controlled share grants only its download until revoked |
+| [test:419](../../tests/e2e/resources.spec.ts#L419) | task contributor appends an Artifact version and loses the edit entry after demotion |
 
 ## tests/e2e/runtime-actions.spec.ts
 
@@ -780,11 +780,14 @@
 | [it:225](../../tests/integration/resource-links.test.ts#L225) | transactional message attachments and fixed Task Artifact evidence → allows only an explicit new message to disclose an older same-conversation upload to a new member |
 | [it:250](../../tests/integration/resource-links.test.ts#L250) | transactional message attachments and fixed Task Artifact evidence → keeps the submitted Artifact version fixed when its head changes and refuses deleted-source acceptance |
 | [it:317](../../tests/integration/resource-links.test.ts#L317) | transactional message attachments and fixed Task Artifact evidence → allows current task contributors to append with explicit authorship, rejects stale competing edits and fences demotion |
-| [it:424](../../tests/integration/resource-links.test.ts#L424) | transactional message attachments and fixed Task Artifact evidence → keeps conversation artifacts creator-only even for another conversation writer |
-| [it:443](../../tests/integration/resource-links.test.ts#L443) | transactional message attachments and fixed Task Artifact evidence → serializes competing Artifact versions without replacing the evidence already submitted to two reviewers |
-| [it:521](../../tests/integration/resource-links.test.ts#L521) | transactional message attachments and fixed Task Artifact evidence → commits exactly one reviewer decision while an Artifact head update races with acceptance |
-| [it:612](../../tests/integration/resource-links.test.ts#L612) | transactional message attachments and fixed Task Artifact evidence → requires the exact Task and SHA-256, even when the submitter can read both Tasks |
-| [it:661](../../tests/integration/resource-links.test.ts#L661) | transactional message attachments and fixed Task Artifact evidence → filters discovery before paging and binds cursors to the current reader and scope generation |
+| [it:424](../../tests/integration/resource-links.test.ts#L424) | transactional message attachments and fixed Task Artifact evidence → preserves a contributor branch independently and merges resolved bytes once against the explicit current head |
+| [it:529](../../tests/integration/resource-links.test.ts#L529) | transactional message attachments and fixed Task Artifact evidence → serializes competing branch merges, rejects foreign bases and paginates only currently visible drafts |
+| [it:603](../../tests/integration/resource-links.test.ts#L603) | transactional message attachments and fixed Task Artifact evidence → bounds live branch drafts and frees capacity after their resource is tombstoned |
+| [it:640](../../tests/integration/resource-links.test.ts#L640) | transactional message attachments and fixed Task Artifact evidence → keeps conversation artifacts creator-only even for another conversation writer |
+| [it:659](../../tests/integration/resource-links.test.ts#L659) | transactional message attachments and fixed Task Artifact evidence → serializes competing Artifact versions without replacing the evidence already submitted to two reviewers |
+| [it:737](../../tests/integration/resource-links.test.ts#L737) | transactional message attachments and fixed Task Artifact evidence → commits exactly one reviewer decision while an Artifact head update races with acceptance |
+| [it:828](../../tests/integration/resource-links.test.ts#L828) | transactional message attachments and fixed Task Artifact evidence → requires the exact Task and SHA-256, even when the submitter can read both Tasks |
+| [it:877](../../tests/integration/resource-links.test.ts#L877) | transactional message attachments and fixed Task Artifact evidence → filters discovery before paging and binds cursors to the current reader and scope generation |
 
 ## tests/integration/resources.test.ts
 

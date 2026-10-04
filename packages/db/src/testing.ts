@@ -1,3 +1,4 @@
+import { artifactBranchTableNames } from './migrations/033-artifact-branches.js';
 import { organizationInvitationTableNames } from './migrations/032-organization-invitations.js';
 import { notificationTableNames } from './migrations/027-notifications.js';
 import { runtimeToolIntentTableNames } from './migrations/026-runtime-tool-intents.js';
@@ -91,6 +92,7 @@ export async function bootstrapDevelopmentRole(
         : [
             ...tenantTableNames,
             ...organizationInvitationTableNames,
+            ...artifactBranchTableNames,
             ...synchronizationTableNames,
             ...taskTableNames,
             ...runtimeTableNames,

@@ -421,6 +421,222 @@ describe('transactional message attachments and fixed Task Artifact evidence', (
       3,
     );
   });
+  it('preserves a contributor branch independently and merges resolved bytes once against the explicit current head', async () => {
+    let work = await task();
+    work = await tasks.changeParticipant(
+      fixture.alice,
+      work.id,
+      fixture.bob.principalId,
+      'contributor',
+      work.version,
+      key(),
+    );
+    const original = await ready({ task_id: work.id }, 'Base content');
+    const artifact = await resources.createArtifact(
+      fixture.alice,
+      { resource_id: original.id, title: 'Branched output' },
+      key(),
+    );
+    const draft = await ready({ task_id: work.id }, 'Bob conflicting content', fixture.bob);
+    const branchKey = key();
+    const input = { base_version_id: artifact.version_id, resource_id: draft.id };
+    const branch = await resources.createArtifactBranch(fixture.bob, artifact.id, input, branchKey);
+    expect(
+      (await resources.createArtifactBranch(fixture.bob, artifact.id, input, branchKey)).id,
+    ).toBe(branch.id);
+    expect((await resources.getArtifact(fixture.alice, artifact.id)).head_version).toBe('1');
+    const updatedContent = await ready({ task_id: work.id }, 'Alice concurrent content');
+    const updated = await resources.createArtifactVersion(
+      fixture.alice,
+      artifact.id,
+      { resource_id: updatedContent.id },
+      artifact.version,
+      key(),
+    );
+    const resolved = await ready(
+      { task_id: work.id },
+      'Explicitly reconciled Alice and Bob changes',
+    );
+    const mergeInput = { branch_id: branch.id, resource_id: resolved.id };
+    await expect(
+      resources.mergeArtifactBranch(
+        fixture.alice,
+        artifact.id,
+        mergeInput,
+        artifact.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    expect((await resources.listArtifactBranches(fixture.bob, artifact.id)).items[0]).toMatchObject(
+      { status: 'open', base_version_id: artifact.version_id, resource: { sha256: draft.sha256 } },
+    );
+    const mergeKey = key();
+    const merged = await resources.mergeArtifactBranch(
+      fixture.alice,
+      artifact.id,
+      mergeInput,
+      updated.version,
+      mergeKey,
+    );
+    expect(merged).toMatchObject({ head_version: '3', resource: { sha256: resolved.sha256 } });
+    expect(
+      (
+        await resources.mergeArtifactBranch(
+          fixture.alice,
+          artifact.id,
+          mergeInput,
+          updated.version,
+          mergeKey,
+        )
+      ).head_version,
+    ).toBe('3');
+    expect((await resources.listArtifactBranches(fixture.bob, artifact.id)).items[0]).toMatchObject(
+      {
+        status: 'merged',
+        base_version_id: artifact.version_id,
+        merged_against_version_id: updated.version_id,
+        merged_version_id: merged.version_id,
+        created_by: fixture.bob.principalId,
+        merged_by: fixture.alice.principalId,
+        resource: { sha256: draft.sha256 },
+      },
+    );
+    await expect(
+      resources.mergeArtifactBranch(fixture.alice, artifact.id, mergeInput, merged.version, key()),
+    ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    expect((await resources.listArtifactVersions(fixture.alice, artifact.id)).items).toHaveLength(
+      3,
+    );
+    await expect(
+      withTenant(databases.owner, fixture.tenantId, (tx) =>
+        sql`update artifact_branches set resource_id=${resolved.id} where id=${branch.id}`.execute(
+          tx,
+        ),
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+    await tasks.changeParticipant(
+      fixture.alice,
+      work.id,
+      fixture.bob.principalId,
+      'observer',
+      work.version,
+      key(),
+    );
+    await expect(
+      resources.createArtifactBranch(fixture.bob, artifact.id, input, branchKey),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+  it('serializes competing branch merges, rejects foreign bases and paginates only currently visible drafts', async () => {
+    const work = await task();
+    const first = await ready({ task_id: work.id });
+    const artifact = await resources.createArtifact(
+      fixture.alice,
+      { resource_id: first.id, title: 'Merge competition' },
+      key(),
+    );
+    const other = await resources.createArtifact(
+      fixture.alice,
+      { resource_id: first.id, title: 'Separate artifact' },
+      key(),
+    );
+    await expect(
+      resources.createArtifactBranch(
+        fixture.alice,
+        artifact.id,
+        { base_version_id: other.version_id, resource_id: first.id },
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    const drafts = await Promise.all(
+      ['left', 'right'].map(async (body) => {
+        const content = await ready({ task_id: work.id }, body);
+        return resources.createArtifactBranch(
+          fixture.alice,
+          artifact.id,
+          { base_version_id: artifact.version_id, resource_id: content.id },
+          key(),
+        );
+      }),
+    );
+    const page = await resources.listArtifactBranches(fixture.alice, artifact.id, { limit: 1 });
+    expect(page.next_cursor).toBeDefined();
+    expect(
+      (
+        await resources.listArtifactBranches(fixture.alice, artifact.id, {
+          cursor: page.next_cursor!,
+        })
+      ).items,
+    ).toHaveLength(1);
+    const results = await Promise.allSettled(
+      drafts.map((branch) =>
+        resources.mergeArtifactBranch(
+          fixture.alice,
+          artifact.id,
+          { branch_id: branch.id, resource_id: branch.resource.id },
+          artifact.version,
+          key(),
+        ),
+      ),
+    );
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(results.find((r) => r.status === 'rejected')).toMatchObject({
+      reason: { code: 'VERSION_CONFLICT' },
+    });
+    const rows = (await resources.listArtifactBranches(fixture.alice, artifact.id)).items;
+    expect(rows.filter((r) => r.status === 'open')).toHaveLength(1);
+    const open = rows.find((r) => r.status === 'open')!;
+    await resources.deleteResource(fixture.alice, open.resource.id, open.resource.version, key());
+    expect((await resources.listArtifactBranches(fixture.alice, artifact.id)).items).toHaveLength(
+      1,
+    );
+    const head = await resources.getArtifact(fixture.alice, artifact.id);
+    await expect(
+      resources.mergeArtifactBranch(
+        fixture.alice,
+        artifact.id,
+        { branch_id: open.id, resource_id: first.id },
+        head.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+  it('bounds live branch drafts and frees capacity after their resource is tombstoned', async () => {
+    const work = await task();
+    const original = await ready({ task_id: work.id });
+    const artifact = await resources.createArtifact(
+      fixture.alice,
+      { resource_id: original.id, title: 'Bounded drafts' },
+      key(),
+    );
+    const content = await ready({ task_id: work.id }, 'Shared draft bytes');
+    const input = { base_version_id: artifact.version_id, resource_id: content.id };
+    for (let i = 0; i < 200; i++)
+      await resources.createArtifactBranch(fixture.alice, artifact.id, input, key());
+    await expect(
+      resources.createArtifactBranch(fixture.alice, artifact.id, input, key()),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    const other = await tenantFixture(databases.owner);
+    expect(
+      (
+        await withTenant(databases.db, other.tenantId, (tx) =>
+          sql`select id from artifact_branches`.execute(tx),
+        )
+      ).rows,
+    ).toHaveLength(0);
+    await resources.deleteResource(fixture.alice, content.id, content.version, key());
+    expect((await resources.listArtifactBranches(fixture.alice, artifact.id)).items).toHaveLength(
+      0,
+    );
+    const replacement = await ready({ task_id: work.id }, 'New live draft');
+    expect(
+      await resources.createArtifactBranch(
+        fixture.alice,
+        artifact.id,
+        { ...input, resource_id: replacement.id },
+        key(),
+      ),
+    ).toMatchObject({ status: 'open' });
+  }, 60000);
   it('keeps conversation artifacts creator-only even for another conversation writer', async () => {
     const chat = await group();
     const content = await ready({ conversation_id: chat.id });

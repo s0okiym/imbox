@@ -1,6 +1,11 @@
 import { VersionComparison } from './version-comparison.js';
 import { useEffect, useRef, useState } from 'react';
-import type { StoredArtifact, StoredArtifactVersion, StoredResource } from '@imbox/contracts';
+import type {
+  ArtifactBranch,
+  StoredArtifact,
+  StoredArtifactVersion,
+  StoredResource,
+} from '@imbox/contracts';
 import { isAccessLoss, type Session } from '../api.js';
 import type { Conversation, Task } from '@imbox/contracts';
 import { ArtifactCollaborationPanel } from './artifact-collaboration-panel.js';
@@ -321,6 +326,9 @@ export function ArtifactContent({
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState<StoredResource | null>(null);
+  const [uploadBase, setUploadBase] = useState(artifact.version_id);
+  const [branchesRevision, setBranchesRevision] = useState(0);
+  const branchCommand = useExecutionCommand('1', refresh, accessLost);
   const [selected, setSelected] = useState<string | null>(null);
   const command = useExecutionCommand(artifact.version, refresh, accessLost);
   useEffect(() => {
@@ -361,7 +369,14 @@ export function ArtifactContent({
         {artifact.resource.task_id && '任务负责人和贡献者可追加版本；并发修改需要刷新后重新提交。'}
       </p>
       {editable && (
-        <button className="button subtle" onClick={() => setUploading(true)}>
+        <button
+          className="button subtle"
+          onClick={() => {
+            command.adoptLatest();
+            setUploadBase(current?.id ?? artifact.version_id);
+            setUploading(true);
+          }}
+        >
           上传新版本
         </button>
       )}
@@ -400,6 +415,17 @@ export function ArtifactContent({
           accessLost={accessLost}
         />
       )}
+      <ArtifactBranches
+        key={`${artifact.id}:${branchesRevision}`}
+        api={api}
+        artifact={artifact}
+        scope={scope}
+        editable={editable}
+        accessLost={accessLost}
+        refresh={refresh}
+        onChanged={onChanged}
+        selectVersion={setSelected}
+      />
       <ResourceContent
         key={current?.id ?? artifact.version_id}
         api={api}
@@ -447,6 +473,33 @@ export function ArtifactContent({
               将「{uploaded.filename}」追加到制品「{artifact.title}」。当前制品版本为{' '}
               {artifact.head_version}，旧引用继续指向旧内容。
             </p>
+            <p>
+              也可以将此内容保留为独立分支，当前任务或会话内的可读成员可见。分支不会改变主版本，之后需核对并上传整理后的内容才能合并。
+            </p>
+            {branchCommand.error && <ErrorNotice>{branchCommand.error}</ErrorNotice>}
+            <button
+              type="button"
+              className="button subtle"
+              disabled={branchCommand.busy || command.busy}
+              onClick={() => {
+                void branchCommand.run(
+                  {
+                    artifact_id: artifact.id,
+                    base_version_id: uploadBase,
+                    resource_id: uploaded.id,
+                  },
+                  async (key, signal) => {
+                    await api.createBranch(artifact.id, uploadBase, uploaded.id, key, signal);
+                    if (!signal.aborted) {
+                      setUploaded(null);
+                      setBranchesRevision((value) => value + 1);
+                    }
+                  },
+                );
+              }}
+            >
+              保存为独立分支
+            </button>
             <SubmitActions command={command} label="追加新版本" onClose={() => setUploaded(null)} />
           </form>
         </Modal>
@@ -509,5 +562,192 @@ export function AttachmentLinks({
         </Modal>
       )}
     </div>
+  );
+}
+
+function ArtifactBranches({
+  api,
+  artifact,
+  scope,
+  editable,
+  accessLost,
+  refresh,
+  onChanged,
+  selectVersion,
+}: {
+  readonly api: ResourceApi;
+  readonly artifact: StoredArtifact;
+  readonly scope: ResourceScope;
+  readonly editable: boolean;
+  readonly accessLost: (error: unknown) => void;
+  readonly refresh: () => void;
+  readonly onChanged: (value: StoredArtifact) => void;
+  readonly selectVersion: (id: string) => void;
+}) {
+  const [items, setItems] = useState<ArtifactBranch[]>([]);
+  const [cursor, setCursor] = useState<string | undefined>();
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<ArtifactBranch | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [resolved, setResolved] = useState<StoredResource | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const flight = useRef<AbortController | null>(null);
+  const command = useExecutionCommand(artifact.version, refresh, accessLost);
+  const load = (after?: string) => {
+    flight.current?.abort();
+    const controller = new AbortController();
+    flight.current = controller;
+    void api
+      .branches(artifact.id, controller.signal, after)
+      .then((page) => {
+        if (!controller.signal.aborted) {
+          setItems((old) => (after ? [...old, ...page.items] : page.items));
+          setCursor(page.next_cursor);
+          setError(null);
+        }
+      })
+      .catch((failure: unknown) => {
+        if (!controller.signal.aborted) {
+          setItems([]);
+          setError(resourceError(failure));
+          if (isAccessLoss(failure)) accessLost(failure);
+        }
+      });
+  };
+  useEffect(() => {
+    const controller = new AbortController();
+    flight.current = controller;
+    void api
+      .branches(artifact.id, controller.signal)
+      .then((page) => {
+        if (!controller.signal.aborted) {
+          setItems(page.items);
+          setCursor(page.next_cursor);
+          setSelected(null);
+          setError(null);
+        }
+      })
+      .catch((failure: unknown) => {
+        if (!controller.signal.aborted) {
+          setItems([]);
+          setError(resourceError(failure));
+          if (isAccessLoss(failure)) accessLost(failure);
+        }
+      });
+    return () => {
+      controller.abort();
+      flight.current?.abort();
+    };
+  }, [api, artifact.id, artifact.version, accessLost]);
+  return (
+    <section className="task-section" aria-label="产物分支">
+      <h2>独立分支</h2>
+      <p>分支保存固定草稿，不改变主版本。合并需上传已整理的完整内容，不会自动拼接或覆盖冲突。</p>
+      {error && <ErrorNotice>{error}</ErrorNotice>}
+      {items.length === 0 && !error && <p>暂无分支。</p>}
+      {items.map((branch) => (
+        <button key={branch.id} className="button subtle" onClick={() => setSelected(branch)}>
+          {branch.resource.filename} · {branch.status === 'open' ? '待合并' : '已合并'}
+        </button>
+      ))}
+      {cursor && (
+        <button className="button subtle" onClick={() => load(cursor)}>
+          更多分支
+        </button>
+      )}
+      {selected && (
+        <section aria-label="选定分支">
+          <p>
+            基础版本：{selected.base_version_id}；作者：{selected.created_by}
+          </p>
+          {selected.merged_version_id && <p>合并版本：{selected.merged_version_id}</p>}
+          <button className="button subtle" onClick={() => selectVersion(selected.base_version_id)}>
+            查看分支基础版本
+          </button>
+          <button className="button subtle" onClick={() => selectVersion(artifact.version_id)}>
+            查看当前主版本
+          </button>
+          <ResourceContent
+            key={selected.id}
+            api={api}
+            resource={selected.resource}
+            accessLost={accessLost}
+          />
+          {editable && selected.status === 'open' && (
+            <button
+              className="button subtle"
+              onClick={() => {
+                command.adoptLatest();
+                setUploading(true);
+                setConfirmed(false);
+              }}
+            >
+              上传整理后的合并内容
+            </button>
+          )}
+        </section>
+      )}
+      {uploading && (
+        <UploadForm
+          api={api}
+          scope={scope}
+          title="上传合并后的完整内容"
+          accessLost={accessLost}
+          onClose={() => setUploading(false)}
+          onUploaded={(value) => {
+            setResolved(value);
+            setUploading(false);
+          }}
+        />
+      )}
+      {resolved && selected && (
+        <Modal title="确认合并分支" onClose={() => setResolved(null)}>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!confirmed) return;
+              void command.run(
+                { branch_id: selected.id, resource_id: resolved.id },
+                async (key, signal) => {
+                  const next = await api.mergeBranch(
+                    artifact,
+                    selected.id,
+                    resolved.id,
+                    key,
+                    signal,
+                  );
+                  if (!signal.aborted) {
+                    setResolved(null);
+                    setSelected(null);
+                    onChanged(next);
+                    command.adoptLatest();
+                  }
+                },
+              );
+            }}
+          >
+            <p>
+              将整理后的「{resolved.filename}」提交为当前主版本 {artifact.head_version}{' '}
+              之后的新版本。分支原稿和历史版本继续保留。
+            </p>
+            <label>
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+              />
+              已核对基础版本、当前主版本与分支内容。
+            </label>
+            <SubmitActions
+              command={command}
+              label="合并为新主版本"
+              disabled={!confirmed}
+              onClose={() => setResolved(null)}
+              onAdopt={() => setConfirmed(false)}
+            />
+          </form>
+        </Modal>
+      )}
+    </section>
   );
 }

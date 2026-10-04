@@ -219,6 +219,39 @@ test('real browser S3 upload creates immutable versions and submits the selected
       .selectOption({ label: '版本 1' });
     await page.getByRole('button', { name: '比较内容', exact: true }).click();
     await expect(page.getByText('两个版本内容完全相同。', { exact: true })).toBeVisible();
+    const beforeConflict = (await f.resources.listArtifacts(f.f.alice, { task_id: f.task.id }))
+      .items[0]!;
+    await page.getByRole('button', { name: '上传新版本', exact: true }).click();
+    await upload(page, 'conflicting-draft.txt', '需要保留的冲突修改');
+    const concurrent = await f.resources.createArtifactVersion(
+      f.f.alice,
+      beforeConflict.id,
+      { resource_id: beforeConflict.resource.id },
+      beforeConflict.version,
+      randomUUID(),
+    );
+    await page.getByRole('button', { name: '追加新版本', exact: true }).click();
+    await expect(page.getByRole('button', { name: '重新核对最新版本', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '保存为独立分支', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    const branches = page.getByLabel('产物分支', { exact: true });
+    await branches
+      .getByRole('button', { name: 'conflicting-draft.txt · 待合并', exact: true })
+      .click();
+    expect((await f.resources.getArtifact(f.f.alice, beforeConflict.id)).head_version).toBe('3');
+    await branches.getByRole('button', { name: '上传整理后的合并内容', exact: true }).click();
+    await upload(page, 'resolved.txt', '已经整理全部冲突的新内容');
+    await page
+      .getByRole('checkbox', { name: '已核对基础版本、当前主版本与分支内容。', exact: true })
+      .check();
+    await page.getByRole('button', { name: '合并为新主版本', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: /^版本 4 的固定引用/ })).toBeVisible();
+    const mergedBranches = await f.resources.listArtifactBranches(f.f.alice, beforeConflict.id);
+    expect(mergedBranches.items[0]).toMatchObject({
+      status: 'merged',
+      base_version_id: beforeConflict.version_id,
+      merged_against_version_id: concurrent.version_id,
+    });
     await page.getByRole('button', { name: /^版本 1 evidence-v1.txt/ }).click();
     expect(await downloadedText(page)).toBe('固定原始证据');
     const artifact = (await f.resources.listArtifacts(f.f.alice, { task_id: f.task.id })).items[0]!;

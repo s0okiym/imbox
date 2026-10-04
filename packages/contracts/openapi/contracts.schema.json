@@ -3221,6 +3221,134 @@
       ],
       "additionalProperties": false
     },
+    "CreateArtifactBranchInput": {
+      "title": "CreateArtifactBranchInput",
+      "type": "object",
+      "properties": {
+        "base_version_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "resource_id": {
+          "$ref": "#/$defs/Identifier"
+        }
+      },
+      "required": [
+        "base_version_id",
+        "resource_id"
+      ],
+      "additionalProperties": false
+    },
+    "MergeArtifactBranchInput": {
+      "title": "MergeArtifactBranchInput",
+      "type": "object",
+      "properties": {
+        "branch_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "resource_id": {
+          "$ref": "#/$defs/Identifier"
+        }
+      },
+      "required": [
+        "branch_id",
+        "resource_id"
+      ],
+      "additionalProperties": false
+    },
+    "ArtifactBranch": {
+      "title": "ArtifactBranch",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "artifact_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "base_version_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "resource": {
+          "$ref": "#/$defs/StoredResource"
+        },
+        "created_by": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "created_at": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "merged"
+          ]
+        },
+        "merged_version_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Identifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "merged_against_version_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Identifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "merged_by": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Identifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "artifact_id",
+        "base_version_id",
+        "resource",
+        "created_by",
+        "created_at",
+        "status",
+        "merged_version_id",
+        "merged_against_version_id",
+        "merged_by"
+      ],
+      "additionalProperties": false
+    },
+    "ArtifactBranchPage": {
+      "title": "ArtifactBranchPage",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ArtifactBranch"
+          },
+          "maxItems": 200
+        },
+        "next_cursor": {
+          "$ref": "#/$defs/Cursor"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
     "CreateStoredArtifactVersionInput": {
       "title": "CreateStoredArtifactVersionInput",
       "type": "object",

@@ -1,4 +1,6 @@
 import type {
+  ArtifactBranch,
+  ArtifactBranchPage,
   CreateStoredArtifactInput,
   CreateUploadInput,
   ResourceDeletion,
@@ -136,6 +138,37 @@ export class ResourceApi {
       key,
       version: artifact.version,
       body: { resource_id: resourceId },
+    });
+  }
+  createBranch(
+    id: string,
+    baseVersionId: string,
+    resourceId: string,
+    key: string,
+    signal: AbortSignal,
+  ): Promise<ArtifactBranch> {
+    return this.request(`/v1/artifacts/${encodeURIComponent(id)}/branches`, signal, {
+      key,
+      body: { base_version_id: baseVersionId, resource_id: resourceId },
+    });
+  }
+  branches(id: string, signal: AbortSignal, cursor?: string): Promise<ArtifactBranchPage> {
+    return this.request(
+      `/v1/artifacts/${encodeURIComponent(id)}/branches?${new URLSearchParams({ limit: '100', ...(cursor ? { cursor } : {}) })}`,
+      signal,
+    );
+  }
+  mergeBranch(
+    artifact: StoredArtifact,
+    branchId: string,
+    resourceId: string,
+    key: string,
+    signal: AbortSignal,
+  ): Promise<StoredArtifact> {
+    return this.request(`/v1/artifacts/${encodeURIComponent(artifact.id)}/branch-merges`, signal, {
+      key,
+      version: artifact.version,
+      body: { branch_id: branchId, resource_id: resourceId },
     });
   }
   versions(id: string, signal: AbortSignal, cursor?: string): Promise<StoredArtifactVersionPage> {

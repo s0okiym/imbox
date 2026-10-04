@@ -26,6 +26,18 @@ import {
   type ResourceRow,
   type ArtifactRow,
 } from './shared.js';
+interface ArtifactBranchRow {
+  id: string;
+  artifact_id: string;
+  base_version_id: string;
+  resource_id: string;
+  created_by: string;
+  created_at: Date;
+  status: 'open' | 'merged';
+  merged_version_id: string | null;
+  merged_against_version_id: string | null;
+  merged_by: string | null;
+}
 export interface CreateUploadInput {
   conversation_id?: string;
   task_id?: string;
@@ -118,6 +130,25 @@ export function createResourceService(options: {
     await sql`insert into resource_links(tenant_id,source_resource_id,target_artifact_version_id) values(${auth.tenantId},${content.id},${id})`.execute(
       tx,
     );
+  }
+  async function branchDto(tx: TenantTransaction, auth: AuthContext, id: string) {
+    const row =
+      (await sql<ArtifactBranchRow>`select * from artifact_branches where id=${id}`.execute(tx))
+        .rows[0] ?? fail('NOT_FOUND', 404);
+    await artifact(tx, auth, row.artifact_id);
+    const content = await resource(tx, auth, row.resource_id);
+    return {
+      id: row.id,
+      artifact_id: row.artifact_id,
+      base_version_id: row.base_version_id,
+      resource: resourceDto(content),
+      created_by: row.created_by,
+      created_at: row.created_at.toISOString(),
+      status: row.status,
+      merged_version_id: row.merged_version_id,
+      merged_against_version_id: row.merged_against_version_id,
+      merged_by: row.merged_by,
+    };
   }
   return {
     async createUpload(auth: AuthContext, input: CreateUploadInput, key: string) {
@@ -535,6 +566,138 @@ export function createResourceService(options: {
           const next = String(BigInt(initial.head_version) + 1n);
           await appendVersion(tx, auth, initial, content, next);
           await sql`update artifacts set version=version+1,head_version=${next} where id=${id}`.execute(
+            tx,
+          );
+          return id;
+        });
+        return artifactDto(tx, auth, await artifact(tx, auth, id));
+      });
+    },
+    async createArtifactBranch(
+      auth: AuthContext,
+      id: string,
+      input: { base_version_id: string; resource_id: string },
+      key: string,
+    ) {
+      return withTenant(options.db, auth.tenantId, async (tx) => {
+        const parent = await artifact(tx, auth, id, true);
+        const result = await command(tx, auth, 'artifact.branch', key, { id, input }, async () => {
+          const base =
+            (
+              await sql<{
+                resource_id: string;
+              }>`select resource_id from artifact_versions where id=${input.base_version_id} and artifact_id=${id}`.execute(
+                tx,
+              )
+            ).rows[0] ?? fail('NOT_FOUND', 404);
+          await resource(tx, auth, base.resource_id);
+          const content = await resource(tx, auth, input.resource_id, true);
+          if (
+            content.task_id !== parent.task_id ||
+            content.conversation_id !== parent.conversation_id
+          )
+            fail('DISCLOSURE_DENIED', 403);
+          const count = (
+            await sql<{
+              count: string;
+            }>`select count(*) from artifact_branches b join resources r on r.tenant_id=b.tenant_id and r.id=b.resource_id where b.artifact_id=${id} and b.status='open' and r.deleted_at is null`.execute(
+              tx,
+            )
+          ).rows[0]!;
+          if (BigInt(count.count) >= 200n)
+            fail('VALIDATION_FAILED', 400, 'At most 200 open branches per artifact');
+          const branchId = randomUUID();
+          await sql`insert into artifact_branches(tenant_id,id,artifact_id,base_version_id,resource_id,created_by) values(${auth.tenantId},${branchId},${id},${input.base_version_id},${input.resource_id},${auth.principalId})`.execute(
+            tx,
+          );
+          return branchId;
+        });
+        return branchDto(tx, auth, result);
+      });
+    },
+    async listArtifactBranches(
+      auth: AuthContext,
+      id: string,
+      query: { cursor?: string; limit?: number } = {},
+    ) {
+      const limit = query.limit ?? 50;
+      if (!Number.isInteger(limit) || limit < 1 || limit > 200) fail('VALIDATION_FAILED', 400);
+      return withTenant(options.db, auth.tenantId, async (tx) => {
+        const parent = await artifact(tx, auth, id);
+        const fence = await scopeAccess(tx, auth, parent);
+        const binding = json([
+          auth.tenantId,
+          auth.principalId,
+          auth.authzRevision,
+          id,
+          fence,
+          'artifact-branches',
+        ]);
+        const after = query.cursor
+          ? cursors.decode(query.cursor, binding)
+          : '00000000-0000-0000-0000-000000000000';
+        const rows = (
+          await sql<{
+            id: string;
+          }>`select b.id from artifact_branches b join resources r on r.tenant_id=b.tenant_id and r.id=b.resource_id where b.artifact_id=${id} and b.id>${after}::uuid and r.deleted_at is null and ${resourceHistorySql(auth)} order by b.id limit ${limit + 1}`.execute(
+            tx,
+          )
+        ).rows;
+        const items = [];
+        for (const row of rows.slice(0, limit)) items.push(await branchDto(tx, auth, row.id));
+        return {
+          items,
+          ...(rows.length > limit
+            ? { next_cursor: cursors.encode(binding, rows[limit - 1]!.id) }
+            : {}),
+        };
+      });
+    },
+    async mergeArtifactBranch(
+      auth: AuthContext,
+      id: string,
+      input: { branch_id: string; resource_id: string },
+      version: string,
+      key: string,
+    ) {
+      return withTenant(options.db, auth.tenantId, async (tx) => {
+        const parent = await artifact(tx, auth, id, true);
+        await command(tx, auth, 'artifact.branch_merge', key, { id, input, version }, async () => {
+          if (parent.version !== version) fail('VERSION_CONFLICT', 409);
+          const branch =
+            (
+              await sql<ArtifactBranchRow>`select * from artifact_branches where id=${input.branch_id} and artifact_id=${id} for update`.execute(
+                tx,
+              )
+            ).rows[0] ?? fail('NOT_FOUND', 404);
+          if (branch.status !== 'open') fail('VERSION_CONFLICT', 409);
+          await resource(tx, auth, branch.resource_id);
+          const content = await resource(tx, auth, input.resource_id, true);
+          if (
+            content.task_id !== parent.task_id ||
+            content.conversation_id !== parent.conversation_id
+          )
+            fail('DISCLOSURE_DENIED', 403);
+          const previous = (
+            await sql<{
+              id: string;
+            }>`select id from artifact_versions where artifact_id=${id} and version=${parent.head_version}`.execute(
+              tx,
+            )
+          ).rows[0]!;
+          const next = String(BigInt(parent.head_version) + 1n);
+          await appendVersion(tx, auth, parent, content, next);
+          const merged = (
+            await sql<{
+              id: string;
+            }>`select id from artifact_versions where artifact_id=${id} and version=${next}`.execute(
+              tx,
+            )
+          ).rows[0]!;
+          await sql`update artifacts set version=version+1,head_version=${next} where id=${id}`.execute(
+            tx,
+          );
+          await sql`update artifact_branches set status='merged',merged_version_id=${merged.id},merged_against_version_id=${previous.id},merged_by=${auth.principalId} where id=${branch.id}`.execute(
             tx,
           );
           return id;

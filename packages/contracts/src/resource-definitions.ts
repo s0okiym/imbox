@@ -63,6 +63,26 @@ export const resourceDefinitions = {
     download_path: str(120),
   }),
   CreateStoredArtifactInput: obj({ resource_id: ref('Identifier'), title: str(200) }),
+  CreateArtifactBranchInput: obj({
+    base_version_id: ref('Identifier'),
+    resource_id: ref('Identifier'),
+  }),
+  MergeArtifactBranchInput: obj({ branch_id: ref('Identifier'), resource_id: ref('Identifier') }),
+  ArtifactBranch: obj({
+    id: ref('Identifier'),
+    artifact_id: ref('Identifier'),
+    base_version_id: ref('Identifier'),
+    resource: ref('StoredResource'),
+    created_by: ref('Identifier'),
+    created_at: ref('UtcTimestamp'),
+    status: { type: 'string', enum: ['open', 'merged'] },
+    merged_version_id: nullable(ref('Identifier')),
+    merged_against_version_id: nullable(ref('Identifier')),
+    merged_by: nullable(ref('Identifier')),
+  }),
+  ArtifactBranchPage: obj({ items: arr(ref('ArtifactBranch'), 200), next_cursor: ref('Cursor') }, [
+    'items',
+  ]),
   CreateStoredArtifactVersionInput: obj({ resource_id: ref('Identifier') }),
   StoredArtifact: obj(
     {

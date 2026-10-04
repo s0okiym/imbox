@@ -143,6 +143,10 @@ export interface ContractTypes {
   UploadTicket: UploadTicket;
   StoredResource: StoredResource;
   CreateStoredArtifactInput: CreateStoredArtifactInput;
+  CreateArtifactBranchInput: CreateArtifactBranchInput;
+  MergeArtifactBranchInput: MergeArtifactBranchInput;
+  ArtifactBranch: ArtifactBranch;
+  ArtifactBranchPage: ArtifactBranchPage;
   CreateStoredArtifactVersionInput: CreateStoredArtifactVersionInput;
   StoredArtifact: StoredArtifact;
   StoredArtifactVersion: StoredArtifactVersion;
@@ -981,6 +985,33 @@ export interface UploadTicket {
 export interface CreateStoredArtifactInput {
   resource_id: Identifier;
   title: string;
+}
+export interface CreateArtifactBranchInput {
+  base_version_id: Identifier;
+  resource_id: Identifier;
+}
+export interface MergeArtifactBranchInput {
+  branch_id: Identifier;
+  resource_id: Identifier;
+}
+export interface ArtifactBranch {
+  id: Identifier;
+  artifact_id: Identifier;
+  base_version_id: Identifier;
+  resource: StoredResource;
+  created_by: Identifier;
+  created_at: UtcTimestamp;
+  status: 'open' | 'merged';
+  merged_version_id: Identifier | null;
+  merged_against_version_id: Identifier | null;
+  merged_by: Identifier | null;
+}
+export interface ArtifactBranchPage {
+  /**
+   * @maxItems 200
+   */
+  items: ArtifactBranch[];
+  next_cursor?: Cursor;
 }
 export interface CreateStoredArtifactVersionInput {
   resource_id: Identifier;

@@ -169,6 +169,46 @@ export function registerResourceRoutes(
     async (r, input) =>
       resources.createArtifactVersion(await auth(r), id(r), input, version(r), key(r)),
   );
+  post(
+    '/v1/artifacts/:id/branches',
+    'CreateArtifactBranchInput',
+    'ArtifactBranch',
+    async (r, input) => resources.createArtifactBranch(await auth(r), id(r), input, key(r)),
+  );
+  post(
+    '/v1/artifacts/:id/branch-merges',
+    'MergeArtifactBranchInput',
+    'StoredArtifact',
+    async (r, input) =>
+      resources.mergeArtifactBranch(await auth(r), id(r), input, version(r), key(r)),
+  );
+  app.get(
+    '/v1/artifacts/:id/branches',
+    {
+      schema: {
+        params: schemas.ResourceParams,
+        response: { 200: schemas.ArtifactBranchPage },
+        querystring: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            cursor: { type: 'string', maxLength: 4096 },
+            limit: { type: 'string', pattern: '^(?:[1-9][0-9]?|1[0-9]{2}|200)$' },
+          },
+        },
+      },
+    },
+    async (request) => {
+      const q = request.query as { cursor?: string; limit?: string };
+      return assertContract(
+        'ArtifactBranchPage',
+        await resources.listArtifactBranches(await auth(request), id(request), {
+          ...(q.cursor ? { cursor: q.cursor } : {}),
+          ...(q.limit ? { limit: Number(q.limit) } : {}),
+        }),
+      );
+    },
+  );
   app.get(
     '/v1/artifacts/:id/versions',
     {

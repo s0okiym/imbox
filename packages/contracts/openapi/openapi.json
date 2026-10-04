@@ -6096,6 +6096,263 @@
         }
       }
     },
+    "/v1/artifacts/{id}/branches": {
+      "post": {
+        "operationId": "createArtifactBranch",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IdempotencyKey"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactBranch"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArtifactBranchInput"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listArtifactBranches",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactBranchPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/artifacts/{id}/branch-merges": {
+      "post": {
+        "operationId": "mergeArtifactBranch",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IdempotencyKey"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 256,
+              "pattern": "^\"[^\"\\r\\n]+\"$"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoredArtifact"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeArtifactBranchInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/artifacts/{id}/versions": {
       "post": {
         "operationId": "createStoredArtifactVersion",
@@ -16067,6 +16324,134 @@
         "required": [
           "resource_id",
           "title"
+        ],
+        "additionalProperties": false
+      },
+      "CreateArtifactBranchInput": {
+        "title": "CreateArtifactBranchInput",
+        "type": "object",
+        "properties": {
+          "base_version_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": [
+          "base_version_id",
+          "resource_id"
+        ],
+        "additionalProperties": false
+      },
+      "MergeArtifactBranchInput": {
+        "title": "MergeArtifactBranchInput",
+        "type": "object",
+        "properties": {
+          "branch_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "resource_id": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": [
+          "branch_id",
+          "resource_id"
+        ],
+        "additionalProperties": false
+      },
+      "ArtifactBranch": {
+        "title": "ArtifactBranch",
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "artifact_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "base_version_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/StoredResource"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/UtcTimestamp"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "merged"
+            ]
+          },
+          "merged_version_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "merged_against_version_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "merged_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "artifact_id",
+          "base_version_id",
+          "resource",
+          "created_by",
+          "created_at",
+          "status",
+          "merged_version_id",
+          "merged_against_version_id",
+          "merged_by"
+        ],
+        "additionalProperties": false
+      },
+      "ArtifactBranchPage": {
+        "title": "ArtifactBranchPage",
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtifactBranch"
+            },
+            "maxItems": 200
+          },
+          "next_cursor": {
+            "$ref": "#/components/schemas/Cursor"
+          }
+        },
+        "required": [
+          "items"
         ],
         "additionalProperties": false
       },
