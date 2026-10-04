@@ -156,6 +156,47 @@ function connect(address: string, token: string) {
 }
 
 describe('durable outbox projection and caller-bound fixed snapshots', () => {
+  it('skips delivery queries only at an authenticated current head and still rejects revoked members', async () => {
+    const conversation = await group();
+    await drain();
+    const baseline = await sync.snapshot(fixture.bob, conversation.id);
+    let deliveryQueries = 0;
+    const observed = createSyncService({
+      db: databases.db.withPlugin({
+        transformQuery(args) {
+          if (JSON.stringify(args.node).includes('projection_deliveries')) deliveryQueries++;
+          return args.node;
+        },
+        async transformResult(args) {
+          return args.result;
+        },
+      }),
+      cursorSecret: secret,
+    });
+    const empty = await observed.events(fixture.bob, conversation.id, { cursor: baseline.cursor });
+    expect(empty).toMatchObject({ items: [], cursor: baseline.cursor, has_more: false });
+    expect(deliveryQueries).toBe(0);
+    await send(conversation.id, 'New head requires an actual delivery read');
+    await drain();
+    const changed = await observed.events(fixture.bob, conversation.id, {
+      cursor: baseline.cursor,
+    });
+    expect(
+      changed.items.some(
+        (item) => item.payload.message?.body === 'New head requires an actual delivery read',
+      ),
+    ).toBe(true);
+    expect(deliveryQueries).toBe(1);
+    await withTenant(databases.owner, fixture.tenantId, (tx) =>
+      sql`update conversation_members set status='removed',version=version+1 where conversation_id=${conversation.id} and principal_id=${fixture.bob.principalId}`.execute(
+        tx,
+      ),
+    );
+    await expect(
+      observed.events(fixture.bob, conversation.id, { cursor: changed.cursor }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(deliveryQueries).toBe(1);
+  });
   it('projects an independent conversation while another conversation is locked', async () => {
     const blockedChat = await group(),
       freeChat = await group();

@@ -287,6 +287,17 @@ export function createSyncService(options: {
         const after = cursors.decode(query.cursor, eventBinding);
         if (!decimal.test(after) || BigInt(after) > BigInt(access.stream.head_seq))
           return fail('RESYNC_REQUIRED', 409);
+        // streamAccess holds the current authorization and stream row locks in this transaction.
+        // An authenticated cursor already at that head cannot have undispatched rows to read.
+        if (after === access.stream.head_seq)
+          return assertContract('StreamEvents', {
+            stream_id: streamId,
+            view_scope: streamId,
+            authz_generation: access.stream.authz_generation,
+            items: [],
+            cursor: query.cursor,
+            has_more: false,
+          });
         // Filter before LIMIT: a page never reveals the number of hidden/history-excluded deliveries.
         const rows = await tx
           .selectFrom('projection_deliveries as d')

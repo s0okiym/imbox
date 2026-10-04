@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "commit": "c988fa8b15cd6f60deb635377d259a0aceb30f83",
+  "run_id": 37230556782,
+  "job_id": 111519122532,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37230556782",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 185,
+    "seconds": 5
+  },
+  "integration": {
+    "files": 35,
+    "passed": 281,
+    "seconds": 108.88
+  },
+  "browser": {
+    "passed": 32,
+    "minutes_rounded": 3.3
+  },
+  "actual_model": {
+    "passed": 1,
+    "seconds": 4.85
+  },
+  "deployment": {
+    "passed": 3,
+    "seconds": 12.92
+  },
+  "scope": "Task-tree boundaries; excludes subsequent wake-burst tests and idle polling optimization"
+}

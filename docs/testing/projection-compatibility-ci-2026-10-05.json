@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "commit": "2f751069fc11062f48cfd5d377db2970e9088268",
+  "run_id": 37230299006,
+  "job_id": 111518372752,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37230299006",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 185,
+    "seconds": 4.37
+  },
+  "integration": {
+    "files": 35,
+    "passed": 279,
+    "seconds": 93.33
+  },
+  "browser": {
+    "passed": 32,
+    "minutes_rounded": 3.2
+  },
+  "actual_model": {
+    "passed": 1,
+    "seconds": 4.84
+  },
+  "deployment": {
+    "passed": 3,
+    "seconds": 12.27
+  },
+  "scope": "Projection compatibility; excludes subsequent task-tree/wake-burst tests and idle polling optimization"
+}
