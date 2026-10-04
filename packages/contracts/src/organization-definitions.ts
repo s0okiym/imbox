@@ -14,6 +14,18 @@ const page = (item: string) =>
     ['items'],
   );
 export const organizationDefinitions = {
+  ManagedTenantMember: object({
+    principal: ref('Principal'),
+    role: { enum: ['owner', 'admin', 'member', 'guest', 'agent'] },
+    status: { enum: ['active', 'disabled', 'historical'] },
+    version: ref('Version'),
+  }),
+  ManagedTenantMemberPage: page('ManagedTenantMember'),
+  SetTenantMemberInput: object({
+    role: { enum: ['owner', 'admin', 'member', 'guest'] },
+    status: { enum: ['active', 'disabled'] },
+    reason: { type: 'string', minLength: 1, maxLength: 2000 },
+  }),
   OrganizationManagementAccess: object({ can_manage: { type: 'boolean' } }),
   ManagedWorkspace: object({
     id: ref('Identifier'),

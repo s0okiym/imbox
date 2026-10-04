@@ -1,3 +1,4 @@
+import { TenantMembers } from './TenantMembers.js';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { ContractTypes as C } from '@imbox/contracts';
 import { ApiClient, ApiError, describeError, type Session } from '../api.js';
@@ -259,6 +260,13 @@ function OrganizationScope({ session, onClose, onSessionLost, onSessionUpdated }
             管理当前组织已有的人员。加入工作区后，具体会话和任务仍需单独授权；Agent 请在 Agent
             目录管理。
           </p>
+          <TenantMembers
+            api={api}
+            session={session}
+            onSessionLost={onSessionLost}
+            onSessionUpdated={onSessionUpdated}
+            onChanged={() => setRevision((n) => n + 1)}
+          />
           <form onSubmit={(e) => void submit(e, 'create')}>
             <label>
               新工作区名称

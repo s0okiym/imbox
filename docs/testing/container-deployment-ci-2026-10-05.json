@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "commit": "83601c227b0f4a346d1908441fee68105df2a93c",
+  "run_id": 37224844230,
+  "job_id": 111502265928,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37224844230",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 181
+  },
+  "integration": {
+    "files": 34,
+    "passed": 261
+  },
+  "browser": {
+    "passed": 29,
+    "minutes_rounded": 3.0
+  },
+  "actual_model": {
+    "passed": 1
+  },
+  "deployment": {
+    "files": 1,
+    "passed": 3
+  },
+  "scope": "Application containers, TLS gateway, runtime dependency checking; excludes subsequent tenant membership lifecycle changes"
+}

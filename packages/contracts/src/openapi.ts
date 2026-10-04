@@ -35,6 +35,24 @@ interface RouteContract {
 export const routeContracts: readonly RouteContract[] = [
   {
     method: 'get',
+    path: '/v1/organization/members',
+    operationId: 'listManagedTenantMembers',
+    response: 'ManagedTenantMemberPage',
+    success: '200',
+    paginated: true,
+  },
+  {
+    method: 'put',
+    path: '/v1/organization/members/{id}',
+    operationId: 'setTenantMember',
+    request: 'SetTenantMemberInput',
+    response: 'ManagedTenantMember',
+    success: '200',
+    idempotency: true,
+    ifMatch: true,
+  },
+  {
+    method: 'get',
     path: '/v1/organization/access',
     operationId: 'getOrganizationAccess',
     response: 'OrganizationManagementAccess',

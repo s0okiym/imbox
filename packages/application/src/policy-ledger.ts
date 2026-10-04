@@ -15,6 +15,7 @@ export const POLICY_KINDS = [
   'revocation.conversation',
   'revocation.task',
   'revocation.workspace_member',
+  'revocation.tenant_member',
   'revocation.credential',
   'revocation.agent',
 ] as const;

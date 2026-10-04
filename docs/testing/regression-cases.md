@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 83 个测试文件、454 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 83 个测试文件、461 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -419,8 +419,9 @@
 
 | 声明 | 用例 |
 |---|---|
-| [test:18](../../tests/e2e/organization.spec.ts#L18) | organization owner creates a workspace and explicitly adds, disables and restores an existing member |
-| [test:79](../../tests/e2e/organization.spec.ts#L79) | ordinary human sees the organization management boundary |
+| [test:27](../../tests/e2e/organization.spec.ts#L27) | organization owner creates a workspace and explicitly adds, disables and restores an existing member |
+| [test:88](../../tests/e2e/organization.spec.ts#L88) | ordinary human sees the organization management boundary |
+| [test:98](../../tests/e2e/organization.spec.ts#L98) | organization owner changes tenant roles, disables and restores a person while the last owner stays protected |
 
 ## tests/e2e/pwa.spec.ts
 
@@ -698,7 +699,13 @@
 | [it:201](../../tests/integration/organization.test.ts#L201) | replays independent membership revocation after database rollback, but preserves an explicit newer grant |
 | [it:245](../../tests/integration/organization.test.ts#L245) | fails closed on ledger errors before changing membership or version |
 | [it:270](../../tests/integration/organization.test.ts#L270) | exposes cookie-authenticated, CSRF-protected organization commands with version and idempotency headers |
-| [it:333](../../tests/integration/organization.test.ts#L333) | keeps a captured Run fenced after its creator is demoted and restored |
+| [it:357](../../tests/integration/organization.test.ts#L357) | keeps a captured Run fenced after its creator is demoted and restored |
+| [it:411](../../tests/integration/organization.test.ts#L411) | restricts organization owner grants, administrator targets, historical identities and cross-tenant members |
+| [it:451](../../tests/integration/organization.test.ts#L451) | disables and restores organization membership without reviving old auth and keeps late retries from undoing restoration |
+| [it:483](../../tests/integration/organization.test.ts#L483) | preserves the last organization owner and each workspace administrator when disabling an organization member |
+| [it:516](../../tests/integration/organization.test.ts#L516) | serializes opposing owner demotions and rejects a concurrent stale tenant member version |
+| [it:556](../../tests/integration/organization.test.ts#L556) | replays tenant revocation across unrelated workspace version changes while preserving an explicit newer tenant grant |
+| [it:589](../../tests/integration/organization.test.ts#L589) | rolls back a tenant membership mutation when its independent ledger cannot be written |
 
 ## tests/integration/promotion.test.ts
 

@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "recorded_at": "2026-10-05T02:54:40.581864+08:00",
+  "parent_commit": "83601c227b0f4a346d1908441fee68105df2a93c",
+  "source_index_sha256": "25ab941121c1607df52a23f9c89a8f5c21723877d69172b81de1a34d7f69a270",
+  "source_index_command": "git ls-files -s -- . ':!docs/**' ':!README.md' | sha256sum",
+  "lock_sha256": "8523fe4133a22be8e649c4ed6e08f894da6d16bf9198613e3b5c0edfed79f880",
+  "migration": "031-tenant-membership-policy",
+  "engineering": {
+    "status": "passed",
+    "command": "pnpm verify",
+    "follow_up": "Final database type declaration separately typechecked; final test selectors passed typecheck:tests; all images rebuilt from final source"
+  },
+  "unit": {
+    "files": 32,
+    "passed": 181,
+    "seconds": 7.09
+  },
+  "integration": {
+    "files": 34,
+    "passed": 267,
+    "seconds": 189.43
+  },
+  "browser": {
+    "initial_full_attempt": {
+      "passed": 29,
+      "failed": 1,
+      "minutes_rounded": 6.1,
+      "failure": "Exact getByLabel locator did not resolve wrapped select; corrected to role + accessible name without timeout increase"
+    },
+    "corrected_organization_suite": {
+      "passed": 3,
+      "seconds": 32.6,
+      "retries": 0
+    },
+    "full_final_commit_ci": "pending"
+  },
+  "actual_model": {
+    "passed": 1,
+    "seconds": 10.09
+  },
+  "deployment": {
+    "passed": 3,
+    "seconds": 18.89,
+    "images": {
+      "api": "sha256:9c63312bd1128ad7b5f2b1c4311f68f611787532673dbe70ee39ffef5ae587aa",
+      "worker": "sha256:482f907c7340da8be3205fd16abd5f97e8543ba120ee9d64164d72c7ce6237c2",
+      "tool-runner": "sha256:80aaa2c1bd3a49d1884f48fd1500f8f305519140a041ee38f0a315f3d3d1eec3",
+      "web": "sha256:4f2ac21fb86ce60f10b5cafc8092d694e9aeb15d0fb50847456433fd799d3c5e"
+    },
+    "scope": "Local Docker deployment using a fixture session and localhost CA; no production IdP, ACME domain or external provider acceptance claimed"
+  },
+  "regression_catalog": {
+    "files": 83,
+    "named_declarations": 461,
+    "check": "passed"
+  },
+  "acceptance": {
+    "verified": 27,
+    "partial": 13,
+    "pending": 1,
+    "production_gate": "blocked"
+  }
+}

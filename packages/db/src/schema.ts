@@ -40,6 +40,7 @@ interface TenantPrincipal extends Versioned {
   role: Generated<'owner' | 'admin' | 'member' | 'agent' | 'guest'>;
   status: Generated<'active' | 'disabled' | 'historical'>;
   authz_revision: GeneratedBigint;
+  membership_policy_version: GeneratedBigint;
 }
 interface Workspace extends Versioned {
   tenant_id: string;

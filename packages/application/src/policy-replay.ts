@@ -253,6 +253,12 @@ export async function applyPolicyRecord(tx: Tx, record: PolicyRecord) {
       }
       break;
     }
+    case 'revocation.tenant_member': {
+      await sql`update tenant_principals set status='disabled',membership_policy_version=membership_policy_version+1,authz_revision=authz_revision+1,version=version+1,updated_at=clock_timestamp() where principal_id=${id} and membership_policy_version<=${record.target_version}::bigint and status='active'`.execute(
+        tx,
+      );
+      break;
+    }
     case 'revocation.workspace_member': {
       const changed =
         await sql`update memberships set status='disabled',version=version+1,updated_at=clock_timestamp() where workspace_id=${id} and principal_id=${record.subject_id!} and version<=${record.target_version}::bigint and status='active'`.execute(

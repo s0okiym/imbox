@@ -2,6 +2,92 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://imbox.local/schemas/v1/contracts.json",
   "$defs": {
+    "ManagedTenantMember": {
+      "title": "ManagedTenantMember",
+      "type": "object",
+      "properties": {
+        "principal": {
+          "$ref": "#/$defs/Principal"
+        },
+        "role": {
+          "enum": [
+            "owner",
+            "admin",
+            "member",
+            "guest",
+            "agent"
+          ]
+        },
+        "status": {
+          "enum": [
+            "active",
+            "disabled",
+            "historical"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/Version"
+        }
+      },
+      "required": [
+        "principal",
+        "role",
+        "status",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "ManagedTenantMemberPage": {
+      "title": "ManagedTenantMemberPage",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ManagedTenantMember"
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "$ref": "#/$defs/Cursor"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "SetTenantMemberInput": {
+      "title": "SetTenantMemberInput",
+      "type": "object",
+      "properties": {
+        "role": {
+          "enum": [
+            "owner",
+            "admin",
+            "member",
+            "guest"
+          ]
+        },
+        "status": {
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "role",
+        "status",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
     "OrganizationManagementAccess": {
       "title": "OrganizationManagementAccess",
       "type": "object",

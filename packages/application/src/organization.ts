@@ -42,6 +42,17 @@ async function managementLock(tx: Tx, auth: AuthContext) {
   await admin(tx, auth);
 }
 const rank = { guest: 0, member: 1, admin: 2 };
+const tenantRank = { guest: 0, member: 1, admin: 2, owner: 3 };
+async function tenantMember(tx: Tx, id: string): Promise<C['ManagedTenantMember']> {
+  const row = (
+    await sql<
+      C['ManagedTenantMember']
+    >`select jsonb_build_object('id',p.id,'kind',p.kind,'display_name',p.display_name,'status',p.status) as principal,tp.role,tp.status,tp.version from tenant_principals tp join principals p on p.id=tp.principal_id where tp.principal_id=${id}`.execute(
+      tx,
+    )
+  ).rows[0];
+  return row ?? fail('NOT_FOUND', 404);
+}
 export function createOrganizationService(
   db: Db,
   secret: string,
@@ -71,6 +82,127 @@ export function createOrganizationService(
     };
   }
   return {
+    listTenantMembers(auth: AuthContext, input: C['PaginationQuery'] = {}) {
+      return withTenant(db, auth.tenantId, async (tx) => {
+        await admin(tx, auth);
+        const p = page(auth, 'organization.tenant_members', input);
+        const rows = (
+          await sql<
+            C['ManagedTenantMember']
+          >`select jsonb_build_object('id',p.id,'kind',p.kind,'display_name',p.display_name,'status',p.status) as principal,tp.role,tp.status,tp.version from tenant_principals tp join principals p on p.id=tp.principal_id where p.id>${p.after}::uuid order by p.id limit ${p.limit + 1}`.execute(
+            tx,
+          )
+        ).rows;
+        return p.finish(rows, (r) => r.principal.id);
+      });
+    },
+    setTenantMember(
+      auth: AuthContext,
+      id: string,
+      input: C['SetTenantMemberInput'],
+      version: string,
+      key: string,
+    ) {
+      assertContract('Identifier', id);
+      assertContract('SetTenantMemberInput', input);
+      assertContract('Version', version);
+      if (!input.reason.trim()) fail('VALIDATION_FAILED', 400);
+      return withTenant(db, auth.tenantId, async (tx) => {
+        await managementLock(tx, auth);
+        await command(
+          tx,
+          auth,
+          'organization.set_tenant_member',
+          key,
+          { id, input, version },
+          async () => {
+            const old = (
+              await sql<{
+                role: string;
+                status: string;
+                version: string;
+                membership_policy_version: string;
+              }>`select role,status,version,membership_policy_version from tenant_principals where principal_id=${id} for update`.execute(
+                tx,
+              )
+            ).rows[0];
+            if (!old) fail('NOT_FOUND', 404);
+            const principal = await lockPrincipal(tx, id);
+            if (principal?.kind !== 'human' || old.role === 'agent') fail('NOT_FOUND', 404);
+            const actor = (
+              await sql<{
+                role: string;
+              }>`select role from tenant_principals where principal_id=${auth.principalId}`.execute(
+                tx,
+              )
+            ).rows[0]!;
+            // Only an owner can grant or modify organization administrative authority.
+            if (
+              actor.role !== 'owner' &&
+              (['owner', 'admin'].includes(old.role) || ['owner', 'admin'].includes(input.role))
+            )
+              fail('FORBIDDEN', 403);
+            expectedVersion(old.version, version);
+            if (old.status === 'historical') fail('FORBIDDEN', 403);
+            if (input.status === 'active' && principal.status !== 'active') fail('FORBIDDEN', 403);
+            if (old.role === input.role && old.status === input.status) return id;
+            if (
+              old.role === 'owner' &&
+              old.status === 'active' &&
+              (input.role !== 'owner' || input.status !== 'active')
+            ) {
+              const others = (
+                await sql`select tp.principal_id from tenant_principals tp join principals p on p.id=tp.principal_id where tp.principal_id<>${id} and tp.role='owner' and tp.status='active' and p.status='active' and p.kind='human' limit 1`.execute(
+                  tx,
+                )
+              ).rows;
+              if (!others.length) fail('LAST_TENANT_OWNER', 409);
+            }
+            if (old.status === 'active' && input.status === 'disabled') {
+              const orphan = (
+                await sql`select m.workspace_id from memberships m where m.principal_id=${id} and m.role='admin' and m.status='active' and not exists(select 1 from memberships other join tenant_principals tp on tp.tenant_id=other.tenant_id and tp.principal_id=other.principal_id join principals p on p.id=other.principal_id where other.workspace_id=m.workspace_id and other.principal_id<>${id} and other.role='admin' and other.status='active' and tp.status='active' and p.status='active' and p.kind='human') limit 1`.execute(
+                  tx,
+                )
+              ).rows;
+              if (orphan.length) fail('LAST_WORKSPACE_ADMIN', 409);
+            }
+            if (
+              old.status === 'active' &&
+              (input.status === 'disabled' ||
+                tenantRank[input.role] < tenantRank[old.role as keyof typeof tenantRank])
+            ) {
+              await recordPolicy(tx, auth, options.policyLedger, {
+                kind: 'revocation.tenant_member',
+                target_id: id,
+                target_version: old.membership_policy_version,
+              });
+            }
+            const changed = (
+              await sql<{
+                version: string;
+              }>`update tenant_principals set role=${input.role},status=${input.status},membership_policy_version=membership_policy_version+1,authz_revision=authz_revision+1,version=version+1,updated_at=clock_timestamp() where principal_id=${id} returning version`.execute(
+                tx,
+              )
+            ).rows[0]!;
+            await appendEvent(tx, auth, {
+              aggregateType: 'tenant_member',
+              aggregateId: id,
+              version: changed.version,
+              type: 'tenant.member_changed',
+              payload: {
+                principal_id: id,
+                role: input.role,
+                status: input.status,
+                reason: input.reason.trim(),
+              },
+              target: `principal:${id}`,
+            });
+            return id;
+          },
+        );
+        return tenantMember(tx, id);
+      });
+    },
     access(auth: AuthContext) {
       return withTenant(db, auth.tenantId, async (tx) => {
         await authorizeTenant(tx, auth);

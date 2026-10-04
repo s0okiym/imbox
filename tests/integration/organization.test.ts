@@ -325,6 +325,30 @@ it('exposes cookie-authenticated, CSRF-protected organization commands with vers
       payload: input(fixture.bob.principalId, 'guest'),
     });
     expect(stale.statusCode).toBe(409);
+    const roster = await app.inject({ method: 'GET', url: '/v1/organization/members', headers });
+    expect(roster.statusCode).toBe(200);
+    const target = assertContract('ManagedTenantMemberPage', roster.json()).items.find(
+      (m) => m.principal.id === fixture.bob.principalId,
+    )!;
+    const request = {
+      method: 'PUT' as const,
+      url: `/v1/organization/members/${fixture.bob.principalId}`,
+      payload: tenantInput('guest'),
+      headers: { ...headers, 'idempotency-key': randomUUID(), 'if-match': `"${target.version}"` },
+    };
+    expect(
+      (await app.inject({ ...request, headers: { ...request.headers, 'x-csrf-token': '' } }))
+        .statusCode,
+    ).toBe(403);
+    expect(
+      (await app.inject({ ...request, headers: { ...request.headers, 'if-match': '' } }))
+        .statusCode,
+    ).toBe(400);
+    const tenantChanged = await app.inject(request);
+    expect(tenantChanged.statusCode).toBe(200);
+    expect(assertContract('ManagedTenantMember', tenantChanged.json())).toMatchObject({
+      role: 'guest',
+    });
   } finally {
     await app.close();
   }
@@ -376,4 +400,213 @@ it('keeps a captured Run fenced after its creator is demoted and restored', asyn
     randomUUID(),
   );
   await expect(f.worker.claim(f.tenantId, next.id)).resolves.not.toBeNull();
+});
+
+const tenantInput = (
+  role: 'owner' | 'admin' | 'member' | 'guest' = 'member',
+  status: 'active' | 'disabled' = 'active',
+) => ({ role, status, reason: 'Reviewed organization membership change' });
+const tenantRow = async (id: string) =>
+  (await service.listTenantMembers(fixture.alice)).items.find((m) => m.principal.id === id)!;
+it('restricts organization owner grants, administrator targets, historical identities and cross-tenant members', async () => {
+  const { alice, bob, charlie } = fixture;
+  await expect(service.listTenantMembers(bob)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  const foreign = await tenantFixture(databases.owner);
+  await expect(
+    service.setTenantMember(alice, foreign.bob.principalId, tenantInput(), '1', randomUUID()),
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  const page = await service.listTenantMembers(alice, { limit: 1 });
+  assertContract('ManagedTenantMemberPage', page);
+  expect(page.next_cursor).toBeDefined();
+  await expect(service.candidates(alice, { cursor: page.next_cursor! })).rejects.toMatchObject({
+    code: 'RESYNC_REQUIRED',
+  });
+  await service.setTenantMember(alice, bob.principalId, tenantInput('admin'), '1', randomUUID());
+  const admin = await refresh(bob);
+  for (const target of [alice.principalId, bob.principalId])
+    await expect(
+      service.setTenantMember(admin, target, tenantInput('member'), '1', randomUUID()),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  await expect(
+    service.setTenantMember(admin, charlie.principalId, tenantInput('owner'), '1', randomUUID()),
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  expect(
+    await service.setTenantMember(
+      admin,
+      charlie.principalId,
+      tenantInput('guest'),
+      '1',
+      randomUUID(),
+    ),
+  ).toMatchObject({ role: 'guest' });
+  await withTenant(databases.owner, alice.tenantId, (tx) =>
+    sql`update tenant_principals set status='historical' where principal_id=${charlie.principalId}`.execute(
+      tx,
+    ),
+  );
+  await expect(
+    service.setTenantMember(alice, charlie.principalId, tenantInput('member'), '2', randomUUID()),
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+});
+it('disables and restores organization membership without reviving old auth and keeps late retries from undoing restoration', async () => {
+  const { alice, bob } = fixture,
+    key = randomUUID(),
+    input = tenantInput('member', 'disabled');
+  const disabled = await service.setTenantMember(alice, bob.principalId, input, '1', key);
+  expect(disabled).toMatchObject({ status: 'disabled', version: '2' });
+  expect(await service.setTenantMember(alice, bob.principalId, input, '1', key)).toEqual(disabled);
+  await expect(
+    withTenant(databases.db, bob.tenantId, (tx) => authorizeTenant(tx, bob)),
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  await expect(
+    service.setTenantMember(alice, bob.principalId, tenantInput('guest'), '1', randomUUID()),
+  ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+  const restored = await service.setTenantMember(
+    alice,
+    bob.principalId,
+    tenantInput('guest'),
+    '2',
+    randomUUID(),
+  );
+  expect(await service.setTenantMember(alice, bob.principalId, input, '1', key)).toEqual(restored);
+  await expect(
+    withTenant(databases.db, bob.tenantId, (tx) => authorizeTenant(tx, bob)),
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  const current = await refresh(bob);
+  await withTenant(databases.db, bob.tenantId, (tx) =>
+    authorizeWorkspace(tx, current, fixture.workspaceId),
+  );
+  await expect(
+    service.setTenantMember(alice, bob.principalId, tenantInput(), '1', key),
+  ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });
+});
+it('preserves the last organization owner and each workspace administrator when disabling an organization member', async () => {
+  const { alice, bob } = fixture;
+  await expect(
+    service.setTenantMember(alice, alice.principalId, tenantInput('admin'), '1', randomUUID()),
+  ).rejects.toMatchObject({ code: 'LAST_TENANT_OWNER' });
+  await service.setTenantMember(alice, bob.principalId, tenantInput('owner'), '1', randomUUID());
+  const owner = await refresh(bob);
+  await expect(
+    service.setTenantMember(
+      owner,
+      alice.principalId,
+      tenantInput('owner', 'disabled'),
+      '1',
+      randomUUID(),
+    ),
+  ).rejects.toMatchObject({ code: 'LAST_WORKSPACE_ADMIN' });
+  await service.setMember(
+    alice,
+    fixture.workspaceId,
+    input(bob.principalId, 'admin'),
+    '1',
+    randomUUID(),
+  );
+  expect(
+    await service.setTenantMember(
+      await refresh(bob),
+      alice.principalId,
+      tenantInput('owner', 'disabled'),
+      '1',
+      randomUUID(),
+    ),
+  ).toMatchObject({ status: 'disabled' });
+});
+it('serializes opposing owner demotions and rejects a concurrent stale tenant member version', async () => {
+  const { alice, bob, charlie } = fixture;
+  await service.setTenantMember(alice, bob.principalId, tenantInput('owner'), '1', randomUUID());
+  const owner = await refresh(bob);
+  const results = await Promise.allSettled([
+    service.setTenantMember(alice, alice.principalId, tenantInput('admin'), '1', randomUUID()),
+    service.setTenantMember(owner, bob.principalId, tenantInput('admin'), '2', randomUUID()),
+  ]);
+  expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+  expect(results.find((r) => r.status === 'rejected')).toMatchObject({
+    reason: { code: 'LAST_TENANT_OWNER' },
+  });
+  const retained = await withTenant(
+    databases.db,
+    alice.tenantId,
+    async (tx) =>
+      (
+        await sql<{
+          principal_id: string;
+        }>`select principal_id from tenant_principals where role='owner' and status='active'`.execute(
+          tx,
+        )
+      ).rows[0]!.principal_id,
+  );
+  const actor = await refresh(retained === alice.principalId ? alice : bob);
+  const race = await Promise.allSettled([
+    service.setTenantMember(actor, charlie.principalId, tenantInput('guest'), '1', randomUUID()),
+    service.setTenantMember(
+      actor,
+      charlie.principalId,
+      tenantInput('member', 'disabled'),
+      '1',
+      randomUUID(),
+    ),
+  ]);
+  expect(race.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+  expect(race.find((r) => r.status === 'rejected')).toMatchObject({
+    reason: { code: 'VERSION_CONFLICT' },
+  });
+});
+it('replays tenant revocation across unrelated workspace version changes while preserving an explicit newer tenant grant', async () => {
+  const { alice, bob } = fixture;
+  await service.setTenantMember(alice, bob.principalId, tenantInput('guest'), '1', randomUUID());
+  const [fact] = await ledger.records(alice.tenantId);
+  expect(fact).toMatchObject({
+    kind: 'revocation.tenant_member',
+    target_id: bob.principalId,
+    target_version: '1',
+  });
+  await withTenant(databases.owner, alice.tenantId, async (tx) => {
+    await sql`delete from policy_receipts where id=${fact!.id}`.execute(tx);
+    await sql`update tenant_principals set role='member',status='active',version=1,authz_revision=1,membership_policy_version=1 where principal_id=${bob.principalId}`.execute(
+      tx,
+    );
+  });
+  // Simulate a newer workspace-only edit; it must not supersede the organization's independent policy fact.
+  await service.setMember(
+    alice,
+    fixture.workspaceId,
+    input(bob.principalId, 'admin'),
+    '1',
+    randomUUID(),
+  );
+  expect((await tenantRow(bob.principalId)).version).toBe('2');
+  expect(await replayPolicyLedger(databases.db, ledger, alice.tenantId)).toEqual({ applied: 1 });
+  expect(await tenantRow(bob.principalId)).toMatchObject({ status: 'disabled', version: '3' });
+  await service.setTenantMember(alice, bob.principalId, tenantInput('member'), '3', randomUUID());
+  await withTenant(databases.owner, alice.tenantId, (tx) =>
+    sql`delete from policy_receipts where id=${fact!.id}`.execute(tx),
+  );
+  await replayPolicyLedger(databases.db, ledger, alice.tenantId);
+  expect(await tenantRow(bob.principalId)).toMatchObject({ status: 'active' });
+});
+it('rolls back a tenant membership mutation when its independent ledger cannot be written', async () => {
+  const broken = createOrganizationService(databases.db, secret, {
+    policyLedger: {
+      ...ledger,
+      append: async () => {
+        throw new Error('ledger unavailable');
+      },
+    },
+  });
+  await expect(
+    broken.setTenantMember(
+      fixture.alice,
+      fixture.bob.principalId,
+      tenantInput('guest'),
+      '1',
+      randomUUID(),
+    ),
+  ).rejects.toThrow('ledger unavailable');
+  expect(await tenantRow(fixture.bob.principalId)).toMatchObject({
+    role: 'member',
+    status: 'active',
+    version: '1',
+  });
 });

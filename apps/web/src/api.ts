@@ -89,6 +89,31 @@ export class ApiClient {
     return payload as T;
   }
 
+  managedTenantMembers(
+    signal: AbortSignal,
+    cursor?: string,
+  ): Promise<C['ManagedTenantMemberPage']> {
+    return this.request(
+      '/v1/organization/members?' +
+        new URLSearchParams({ limit: '100', ...(cursor ? { cursor } : {}) }),
+      { signal },
+    );
+  }
+  setTenantMember(
+    id: string,
+    body: C['SetTenantMemberInput'],
+    version: string,
+    idempotencyKey: string,
+    signal: AbortSignal,
+  ): Promise<C['ManagedTenantMember']> {
+    return this.request('/v1/organization/members/' + encodeURIComponent(id), {
+      method: 'PUT',
+      body,
+      version,
+      idempotencyKey,
+      signal,
+    });
+  }
   organizationAccess(signal: AbortSignal): Promise<C['OrganizationManagementAccess']> {
     return this.request('/v1/organization/access', { signal });
   }
@@ -296,6 +321,7 @@ export function describeError(error: unknown): string {
     UNAUTHENTICATED: '登录已失效，请重新登录。',
     FORBIDDEN: '当前身份无法访问此内容，已清除相关视图。',
     NOT_FOUND: '此内容不可用或你已失去访问权限。',
+    LAST_TENANT_OWNER: '请先指定另一名有效的组织所有者，再停用或降权当前所有者。',
     LAST_WORKSPACE_ADMIN: '请先指定另一名有效的工作区管理员，再停用或降权当前管理员。',
     VERSION_CONFLICT: '内容已被更新。请查看最新版本后重新编辑。',
     IDEMPOTENCY_CONFLICT: '这个请求的内容已经改变，请核对后重新操作。',

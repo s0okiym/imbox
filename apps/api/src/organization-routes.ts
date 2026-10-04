@@ -27,6 +27,34 @@ export function registerOrganizationRoutes(
     },
   };
   app.get(
+    '/v1/organization/members',
+    { schema: { querystring, response: { 200: schemas.ManagedTenantMemberPage } } },
+    async (r) => organization.listTenantMembers(await auth(r), page(r)),
+  );
+  app.put(
+    '/v1/organization/members/:id',
+    {
+      schema: {
+        params: schemas.ResourceParams,
+        body: schemas.SetTenantMemberInput,
+        response: { 200: schemas.ManagedTenantMember },
+      },
+    },
+    async (r) => {
+      const a = await auth(r),
+        match = r.headers['if-match'];
+      if (typeof match !== 'string' || !/^"[1-9][0-9]*"$/.test(match))
+        throw new ApplicationError('VALIDATION_FAILED', 400);
+      return organization.setTenantMember(
+        a,
+        id(r),
+        assertContract('SetTenantMemberInput', r.body),
+        assertContract('Version', match.slice(1, -1)),
+        key(r),
+      );
+    },
+  );
+  app.get(
     '/v1/organization/access',
     { schema: { response: { 200: schemas.OrganizationManagementAccess } } },
     async (r) => organization.access(await auth(r)),

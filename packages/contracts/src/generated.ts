@@ -59,6 +59,9 @@ export type WsClientFrame = WsHello | WsSubscribe | WsAck | WsHeartbeat;
 export type WsServerFrame = WsWelcome | WsSubscribed | WsControl | WsHeartbeat | ProjectionEnvelope;
 
 export interface ContractTypes {
+  ManagedTenantMember: ManagedTenantMember;
+  ManagedTenantMemberPage: ManagedTenantMemberPage;
+  SetTenantMemberInput: SetTenantMemberInput;
   OrganizationManagementAccess: OrganizationManagementAccess;
   ManagedWorkspace: ManagedWorkspace;
   ManagedWorkspacePage: ManagedWorkspacePage;
@@ -270,6 +273,30 @@ export interface ContractTypes {
   WsClientFrame: WsClientFrame;
   WsServerFrame: WsServerFrame;
 }
+export interface ManagedTenantMember {
+  principal: Principal;
+  role: 'owner' | 'admin' | 'member' | 'guest' | 'agent';
+  status: 'active' | 'disabled' | 'historical';
+  version: Version;
+}
+export interface Principal {
+  id: Identifier;
+  kind: 'human' | 'agent' | 'service';
+  display_name: string;
+  status: 'active' | 'disabled' | 'deleted';
+}
+export interface ManagedTenantMemberPage {
+  /**
+   * @maxItems 100
+   */
+  items: ManagedTenantMember[];
+  next_cursor?: Cursor;
+}
+export interface SetTenantMemberInput {
+  role: 'owner' | 'admin' | 'member' | 'guest';
+  status: 'active' | 'disabled';
+  reason: string;
+}
 export interface OrganizationManagementAccess {
   can_manage: boolean;
 }
@@ -288,12 +315,6 @@ export interface ManagedWorkspacePage {
 export interface OrganizationCandidate {
   principal: Principal;
   tenant_role: 'owner' | 'admin' | 'member' | 'guest';
-}
-export interface Principal {
-  id: Identifier;
-  kind: 'human' | 'agent' | 'service';
-  display_name: string;
-  status: 'active' | 'disabled' | 'deleted';
 }
 export interface OrganizationCandidatePage {
   /**
