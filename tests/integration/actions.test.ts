@@ -504,6 +504,60 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
     expect(attempts).toBe(1);
     expect(sideEffects).toBe(1);
   });
+  it('rejects legacy grant insertion at commit without inventing a historical connector binding', async () => {
+    const { grant } = await proposed();
+    await expect(
+      withTenant(databases.db, fixture.tenantId, (tx) =>
+        sql`insert into capability_grants(tenant_id,id,task_id,executor_principal_id,issued_by,tool_id,tool_version,target_id,allow_execute,allow_disclosure,resource_versions,approver_ids,currency,limit_microunits,expires_at,ancestor_fences,authority_snapshot)
+        select tenant_id,${key()},task_id,executor_principal_id,issued_by,tool_id,tool_version,target_id,allow_execute,allow_disclosure,resource_versions,approver_ids,currency,limit_microunits,expires_at,ancestor_fences,authority_snapshot-'tool_binding' from capability_grants where id=${grant.id}`.execute(
+          tx,
+        ),
+      ),
+    ).rejects.toMatchObject({ code: '23514', constraint: 'action_connector_binding_required' });
+    expect((await actions.listGrants(fixture.alice)).items).toHaveLength(1);
+    expect(attempts).toBe(0);
+  });
+  it.each(['new_attempt', 'prepared_attempt'] as const)(
+    'database fences a legacy worker using unbound authority: %s',
+    async (phase) => {
+      const { action, grant } = await proposed();
+      await approve(action);
+      const claim =
+        phase === 'prepared_attempt'
+          ? await actions.claim(fixture.tenantId, action.id, 'legacy-worker')
+          : null;
+      if (claim) await actions.persistIntent(claim);
+      // Model a pre-upgrade authority row; no new grant is inserted and historical fields are not backfilled.
+      await withTenant(databases.owner, fixture.tenantId, (tx) =>
+        sql`update capability_grants set authority_snapshot=authority_snapshot-'tool_binding' where id=${grant.id}`.execute(
+          tx,
+        ),
+      );
+      // Use the application DB role and legacy SQL write shape, bypassing the newer service guard deliberately.
+      await expect(
+        withTenant(databases.db, fixture.tenantId, (tx) =>
+          claim
+            ? sql`update action_attempts set status='in_flight',side_effect='possible',version=version+1 where id=${claim.attemptId}`.execute(
+                tx,
+              )
+            : sql`insert into action_attempts(tenant_id,id,action_id,attempt_no,status,side_effect,lease_generation,fingerprint)
+            values(${fixture.tenantId},${key()},${action.id},1,'prepared','not_attempted',1,${action.fingerprint})`.execute(
+                tx,
+              ),
+        ),
+      ).rejects.toMatchObject({ code: '23514', constraint: 'action_connector_binding_required' });
+      if (claim) {
+        const saved = await withTenant(databases.db, fixture.tenantId, (tx) =>
+          sql`select status from action_attempts where id=${claim.attemptId}`.execute(tx),
+        );
+        expect(saved.rows[0]).toMatchObject({ status: 'prepared' });
+        await actions.abortPrepared(claim);
+        expect((await actions.getAction(fixture.alice, action.id)).status).toBe('failed');
+      }
+      expect(attempts).toBe(0);
+      expect(sideEffects).toBe(0);
+    },
+  );
   it('rejects oversized publication previews without returning truncated content', async () => {
     const file = await artifact('x'.repeat(4001));
     const grant = await actions.createGrant(

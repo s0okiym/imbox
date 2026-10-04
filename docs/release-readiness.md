@@ -43,3 +43,5 @@
 AC-18 已完成当前 V1 的逐项审查：64 相关集成与 4 浏览器通过，包含已授予新版范围仍须重新批准的路径。见 [证据](testing/artifact-acceptance-audit-2026-10-05.md)。本轮未重新运行全量生产门禁，未解除其余阻断。
 
 Action 授权、执行前重验及外部效果边界已完成 AC-12 / INV-08 [逐项审查](testing/action-authorization-audit-2026-10-05.md)，本轮 76 相关集成通过。当前 30/41 verified，剩余 11 项仍阻断生产准出。
+
+历史 Web/API 候选 9a23f2c 的远程全步骤已通过，含历史兼容、真实模型与 TLS 容器工作流，见 [归档](testing/rolling-api-ci-2026-10-05.json)。后续迁移 036 增加数据库执行约束，升级须协调停止旧外部执行和恢复写入器，不能凭通信兼容结果混用旧执行栈；见 [本轮证据](testing/database-binding-fence-2026-10-05.md)。

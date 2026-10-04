@@ -1,0 +1,129 @@
+{
+  "version": 1,
+  "commit": "9a23f2caf69ed8f7c3fc2b9eaa9d313d41caf85d",
+  "run_id": 37242986025,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37242986025",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 111555223692,
+      "name": "verify",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm install --frozen-lockfile",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run cp .env.example .env",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm infra:up",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm verify",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm test:catalog:check",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm infra:setup:test",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm db:setup:test",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm test:integration",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm exec playwright install --with-deps chromium",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Browser regression (redact credentials)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Historical client compatibility (redact credentials)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Start pinned local model and verify actual inference",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build application images and verify TLS container workflow",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run docker compose -f infra/compose.yaml --profile model down -v",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "scope": "Historical Web/API compatibility candidate before database migration 036; step outcomes only, no inferred test counts."
+}

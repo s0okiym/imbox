@@ -26,7 +26,7 @@
 | AC-18 | verified | 跨作者冲突、独立分支和显式合并已实现；验收固定引用经并发更新/审核竞争验证。批准 v1 后生成 v2 仍仅发送 v1；即使授权同时含 v1/v2，修订为 v2 也撤销旧批准、改变指纹且必须重新审批。64 相关集成、4 浏览器通过；见 [逐项审查](artifact-acceptance-audit-2026-10-05.md)。 |
 | AC-19  | partial  | knowledge、resources、notifications、exports 验证当前 ACL 与分页/计数/下载分块/导出中途撤权，推送发送前重验。真实厂商通知及离线设备得知撤权后的跨设备矩阵仍待验收。             |
 | AC-20  | partial  | governance/retention 验证派生正文清除、独立意图重放；真实隔离 dump/对象恢复重放四条事实，PWA 清除本机副本。生产备份链、所有组织授权历史和 WAL PITR 尚未覆盖。                   |
-| AC-21  | partial  | Web 对协议/schema v1 内未知展示实体使用固定本地提示，不展示未知载荷；HTTP 快照和 WebSocket 保持已知消息同步，控制帧及不兼容版本拒绝。已有未知路由/非法请求拒绝。真实历史客户端与服务端滚动升级、动作 schema 版本联合矩阵仍未完成。                                   |
+| AC-21 | partial | 固定历史 Web/API 与当前客户端/服务的消息切换、重连及回退已验证，远程全步骤通过；当前控制入口拒绝未来 Action schema。迁移 036 阻止旧 SQL 形态的无绑定执行写入。真实旧执行二进制、完整业务混合版本及生产登录/SW 更新矩阵仍待验证；见 [数据库约束证据](database-binding-fence-2026-10-05.md)。 |
 | AC-22  | verified | scheduling 同时扫描/派发只产生一次 occurrence 与 wake，停用后跳过、overlap 跳过、skip/coalesce 持久计数；calendar 单元覆盖纽约 DST、Lord Howe 半小时变更、Apia 跳日和上海时区。 |
 | AC-23  | partial  | 跨租户、伪造身份/授权字段、私有来源披露与受限工具绑定已有拒绝断言，Memory instruction_authority=none。真实 IdP 回调矩阵、链接出口和模型提示攻击联合红队范围未全部验收。         |
 | AC-24  | verified | tasks 验收仅限指定审核者，submission 固定 hash/goal；开放 child 阻止父任务通过验收；runtime 全子树 live Run/未知记账阻止关闭，Run completed 本身不执行任务验收。                |

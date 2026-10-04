@@ -1,3 +1,4 @@
+import { connectorBindingFenceSql } from './migrations/036-connector-binding-fence.js';
 import { lateCancellationAckSql } from './migrations/035-late-cancellation-ack.js';
 import { runCancellationAckSql } from './migrations/034-run-cancellation-ack.js';
 import { artifactBranchesSql } from './migrations/033-artifact-branches.js';
@@ -71,6 +72,7 @@ export const migrations = [
   { id: '033-artifact-branches', sql: artifactBranchesSql },
   { id: '034-run-cancellation-ack', sql: runCancellationAckSql },
   { id: '035-late-cancellation-ack', sql: lateCancellationAckSql },
+  { id: '036-connector-binding-fence', sql: connectorBindingFenceSql },
 ] as const;
 
 /** Explicit command only. Atomic migration batch, immutable checksums, serialized owner DDL. */
