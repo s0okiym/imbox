@@ -1,0 +1,253 @@
+{
+  "version": 1,
+  "base_commit": "107dab867fe5273d7c07f859a4a361cdbd2cfdce",
+  "trial_patch": "docs/testing/projection-metadata-trial.patch",
+  "trial_patch_sha256": "47d4927f4568a107c0f41fdce5022819efa0e3c0d11afb9c1f59f3060771f0b5",
+  "disposition": "reverted: no demonstrated end-to-end gain; do not treat the trial as current implementation",
+  "baseline": {
+    "version": 3,
+    "started_at": "2026-10-04T20:15:59.478Z",
+    "finished_at": "2026-10-04T20:18:27.650Z",
+    "fixture": {
+      "historical_messages": 1000000,
+      "history_conversations": 10,
+      "history_bulk_seeded": true,
+      "live_streams": 50,
+      "workspaces": 1,
+      "distinct_actors": 2,
+      "requested_connections": 1000,
+      "subscribed_connections": 1000,
+      "requested_message_rate": 50,
+      "duration_seconds": 30
+    },
+    "environment": {
+      "logical_cpus": 4,
+      "host_memory_gib": 7.76,
+      "node": "v24.21.0",
+      "api_processes": 1,
+      "worker_loops": 2,
+      "database_profiling": false,
+      "application_pool": 10,
+      "identity_pool": 5,
+      "worker_pool": 5,
+      "network": "host loopback; PostgreSQL Docker; shared development host"
+    },
+    "results": {
+      "database_profile_totals": [],
+      "database_profile_dropped": 0,
+      "database_profile": [],
+      "database_profile_scope": "disabled: no database observer installed; empty profile arrays do not imply zero database work",
+      "notification_source_plan": {
+        "execution_ms": 0.16,
+        "messages_examined": 1,
+        "materialized_all_sources": false
+      },
+      "saved_messages": 1500,
+      "committed_messages": 1500,
+      "expected_recipient_deliveries": 30000,
+      "observed_recipient_deliveries": 30000,
+      "missing_recipient_deliveries": 0,
+      "drain_elapsed_ms": 9331,
+      "drain_deadline_ms": 60000,
+      "delivery_latency_complete": true,
+      "delivery_latency_censored": false,
+      "offered_messages": 1500,
+      "achieved_save_rate": 48.88665650209894,
+      "save_http_ms": {
+        "p50": 683.26,
+        "p95": 1001.64
+      },
+      "history_page_ms": {
+        "p50": 25.9,
+        "p95": 50.11
+      },
+      "commit_return_to_ws_receive_ms": {
+        "p50": 8166.69,
+        "p95": 10410.85,
+        "samples": 30000
+      },
+      "duplicate_deliveries": 0,
+      "closed_during_load": 0,
+      "errors": {},
+      "maximum_pending_conversation_outbox": 508,
+      "maximum_pending_notification_events": 1113,
+      "maximum_queue_age_ms": 10456.992,
+      "maximum_lock_waiters": 3,
+      "worker_failures": 0,
+      "peak_process_rss_mib": 403.98046875,
+      "event_loop_p95_ms": 24.117247,
+      "cpu_usage": {
+        "user": 40102219,
+        "system": 6559729
+      }
+    },
+    "design_environment_equivalent": false,
+    "reconnect_storm_verified": false,
+    "slow_model_and_file_contention_verified": false,
+    "production_capacity_claim": false
+  },
+  "trial_first": {
+    "version": 3,
+    "started_at": "2026-10-04T20:25:20.460Z",
+    "finished_at": "2026-10-04T20:27:54.152Z",
+    "fixture": {
+      "historical_messages": 1000000,
+      "history_conversations": 10,
+      "history_bulk_seeded": true,
+      "live_streams": 50,
+      "workspaces": 1,
+      "distinct_actors": 2,
+      "requested_connections": 1000,
+      "subscribed_connections": 1000,
+      "requested_message_rate": 50,
+      "duration_seconds": 30
+    },
+    "environment": {
+      "logical_cpus": 4,
+      "host_memory_gib": 7.76,
+      "node": "v24.21.0",
+      "api_processes": 1,
+      "worker_loops": 2,
+      "database_profiling": false,
+      "application_pool": 10,
+      "identity_pool": 5,
+      "worker_pool": 5,
+      "network": "host loopback; PostgreSQL Docker; shared development host"
+    },
+    "results": {
+      "database_profile_totals": [],
+      "database_profile_dropped": 0,
+      "database_profile": [],
+      "database_profile_scope": "disabled: no database observer installed; empty profile arrays do not imply zero database work",
+      "notification_source_plan": {
+        "execution_ms": 0.294,
+        "messages_examined": 1,
+        "materialized_all_sources": false
+      },
+      "saved_messages": 1500,
+      "committed_messages": 1500,
+      "expected_recipient_deliveries": 30000,
+      "observed_recipient_deliveries": 30000,
+      "missing_recipient_deliveries": 0,
+      "drain_elapsed_ms": 9635,
+      "drain_deadline_ms": 60000,
+      "delivery_latency_complete": true,
+      "delivery_latency_censored": false,
+      "offered_messages": 1500,
+      "achieved_save_rate": 48.22766677858373,
+      "save_http_ms": {
+        "p50": 1477.7,
+        "p95": 1787.18
+      },
+      "history_page_ms": {
+        "p50": 44.21,
+        "p95": 67.51
+      },
+      "commit_return_to_ws_receive_ms": {
+        "p50": 7603.36,
+        "p95": 10032.14,
+        "samples": 30000
+      },
+      "duplicate_deliveries": 0,
+      "closed_during_load": 0,
+      "errors": {},
+      "maximum_pending_conversation_outbox": 478,
+      "maximum_pending_notification_events": 1150,
+      "maximum_queue_age_ms": 9618.94,
+      "maximum_lock_waiters": 4,
+      "worker_failures": 0,
+      "peak_process_rss_mib": 402.421875,
+      "event_loop_p95_ms": 25.034751,
+      "cpu_usage": {
+        "user": 42018591,
+        "system": 6601530
+      }
+    },
+    "design_environment_equivalent": false,
+    "reconnect_storm_verified": false,
+    "slow_model_and_file_contention_verified": false,
+    "production_capacity_claim": false
+  },
+  "trial_repeat": {
+    "version": 3,
+    "started_at": "2026-10-04T20:28:47.793Z",
+    "finished_at": "2026-10-04T20:31:14.314Z",
+    "fixture": {
+      "historical_messages": 1000000,
+      "history_conversations": 10,
+      "history_bulk_seeded": true,
+      "live_streams": 50,
+      "workspaces": 1,
+      "distinct_actors": 2,
+      "requested_connections": 1000,
+      "subscribed_connections": 1000,
+      "requested_message_rate": 50,
+      "duration_seconds": 30
+    },
+    "environment": {
+      "logical_cpus": 4,
+      "host_memory_gib": 7.76,
+      "node": "v24.21.0",
+      "api_processes": 1,
+      "worker_loops": 2,
+      "database_profiling": false,
+      "application_pool": 10,
+      "identity_pool": 5,
+      "worker_pool": 5,
+      "network": "host loopback; PostgreSQL Docker; shared development host"
+    },
+    "results": {
+      "database_profile_totals": [],
+      "database_profile_dropped": 0,
+      "database_profile": [],
+      "database_profile_scope": "disabled: no database observer installed; empty profile arrays do not imply zero database work",
+      "notification_source_plan": {
+        "execution_ms": 0.244,
+        "messages_examined": 1,
+        "materialized_all_sources": false
+      },
+      "saved_messages": 1500,
+      "committed_messages": 1500,
+      "expected_recipient_deliveries": 30000,
+      "observed_recipient_deliveries": 30000,
+      "missing_recipient_deliveries": 0,
+      "drain_elapsed_ms": 10879,
+      "drain_deadline_ms": 60000,
+      "delivery_latency_complete": true,
+      "delivery_latency_censored": false,
+      "offered_messages": 1500,
+      "achieved_save_rate": 47.527540389192325,
+      "save_http_ms": {
+        "p50": 1678.77,
+        "p95": 2586.54
+      },
+      "history_page_ms": {
+        "p50": 32.46,
+        "p95": 92.77
+      },
+      "commit_return_to_ws_receive_ms": {
+        "p50": 7786.4,
+        "p95": 11008.58,
+        "samples": 30000
+      },
+      "duplicate_deliveries": 0,
+      "closed_during_load": 0,
+      "errors": {},
+      "maximum_pending_conversation_outbox": 524,
+      "maximum_pending_notification_events": 1163,
+      "maximum_queue_age_ms": 10921.879,
+      "maximum_lock_waiters": 3,
+      "worker_failures": 0,
+      "peak_process_rss_mib": 398.984375,
+      "event_loop_p95_ms": 25.903103,
+      "cpu_usage": {
+        "user": 42730360,
+        "system": 6981737
+      }
+    },
+    "design_environment_equivalent": false,
+    "reconnect_storm_verified": false,
+    "slow_model_and_file_contention_verified": false,
+    "production_capacity_claim": false
+  }
+}

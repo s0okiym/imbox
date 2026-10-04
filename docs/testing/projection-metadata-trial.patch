@@ -1,0 +1,151 @@
+diff --git a/packages/application/src/sync.ts b/packages/application/src/sync.ts
+index d18b8c4..bbf49e2 100644
+--- a/packages/application/src/sync.ts
++++ b/packages/application/src/sync.ts
+@@ -1,4 +1,4 @@
+-import { presentMessage, reactionSummary, messageEdition } from './message-presentation.js';
++import { presentMessage } from './message-presentation.js';
+ import { randomUUID } from 'node:crypto';
+ import { assertContract, type ContractTypes } from '@imbox/contracts';
+ import {
+@@ -568,14 +568,32 @@ export function createOutboxProcessor(options: {
+                 .forShare()
+                 .executeTakeFirstOrThrow();
+               if (message.conversation_id !== streamId) throw new Error('EVENT_SCOPE_MISMATCH');
+-              const actor = await tx
+-                .selectFrom('principals')
+-                .select(['id', 'kind', 'display_name', 'status'])
+-                .where('id', '=', message.sender_principal_id)
+-                .executeTakeFirstOrThrow();
+               entityVersion = message.version;
+               sourceSeq = message.seq;
+               retracted = message.deleted_at !== null;
++              // Retain the message share lock and read presentation metadata in one statement.
++              const metadata = (
++                await sql<{
++                  id: string;
++                  kind: 'human' | 'agent' | 'service';
++                  display_name: string;
++                  status: 'active' | 'disabled' | 'deleted';
++                  attachment_ids: string[];
++                  reactions: ContractTypes['MessageReactionSummary'][];
++                  edited_at: Date | null;
++                }>`select p.id,p.kind,p.display_name,p.status,
++                  case when ${retracted} then array[]::uuid[] else array(select mr.resource_id from message_resources mr join resources r on r.tenant_id=mr.tenant_id and r.id=mr.resource_id where mr.message_id=${message.id} and r.deleted_at is null and r.version=mr.resource_version and r.conversation_id=${streamId} order by mr.ordinal) end as attachment_ids,
++                  case when ${retracted} then '[]'::jsonb else coalesce((select jsonb_agg(jsonb_build_object('emoji',g.emoji,'count',g.n) order by g.emoji) from (select emoji,count(*)::text n from reactions where message_id=${message.id} group by emoji) g),'[]'::jsonb) end as reactions,
++                  (select created_at from domain_events where aggregate_type='message' and aggregate_id=${message.id} and event_type='message.edited' order by aggregate_version desc limit 1) as edited_at
++                  from principals p where p.id=${message.sender_principal_id}`.execute(tx)
++              ).rows[0];
++              if (!metadata) throw new Error('MESSAGE_ACTOR_MISSING');
++              const actor = {
++                id: metadata.id,
++                kind: metadata.kind,
++                display_name: metadata.display_name,
++                status: metadata.status,
++              };
+               const dto = assertContract('Message', {
+                 id: message.id,
+                 conversation_id: streamId,
+@@ -585,21 +603,13 @@ export function createOutboxProcessor(options: {
+                 version: message.version,
+                 body: retracted ? '' : message.body,
+                 format: 'text',
+-                attachment_ids: retracted
+-                  ? []
+-                  : (
+-                      await sql<{
+-                        resource_id: string;
+-                      }>`select mr.resource_id from message_resources mr join resources r on r.tenant_id=mr.tenant_id and r.id=mr.resource_id where mr.message_id=${message.id} and r.deleted_at is null and r.version=mr.resource_version and r.conversation_id=${streamId} order by mr.ordinal`.execute(
+-                        tx,
+-                      )
+-                    ).rows.map((row) => row.resource_id),
+-                reactions: retracted ? [] : await reactionSummary(tx, message.id),
++                attachment_ids: metadata.attachment_ids,
++                reactions: metadata.reactions,
+                 ...(message.reply_to_id ? { reply_to_id: message.reply_to_id } : {}),
+                 ...(message.reply_to_version ? { reply_to_version: message.reply_to_version } : {}),
+                 ...(message.thread_root_id ? { thread_root_id: message.thread_root_id } : {}),
+                 created_at: message.created_at.toISOString(),
+-                ...(await messageEdition(tx, message.id)),
++                ...(metadata.edited_at ? { edited_at: metadata.edited_at.toISOString() } : {}),
+                 deleted: retracted,
+                 view_scope: streamId,
+                 authz_generation: conversation.authz_generation,
+@@ -633,14 +643,17 @@ export function createOutboxProcessor(options: {
+               throw new Error('EVENT_AHEAD_OF_AUTHORITY');
+             // Old queued events may observe newer authority. Attribute the projection to the REAL
+             // newer event, never attach new content to an old entity/event version.
+-            const sourceEvent = await tx
+-              .selectFrom('domain_events')
+-              .select('id')
+-              .where('tenant_id', '=', claim.tenantId)
+-              .where('aggregate_type', '=', event.aggregate_type)
+-              .where('aggregate_id', '=', event.aggregate_id)
+-              .where('aggregate_version', '=', entityVersion)
+-              .executeTakeFirstOrThrow();
++            const sourceEvent =
++              entityVersion === event.aggregate_version
++                ? event
++                : await tx
++                    .selectFrom('domain_events')
++                    .select('id')
++                    .where('tenant_id', '=', claim.tenantId)
++                    .where('aggregate_type', '=', event.aggregate_type)
++                    .where('aggregate_id', '=', event.aggregate_id)
++                    .where('aggregate_version', '=', entityVersion)
++                    .executeTakeFirstOrThrow();
+             const stream = await tx
+               .selectFrom('projection_streams')
+               .selectAll()
+diff --git a/tests/integration/sync.test.ts b/tests/integration/sync.test.ts
+index 9c9d42c..6f1bd26 100644
+--- a/tests/integration/sync.test.ts
++++ b/tests/integration/sync.test.ts
+@@ -156,6 +156,47 @@ function connect(address: string, token: string) {
+ }
+ 
+ describe('durable outbox projection and caller-bound fixed snapshots', () => {
++  it('bounds ordinary message projection round trips while preserving actor and event identity', async () => {
++    const conversation = await group();
++    await drain();
++    const message = await send(conversation.id, 'Bounded projection query cost');
++    let queries = 0;
++    const measured = createOutboxProcessor({
++      db: databases.db.withPlugin({
++        transformQuery(args) {
++          queries++;
++          return args.node;
++        },
++        async transformResult(args) {
++          return args.result;
++        },
++      }),
++    });
++    const claims = await measured.claimBatch(fixture.tenantId);
++    expect(claims).toHaveLength(1);
++    queries = 0;
++    expect(await measured.processClaim(claims[0]!)).toBe('completed');
++    expect(queries).toBeLessThanOrEqual(18);
++    const snapshot = await sync.snapshot(fixture.bob, conversation.id);
++    const projected = snapshot.items.find((item) => item.entity.id === message.id)!;
++    expect(projected.payload.message).toMatchObject({
++      body: message.body,
++      actor: message.actor,
++      attachment_ids: [],
++      reactions: [],
++      version: '1',
++    });
++    expect(projected.payload.message?.edited_at).toBeUndefined();
++    const event = await withTenant(databases.db, fixture.tenantId, (tx) =>
++      tx
++        .selectFrom('domain_events')
++        .select('id')
++        .where('aggregate_id', '=', message.id)
++        .where('aggregate_version', '=', '1')
++        .executeTakeFirstOrThrow(),
++    );
++    expect(projected.event_id).toBe(event.id);
++  });
+   it('skips delivery queries only at an authenticated current head and still rejects revoked members', async () => {
+     const conversation = await group();
+     await drain();
