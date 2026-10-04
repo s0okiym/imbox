@@ -259,12 +259,12 @@ async function proposed(
   );
   return { grant, action };
 }
-async function artifact(body: string) {
+async function artifact(body: string, taskId = task.id) {
   const bytes = Buffer.from(body);
   const ticket = await resources.createUpload(
     fixture.alice,
     {
-      task_id: task.id,
+      task_id: taskId,
       filename: 'publish.md',
       content_type: 'text/markdown',
       byte_size: bytes.byteLength,
@@ -307,6 +307,83 @@ const approve = (action: C['Action']) =>
 const runner = () => createToolRunner({ actions, workerId: 'test-tool-worker' });
 
 describe('controlled actions with real PostgreSQL, HTTP and independent signed journal', () => {
+  it.each(['hash', 'version', 'id'] as const)(
+    'rejects an artifact reference with an incorrect %s before issuing authority',
+    async (field) => {
+      const file = await artifact('Exact authorized source');
+      const ref = artifactRef(file);
+      const invalid = {
+        ...ref,
+        ...(field === 'hash' ? { sha256: '0'.repeat(64) } : {}),
+        ...(field === 'version' ? { version: '999' } : {}),
+        ...(field === 'id' ? { id: key() } : {}),
+      };
+      await expect(proposed([invalid], 'Exact authorized source')).rejects.toMatchObject({
+        code: field === 'id' ? 'NOT_FOUND' : 'VERSION_CONFLICT',
+      });
+      expect((await actions.listGrants(fixture.alice)).items).toHaveLength(0);
+      expect((await actions.listActions(fixture.alice)).items).toHaveLength(0);
+      expect(deliveredTexts).toEqual([]);
+    },
+  );
+  it('rejects cross-task publication even when issuer and executor can read both tasks', async () => {
+    let other = await tasks.createTask(
+      fixture.alice,
+      {
+        workspace_id: fixture.workspaceId,
+        title: 'Separate authorized task',
+        goal: 'Keep disclosure scoped',
+        acceptance_criteria: ['No implicit cross-task publication'],
+        reviewer_principal_ids: [fixture.alice.principalId],
+        budget: { currency: 'USD', limit_microunits: '100' },
+      },
+      key(),
+    );
+    other = await tasks.changeParticipant(
+      fixture.alice,
+      other.id,
+      fixture.bob.principalId,
+      'contributor',
+      other.version,
+      key(),
+    );
+    const file = await artifact('Different task private body', other.id);
+    await expect(
+      proposed([artifactRef(file)], 'Different task private body'),
+    ).rejects.toMatchObject({ code: 'DISCLOSURE_DENIED' });
+    expect((await actions.listGrants(fixture.alice)).items).toHaveLength(0);
+    expect(deliveredTexts).toEqual([]);
+  });
+  it.each(['before_claim', 'after_intent'] as const)(
+    'rejects artifact delivery when the executor is removed %s',
+    async (phase) => {
+      const file = await artifact('Body loses executor permission');
+      const { action } = await proposed([artifactRef(file)], 'Body loses executor permission');
+      await approve(action);
+      const claim =
+        phase === 'after_intent'
+          ? await actions.claim(fixture.tenantId, action.id, 'revoked-artifact-worker')
+          : null;
+      if (claim) await actions.persistIntent(claim);
+      task = await tasks.changeParticipant(
+        fixture.alice,
+        task.id,
+        fixture.bob.principalId,
+        null,
+        task.version,
+        key(),
+      );
+      await expect(
+        claim ? actions.dispatch(claim) : runner().runOnce(fixture.tenantId, action.id),
+      ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+      if (claim) await actions.abortPrepared(claim);
+      await expect(actions.getAction(fixture.bob, action.id)).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+      });
+      expect(deliveredTexts).toEqual([]);
+      expect(sideEffects).toBe(0);
+    },
+  );
   it('rejects oversized publication previews without returning truncated content', async () => {
     const file = await artifact('x'.repeat(4001));
     const grant = await actions.createGrant(
