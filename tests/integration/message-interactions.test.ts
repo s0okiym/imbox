@@ -111,6 +111,68 @@ describe('message threads, fixed quotes and reactions', () => {
       ).toEqual([]),
     );
   });
+  it('keeps paged row metadata separate and redacts fixed quotes after their source is deleted', async () => {
+    const c = await conversation();
+    const source = await message(c.id);
+    const reply = await messaging().createMessage(
+      f.bob,
+      c.id,
+      {
+        client_message_id: key(),
+        body: 'Reply',
+        reply_to_id: source.id,
+        reply_to_version: source.version,
+      },
+      key(),
+    );
+    const edited = await messaging().changeMessage(
+      f.alice,
+      source.id,
+      { body: 'Edited source' },
+      source.version,
+      key(),
+    );
+    await messaging().setReaction(f.bob, reply.id, { emoji: '👀' }, true, key());
+    const trailing = await message(c.id);
+    const page = await messaging().listMessages(f.bob, c.id, { limit: 2 });
+    expect(page.items.map((item) => item.id)).toEqual([reply.id, trailing.id]);
+    expect(page.items[0]).toMatchObject({
+      actor: { id: f.bob.principalId },
+      body: 'Reply',
+      reactions: [{ emoji: '👀', count: '1' }],
+      quote: { body: 'Original', source_version: '1', unavailable: false },
+    });
+    expect(page.items[0]?.edited_at).toBeUndefined();
+    expect(page.items[1]).toMatchObject({
+      actor: { id: f.alice.principalId },
+      reactions: [],
+      attachment_ids: [],
+    });
+    expect(page.items[1]?.quote).toBeUndefined();
+    const older = await messaging().listMessages(f.bob, c.id, {
+      limit: 2,
+      cursor: page.next_cursor!,
+    });
+    expect(older.items).toHaveLength(1);
+    expect(older.items[0]).toMatchObject({
+      id: source.id,
+      body: 'Edited source',
+      edited_at: edited.edited_at,
+      reactions: [],
+    });
+    expect(older.items[0]?.edited_at).toBeDefined();
+    expect((await messaging().listThread(f.bob, source.id)).items).toEqual([page.items[0]]);
+    await messaging().changeMessage(f.alice, source.id, null, edited.version, key());
+    const after = await messaging().listMessages(f.bob, c.id);
+    expect(after.items[0]).toMatchObject({
+      deleted: true,
+      body: '',
+      reactions: [],
+      attachment_ids: [],
+    });
+    expect(after.items[1]?.quote).toMatchObject({ body: null, unavailable: true });
+    expect((await messaging().listThread(f.bob, source.id)).items[0]?.quote?.body).toBeNull();
+  });
   it('requires precise quote versions, same-conversation sources and canonical thread roots', async () => {
     const c = await conversation(),
       other = await conversation();
@@ -249,14 +311,7 @@ describe('message threads, fixed quotes and reactions', () => {
   it('denies reaction and quote reads after workspace or conversation revocation', async () => {
     const c = await conversation();
     const m = await message(c.id);
-    await messaging().changeMember(
-      f.alice,
-      c.id,
-      f.bob.principalId,
-      'remove',
-      c.version,
-      key(),
-    );
+    await messaging().changeMember(f.alice, c.id, f.bob.principalId, 'remove', c.version, key());
     await expect(
       messaging().setReaction(f.bob, m.id, { emoji: '👀' }, true, key()),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });

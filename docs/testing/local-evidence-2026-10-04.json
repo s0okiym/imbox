@@ -131,5 +131,18 @@
     "production_capacity_claim": false
   },
   "v1_release_approved": false,
-  "acceptance_requirements_verified": 0
+  "acceptance_requirements_verified": 0,
+  "github_ci": {
+    "head_sha": "75bc22c59540ce41bda52e94f7807ca39256f4cc",
+    "run_id": 37209873956,
+    "url": "https://github.com/s0okiym/imbox/actions/runs/37209873956",
+    "conclusion": "success",
+    "reviewed_steps": [
+      "engineering verification",
+      "catalog check",
+      "real integration",
+      "browser regression",
+      "actual local model inference"
+    ]
+  }
 }

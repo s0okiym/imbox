@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 77 个测试文件、420 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 77 个测试文件、422 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -588,24 +588,26 @@
 | 声明 | 用例 |
 |---|---|
 | [it:50](../../tests/integration/message-interactions.test.ts#L50) | message threads, fixed quotes and reactions → freezes quote version across edits and redacts/deletes retained source revisions on withdrawal |
-| [it:114](../../tests/integration/message-interactions.test.ts#L114) | message threads, fixed quotes and reactions → requires precise quote versions, same-conversation sources and canonical thread roots |
-| [it:178](../../tests/integration/message-interactions.test.ts#L178) | message threads, fixed quotes and reactions → never leaks older quoted text or thread identifiers to members whose history starts later, including sync |
-| [it:215](../../tests/integration/message-interactions.test.ts#L215) | message threads, fixed quotes and reactions → deduplicates reactions under concurrency without changing message order and only removes the actor’s own reaction |
-| [it:249](../../tests/integration/message-interactions.test.ts#L249) | message threads, fixed quotes and reactions → denies reaction and quote reads after workspace or conversation revocation |
+| [it:114](../../tests/integration/message-interactions.test.ts#L114) | message threads, fixed quotes and reactions → keeps paged row metadata separate and redacts fixed quotes after their source is deleted |
+| [it:176](../../tests/integration/message-interactions.test.ts#L176) | message threads, fixed quotes and reactions → requires precise quote versions, same-conversation sources and canonical thread roots |
+| [it:240](../../tests/integration/message-interactions.test.ts#L240) | message threads, fixed quotes and reactions → never leaks older quoted text or thread identifiers to members whose history starts later, including sync |
+| [it:277](../../tests/integration/message-interactions.test.ts#L277) | message threads, fixed quotes and reactions → deduplicates reactions under concurrency without changing message order and only removes the actor’s own reaction |
+| [it:311](../../tests/integration/message-interactions.test.ts#L311) | message threads, fixed quotes and reactions → denies reaction and quote reads after workspace or conversation revocation |
 
 ## tests/integration/messaging.test.ts
 
 | 声明 | 用例 |
 |---|---|
 | [it:40](../../tests/integration/messaging.test.ts#L40) | real PostgreSQL messaging commands and current permissions → concurrent command retries commit one conversation and one event/outbox |
-| [it:62](../../tests/integration/messaging.test.ts#L62) | real PostgreSQL messaging commands and current permissions → membership and tenant isolation apply to both lookup and enumeration |
-| [it:76](../../tests/integration/messaging.test.ts#L76) | real PostgreSQL messaging commands and current permissions → concurrent repeated sends allocate once and reject reused client message identity |
-| [it:90](../../tests/integration/messaging.test.ts#L90) | real PostgreSQL messaging commands and current permissions → latest-first pagination is caller-bound, and stale authorization cursors require resync |
-| [it:119](../../tests/integration/messaging.test.ts#L119) | real PostgreSQL messaging commands and current permissions → since-join history blocks earlier bodies and reply references |
-| [it:148](../../tests/integration/messaging.test.ts#L148) | real PostgreSQL messaging commands and current permissions → concurrent edits require the same current version and retain the old revision |
-| [it:179](../../tests/integration/messaging.test.ts#L179) | real PostgreSQL messaging commands and current permissions → revocation blocks reads, new sends, and previously successful command replays |
-| [it:207](../../tests/integration/messaging.test.ts#L207) | real PostgreSQL messaging commands and current permissions → workspace membership revocation closes old conversation access and enumeration |
-| [it:234](../../tests/integration/messaging.test.ts#L234) | real PostgreSQL messaging commands and current permissions → read cursors remain monotonic and reject positions outside the visible stream |
+| [it:62](../../tests/integration/messaging.test.ts#L62) | real PostgreSQL messaging commands and current permissions → bounds database round trips as a plain history page grows without skipping message rows |
+| [it:95](../../tests/integration/messaging.test.ts#L95) | real PostgreSQL messaging commands and current permissions → membership and tenant isolation apply to both lookup and enumeration |
+| [it:109](../../tests/integration/messaging.test.ts#L109) | real PostgreSQL messaging commands and current permissions → concurrent repeated sends allocate once and reject reused client message identity |
+| [it:123](../../tests/integration/messaging.test.ts#L123) | real PostgreSQL messaging commands and current permissions → latest-first pagination is caller-bound, and stale authorization cursors require resync |
+| [it:152](../../tests/integration/messaging.test.ts#L152) | real PostgreSQL messaging commands and current permissions → since-join history blocks earlier bodies and reply references |
+| [it:181](../../tests/integration/messaging.test.ts#L181) | real PostgreSQL messaging commands and current permissions → concurrent edits require the same current version and retain the old revision |
+| [it:212](../../tests/integration/messaging.test.ts#L212) | real PostgreSQL messaging commands and current permissions → revocation blocks reads, new sends, and previously successful command replays |
+| [it:240](../../tests/integration/messaging.test.ts#L240) | real PostgreSQL messaging commands and current permissions → workspace membership revocation closes old conversation access and enumeration |
+| [it:267](../../tests/integration/messaging.test.ts#L267) | real PostgreSQL messaging commands and current permissions → read cursors remain monotonic and reject positions outside the visible stream |
 
 ## tests/integration/model-adapter.test.ts
 

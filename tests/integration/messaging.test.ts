@@ -59,6 +59,39 @@ describe('real PostgreSQL messaging commands and current permissions', () => {
       ),
     ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });
   });
+  it('bounds database round trips as a plain history page grows without skipping message rows', async () => {
+    const c = await group();
+    for (let index = 0; index < 100; index++) await send(c.id, `Page row ${index}`);
+    let queries = 0;
+    const observed = createMessagingService(
+      databases.db.withPlugin({
+        transformQuery(args) {
+          queries++;
+          return args.node;
+        },
+        async transformResult(args) {
+          return args.result;
+        },
+      }),
+      'page-query-budget-secret-more-than-thirty-two-characters',
+    );
+    const small = await observed.listMessages(fixture.bob, c.id, { limit: 10 });
+    const smallQueries = queries;
+    queries = 0;
+    const large = await observed.listMessages(fixture.bob, c.id, { limit: 100 });
+    expect(small.items.map((item) => item.body)).toEqual(
+      Array.from({ length: 10 }, (_, i) => `Page row ${90 + i}`),
+    );
+    expect(large.items.map((item) => item.body)).toEqual(
+      Array.from({ length: 100 }, (_, i) => `Page row ${i}`),
+    );
+    // A page may perform authorization queries, but must not issue queries per ordinary row.
+    expect(queries).toBeLessThanOrEqual(20);
+    expect(queries).toBeLessThanOrEqual(smallQueries + 1);
+    await expect(observed.listMessages(fixture.charlie, c.id)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+  });
   it('membership and tenant isolation apply to both lookup and enumeration', async () => {
     const c = await group();
     const outsider = await tenantFixture(databases.owner);

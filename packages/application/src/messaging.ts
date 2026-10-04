@@ -2,8 +2,8 @@ import { recordPolicy, type PolicyLedger } from './policy-ledger.js';
 import { purgeDerivedContent } from './policy-replay.js';
 import {
   presentMessage,
-  reactionSummary,
   REACTION_EMOJIS,
+  reactionSummary,
   messageEdition,
 } from './message-presentation.js';
 import { randomUUID } from 'node:crypto';
@@ -69,6 +69,77 @@ export function createMessagingService(
       projection_revision: c.version,
     });
   }
+  // Fetch a page in one database round trip. Subqueries remain tenant- and message-bound;
+  // caller authorization is retained by the surrounding transaction, not cached between calls.
+  async function messageRows(tx: TenantTransaction, auth: AuthContext, ids: readonly string[]) {
+    if (!ids.length) return [];
+    return tx
+      .selectFrom('messages as m')
+      .innerJoin('principals as p', 'p.id', 'm.sender_principal_id')
+      .selectAll('m')
+      .select([
+        sql<
+          ContractTypes['Message']['actor']
+        >`jsonb_build_object('id',p.id,'kind',p.kind,'display_name',p.display_name,'status',p.status)`.as(
+          'actor',
+        ),
+        sql<string[]>`case when m.deleted_at is not null then array[]::uuid[] else array(
+          select mr.resource_id from message_resources mr
+          join resources r on r.tenant_id=mr.tenant_id and r.id=mr.resource_id
+          where mr.tenant_id=m.tenant_id and mr.message_id=m.id and r.deleted_at is null
+            and r.version=mr.resource_version and r.conversation_id=m.conversation_id
+          order by mr.ordinal) end`.as('attachment_ids'),
+        sql<
+          ContractTypes['MessageReactionSummary'][]
+        >`case when m.deleted_at is not null then '[]'::jsonb else coalesce((
+          select jsonb_agg(summary order by summary.emoji) from (
+            select emoji,count(*)::text as count from reactions
+            where tenant_id=m.tenant_id and message_id=m.id group by emoji
+          ) summary), '[]'::jsonb) end`.as('reaction_summary'),
+        sql<Date | null>`(select created_at from domain_events
+          where tenant_id=m.tenant_id and aggregate_type='message' and aggregate_id=m.id
+            and event_type='message.edited' order by aggregate_version desc limit 1)`.as(
+          'body_edited_at',
+        ),
+      ])
+      .where('m.tenant_id', '=', auth.tenantId)
+      .where('m.id', 'in', [...ids])
+      .execute();
+  }
+  type MessageRow = Awaited<ReturnType<typeof messageRows>>[number];
+  async function presentRow(tx: TenantTransaction, m: MessageRow, allowed: ConversationAccess) {
+    if (
+      m.conversation_id !== allowed.row.id ||
+      BigInt(m.seq) < BigInt(allowed.member.visible_from_seq)
+    )
+      return fail('NOT_FOUND', 404);
+    const dto = assertContract('Message', {
+      id: m.id,
+      conversation_id: m.conversation_id,
+      client_message_id: m.client_message_id,
+      actor: m.actor,
+      seq: m.seq,
+      version: m.version,
+      body: m.deleted_at ? '' : m.body,
+      format: 'text',
+      attachment_ids: m.attachment_ids,
+      reactions: m.reaction_summary,
+      ...(m.reply_to_id ? { reply_to_id: m.reply_to_id } : {}),
+      ...(m.reply_to_version ? { reply_to_version: m.reply_to_version } : {}),
+      ...(m.thread_root_id ? { thread_root_id: m.thread_root_id } : {}),
+      created_at: m.created_at.toISOString(),
+      ...(m.body_edited_at ? { edited_at: m.body_edited_at.toISOString() } : {}),
+      deleted: m.deleted_at !== null,
+      view_scope: m.conversation_id,
+      authz_generation: allowed.row.authz_generation,
+      projection_id: m.id,
+      projection_revision: m.version,
+    });
+    return assertContract(
+      'Message',
+      await presentMessage(tx, dto, allowed.member.visible_from_seq),
+    );
+  }
   async function messageDto(
     tx: TenantTransaction,
     auth: AuthContext,
@@ -88,45 +159,49 @@ export function createMessagingService(
       BigInt(m.seq) < BigInt(allowed.member.visible_from_seq)
     )
       return fail('NOT_FOUND', 404);
-    const p = await tx
+    const actor = await tx
       .selectFrom('principals')
       .select(['id', 'kind', 'display_name', 'status'])
       .where('id', '=', m.sender_principal_id)
       .executeTakeFirstOrThrow();
-    const dto = assertContract('Message', {
-      id: m.id,
-      conversation_id: m.conversation_id,
-      client_message_id: m.client_message_id,
-      actor: p,
-      seq: m.seq,
-      version: m.version,
-      body: m.deleted_at ? '' : m.body,
-      format: 'text',
-      attachment_ids: m.deleted_at
-        ? []
-        : (
-            await sql<{
-              resource_id: string;
-            }>`select mr.resource_id from message_resources mr join resources r on r.tenant_id=mr.tenant_id and r.id=mr.resource_id where mr.message_id=${m.id} and r.deleted_at is null and r.version=mr.resource_version and r.conversation_id=${m.conversation_id} order by mr.ordinal`.execute(
-              tx,
-            )
-          ).rows.map((row) => row.resource_id),
-      reactions: m.deleted_at ? [] : await reactionSummary(tx, m.id),
-      ...(m.reply_to_id ? { reply_to_id: m.reply_to_id } : {}),
-      ...(m.reply_to_version ? { reply_to_version: m.reply_to_version } : {}),
-      ...(m.thread_root_id ? { thread_root_id: m.thread_root_id } : {}),
-      created_at: m.created_at.toISOString(),
-      ...(await messageEdition(tx, m.id)),
-      deleted: m.deleted_at !== null,
-      view_scope: m.conversation_id,
-      authz_generation: allowed.row.authz_generation,
-      projection_id: m.id,
-      projection_revision: m.version,
-    });
-    return assertContract(
-      'Message',
-      await presentMessage(tx, dto, allowed.member.visible_from_seq),
+    const attachment_ids = m.deleted_at
+      ? []
+      : (
+          await sql<{ resource_id: string }>`
+      select mr.resource_id from message_resources mr join resources r
+      on r.tenant_id=mr.tenant_id and r.id=mr.resource_id
+      where mr.message_id=${m.id} and r.deleted_at is null and r.version=mr.resource_version
+      and r.conversation_id=${m.conversation_id} order by mr.ordinal`.execute(tx)
+        ).rows.map((row) => row.resource_id);
+    const reaction_summary = m.deleted_at ? [] : await reactionSummary(tx, m.id);
+    const edition = await messageEdition(tx, m.id);
+    return presentRow(
+      tx,
+      {
+        ...m,
+        actor,
+        attachment_ids,
+        reaction_summary,
+        body_edited_at: edition.edited_at ? new Date(edition.edited_at) : null,
+      },
+      allowed,
     );
+  }
+
+  async function messagePage(
+    tx: TenantTransaction,
+    auth: AuthContext,
+    ids: readonly string[],
+    access: ConversationAccess,
+  ) {
+    const byId = new Map((await messageRows(tx, auth, ids)).map((row) => [row.id, row]));
+    const items = [];
+    for (const id of ids) {
+      const row = byId.get(id);
+      if (!row) return fail('NOT_FOUND', 404);
+      items.push(await presentRow(tx, row, access));
+    }
+    return items;
   }
   function checkFormat(input: { format?: string; attachment_ids?: string[] }) {
     if (
@@ -472,9 +547,12 @@ export function createMessagingService(
           .limit(limitOf(query) + 1)
           .execute();
         const selected = rows.slice(0, limitOf(query));
-        const items = [];
-        for (const row of [...selected].reverse())
-          items.push(await messageDto(tx, auth, row.id, access));
+        const items = await messagePage(
+          tx,
+          auth,
+          [...selected].reverse().map((row) => row.id),
+          access,
+        );
         return assertContract('MessagePage', {
           items,
           ...(rows.length > limitOf(query)
@@ -506,8 +584,12 @@ export function createMessagingService(
           .limit(limitOf(query) + 1)
           .execute();
         const selected = rows.slice(0, limitOf(query));
-        const items = [];
-        for (const r of selected) items.push(await messageDto(tx, auth, r.id, access));
+        const items = await messagePage(
+          tx,
+          auth,
+          selected.map((row) => row.id),
+          access,
+        );
         return assertContract('MessagePage', {
           items,
           ...(rows.length > limitOf(query)
