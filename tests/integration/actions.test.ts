@@ -586,6 +586,61 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
     await expect(runner().runOnce(fixture.tenantId, action.id)).rejects.toBeDefined();
     expect(sideEffects).toBe(0);
   });
+  it('rejects an approved stale task version before claim and permits newly authorized work', async () => {
+    const { action } = await proposed();
+    await approve(action);
+    const previousEpoch = task.execution_epoch;
+    task = await tasks.updateTask(
+      fixture.alice,
+      task.id,
+      { title: 'Updated delivery title' },
+      task.version,
+      key(),
+    );
+    // A title edit preserves the execution epoch, isolating the resource-version fence.
+    expect(task.execution_epoch).toBe(previousEpoch);
+    await expect(runner().runOnce(fixture.tenantId, action.id)).rejects.toMatchObject({
+      code: 'VERSION_CONFLICT',
+    });
+    expect(attempts).toBe(0);
+    expect(await journal.records(fixture.tenantId)).toHaveLength(0);
+    const fresh = await proposed();
+    await approve(fresh.action);
+    expect(await runner().runOnce(fixture.tenantId, fresh.action.id)).toMatchObject({
+      status: 'succeeded',
+    });
+    expect(attempts).toBe(1);
+    expect(sideEffects).toBe(1);
+  });
+  it('rechecks the task version after durable intent and releases an unsent reservation', async () => {
+    const { action } = await proposed();
+    await approve(action);
+    const claim = await actions.claim(fixture.tenantId, action.id, 'stale-resource-worker');
+    await actions.persistIntent(claim);
+    const previousEpoch = task.execution_epoch;
+    task = await tasks.updateTask(
+      fixture.alice,
+      task.id,
+      { title: 'Changed after durable intent' },
+      task.version,
+      key(),
+    );
+    expect(task.execution_epoch).toBe(previousEpoch);
+    await expect(actions.dispatch(claim)).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+    await actions.abortPrepared(claim);
+    expect(attempts).toBe(0);
+    expect(sideEffects).toBe(0);
+    expect((await actions.getAction(fixture.alice, action.id)).status).toBe('failed');
+    expect(
+      (
+        await withTenant(databases.db, fixture.tenantId, (tx) =>
+          sql`select reserved_microunits,spent_microunits from task_budgets where task_id=${task.id}`.execute(
+            tx,
+          ),
+        )
+      ).rows[0],
+    ).toEqual({ reserved_microunits: '0', spent_microunits: '0' });
+  });
   it('rejects expired leases even before takeover and retains unresolved attempts', async () => {
     const { action } = await proposed();
     await approve(action);
@@ -767,6 +822,37 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
         status: 'ready',
         approval: { decided_by: fixture.alice.principalId },
       });
+      // An approved action cannot be retargeted or reassigned through revision.
+      for (const injected of [
+        { target_id: 'unapproved-destination' },
+        { executor_principal_id: fixture.charlie.principalId },
+        { tool_id: 'unapproved.tool' },
+        { tool_version: '2' },
+      ]) {
+        const changed = await app.inject({
+          method: 'PATCH',
+          url: `/v1/actions/${action.id}`,
+          headers: {
+            ...headers,
+            'idempotency-key': key(),
+            'if-match': `"${approved.json<C['Action']>().version}"`,
+          },
+          payload: {
+            parameters: action.parameters,
+            resource_versions: action.resource_versions,
+            ...injected,
+          },
+        });
+        expect(changed.statusCode).toBe(400);
+        expect(await actions.getAction(fixture.alice, action.id)).toMatchObject({
+          status: 'ready',
+          fingerprint: action.fingerprint,
+          executor_id: fixture.bob.principalId,
+          target_id: 'demo',
+          tool_id: 'demo.delivery',
+          tool_version: '1',
+        });
+      }
       for (const command of ['claim', 'dispatch', 'record-outcome', 'receipts'])
         expect(
           (
