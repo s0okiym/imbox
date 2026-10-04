@@ -12,7 +12,7 @@
 | AC-04  | verified | agents 中 human→agent→agent 交接测试在 acknowledgeRequest 后断言 received_at 存在、status=pending、原 owner 不变，只有 decide accept 后才切换负责权。                           |
 | AC-05  | partial  | 委派接受后仅一个 child，父 owner 不变；拒绝/过期不创建 child，维护扫描幂等处理超时。仍缺少“委派被拒绝后用户找到后续处理者”的专用浏览器闭环。                                    |
 | AC-06  | verified | tasks 的 concurrent competing handoffs 断言仅一次成功、owner 为胜出者、version/epoch=2、唯一 owner/accept/agreement；同键五次接受返回同一协议，写入处于同一事务。               |
-| AC-07  | partial  | runtime 验证租约过期/接管后的旧 holder 不可心跳/报告；actions 验证旧 epoch、失效租约及 unknown 保留。尚缺真实交接与外部调用在途相交的完整组合注入。                             |
+| AC-07 | verified | 真实交接后旧 Worker 心跳、预占、结果提交均拒绝；已持久化意图尚未派发的 Action 被旧 epoch 围栏拒绝并释放预占；真实 HTTP 副作用发生后交接且丢响应，新 owner 只读核对、一次 POST 与一次费用结算。 |
 | AC-08  | verified | maintenance 并发扫描只升级一次，保持显式 blocked 和 owner_unavailable，审计 actor 为维护身份，原指派管理员离开时重新路由；源码只变阻塞/代际，不置空 owner。                     |
 | AC-09  | verified | tasks conversation summary 仅返回显式 public_summary，关联不授予 Task ACL；knowledge 私人目标不出现在他人搜索，分页没有 total，跨租户与隐蔽成员读取拒绝。                       |
 | AC-10  | verified | runtime-knowledge 拒绝私有 Memory 披露到会话、来源范围不同和 Agent 缺少读取权限；run-tool-intents 混合来源在排队前拒绝且模型调用/副作用均为零。                                 |
@@ -34,7 +34,7 @@
 | INV-01 | verified | HTTP/machine 作者、批准者均来自认证上下文；正文 actor_id、target_id、executor_principal_id 注入拒绝；Agent 与人类会话不能混用。                                                 |
 | INV-02 | verified | Task owner 非空数据库约束、初始 self owner 和唯一活动 owner 竞争断言；maintenance 明确阻塞与升级，不静默清空或改派。                                                            |
 | INV-03 | verified | 咨询提案修订并接受后明确断言 owner 与 accountable 均保持原主体；委派前后父 owner、子 owner/accountable 已断言，交接 ACK 后及接受前原 owner 保持。                               |
-| INV-04 | partial  | 交接 owner/version/epoch 与唯一接受事务已有断言，runtime/action 旧代际围栏分别验证；完整在途交接组合与派发事件的一致性补验同 AC-07。                                            |
+| INV-04 | verified | 通过真实接受事务核对唯一 owner、accountable 不变、任务版本/epoch/授权代际提升及唯一交接事件和 outbox；旧 Worker 和未派发 Action 被拒绝，在途结果独立核对。 |
 | INV-05 | verified | 传输 ACK 不写已读，Agent ACK 不接单，completed external report 不代表平台验证；任务必须经提交和指定审核者验收，Run 结束与 Task 关闭分离。                                       |
 | INV-06 | verified | Task 会话关联不授予 Task ACL；Agent 注册不授予消息/任务访问；跨会话资源附件被拒绝，定向 Artifact share 不授予底层资源 ACL。                                                     |
 | INV-07 | verified | runtime-knowledge 检查人类与 Agent 来源权限及披露范围，action 要求独立 grant/approval；分享固定版本/收件人代际，新群成员不继承旧分享。                                          |
@@ -48,6 +48,6 @@
 | INV-15 | partial  | message/Memory/Run/资源/评论与分享的删除、保留、独立重放有测试；生产备份链及所有组织身份变更无法仅由本地四条事实恢复证明。                                                      |
 | INV-16 | pending  | 本地 HTTP 试用不构成生产 TLS、静态加密或密钥托管证据。V1 不提供 E2EE；服务端/配置模型可见授权明文的说明保留，生产加密承诺待目标部署验收。                                       |
 
-本轮结果：24 项 verified、16 项 partial、1 项 pending。`pnpm test:acceptance` 预期仍非零退出；其余已通过的工程、集成和浏览器测试不因此作废。
+2026-10-05 交接补验后结果：26 项 verified、14 项 partial、1 项 pending，新增实际运行与边界见 [交接证据](handoff-evidence-2026-10-05.md)。`pnpm test:acceptance` 预期仍非零退出；其余已通过的工程、集成和浏览器测试不因此作废。
 
-后续按完整用户流程补验，优先交接在途行动、组织生命周期与兼容性；真机、生产 IdP/TLS、灾备和参考容量使用真实环境证据。上述补验边界与当前可运行主体一并交付，遵循先完成主体、再细化的优先级。
+后续按完整用户流程补验，优先交接包行动清单、组织生命周期与兼容性；真机、生产 IdP/TLS、灾备和参考容量使用真实环境证据。上述补验边界与当前可运行主体一并交付，遵循先完成主体、再细化的优先级。

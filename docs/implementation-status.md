@@ -70,7 +70,7 @@ CI 编排已补齐真实 SeaweedFS、受限测试桶 CORS、Chromium 及实际�
 - `618f495` 已推送：`pilot:setup` / `pilot` / `pilot:status` 集中运行本机功能候选，实测真实双人消息、端口冲突保护和子进程故障退出；已有配置保留。
 - 新增迁移 030 与 `workspace:provision`：运维 owner 才能初始化新组织，使用既有有效 human 身份，默认只计划、显式 apply、同事务写入独立回执；并发重试不重复初始化，既有组织和不同清单拒绝，重放不恢复被撤销成员。
 - 新增组织初始化的 5 项集成回归及私聊隔离的独立回归。CLI 已实际执行 planned → applied → already_applied，测试数据只写入隔离测试库。
-- 原先全 pending 的验收登记已按断言审查细化为 24 verified / 16 partial / 1 pending；完整生产门禁继续阻断。当前交付边界与未来工作见 `docs/delivery-backlog.md`，新的运行入口见 `docs/operations/local-pilot.md` 与 `workspace-provisioning.md`。
+- 原先全 pending 的验收登记已按断言审查细化为 26 verified / 14 partial / 1 pending；完整生产门禁继续阻断。当前交付边界与未来工作见 `docs/delivery-backlog.md`，新的运行入口见 `docs/operations/local-pilot.md` 与 `workspace-provisioning.md`。
 
 ## 2026-10-05 最终功能候选复核（Asia/Shanghai）
 

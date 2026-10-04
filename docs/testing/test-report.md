@@ -92,3 +92,7 @@ Node.js 24.21.0、pnpm 10.34.6，PostgreSQL 18、SeaweedFS S3、Ollama 固定模
 本机开发库已应用迁移 030，配置使用 Web 5183 / API 4180，避开其他应用；启用仅本机开发身份与独立隐私账本后，默认 `pilot:status` 和真实双人消息再次通过。共享宿主保留系统 Node 22，独立 Node 24 工具链已安装；本机可先 `. .artifacts/pilot-env.sh` 再 `pnpm pilot`。应用验证后已正常停止，PostgreSQL/对象存储保留；`.env`、密钥和宿主辅助脚本均未提交。
 
 最终远程复核：[`dbcc6b0` / 37215651755](https://github.com/s0okiym/imbox/actions/runs/37215651755) **所有 CI 步骤 success**，包括完整工程与契约、32 文件 180 单元、33 文件 246 集成、24 浏览器（2.7 分钟）、1 项真实固定模型验证及清理。原失败未删除，也未通过重试配置绕过。最终归档提交只修改 README/文档，核对源文件索引指纹仍为 `7e9f585521326ded3326319d2d7053fe6efaaac328ec8a57ac65233a2583fec8`；归档本身不计作新的测试执行。
+
+## 真实交接补验（2026-10-05）
+
+新增 3 个跨模块集成场景，覆盖旧 Worker 权限失效、prepared Action 拒绝派发和已发生外部副作用的 unknown 核对。任务、运行与行动 3 文件共 52 项通过（25.36 秒），详见 [交接证据](handoff-evidence-2026-10-05.md)。AC-07 / INV-04 更新为 verified，总登记为 26 verified / 14 partial / 1 pending，完整生产门禁仍未通过。交接包 pending_action_ids 仍为空数组的限制已单独记录，不用执行安全测试替代交接体验完成度。

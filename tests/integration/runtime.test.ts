@@ -8,7 +8,11 @@ import {
   type RuntimeWorker,
   type CreateRunInput,
 } from '@imbox/runtime';
-import { createMessagingService, type MessagingService } from '@imbox/application';
+import {
+  createTaskService,
+  createMessagingService,
+  type MessagingService,
+} from '@imbox/application';
 import { assertContract } from '@imbox/contracts';
 import { createIdentityService, registerAuthRoutes } from '@imbox/auth';
 import { assertRuntimeRole, sql, withTenant } from '@imbox/db';
@@ -16,6 +20,7 @@ import { createApp } from '../../apps/api/src/app.js';
 import { registerRuntimeRoutes } from '../../apps/api/src/runtime-routes.js';
 import { tenantFixture, testDatabases } from '../helpers/database.js';
 import { withRuntimeTransaction as runtimeTransaction } from '@imbox/runtime';
+import { acceptHandoff } from '../helpers/handoff.js';
 let databases: Awaited<ReturnType<typeof testDatabases>>;
 let fixture: Awaited<ReturnType<typeof tenantFixture>>;
 let runtime: RuntimeService;
@@ -216,6 +221,91 @@ describe('durable runtime identity, leases and context', () => {
       manifest: { purpose: body.purpose, destination: body.destination },
       items: [],
       budget: { currency: 'USD', limit_microunits: '100' },
+    });
+  });
+  it('rejects old worker heartbeat, budget reservation and completion after real handoff', async () => {
+    const tasks = createTaskService(databases.db, secret);
+    let current = await tasks.createTask(
+      fixture.alice,
+      {
+        workspace_id: fixture.workspaceId,
+        title: 'Live worker handoff',
+        goal: 'Transfer execution authority',
+        acceptance_criteria: ['Only current authority may publish'],
+        reviewer_principal_ids: [fixture.alice.principalId],
+        budget: { currency: 'USD', limit_microunits: '100' },
+      },
+      key(),
+    );
+    current = await tasks.changeParticipant(
+      fixture.alice,
+      current.id,
+      agentPrincipal,
+      'contributor',
+      current.version,
+      key(),
+    );
+    current = await tasks.changeState(
+      fixture.alice,
+      current.id,
+      { state: 'active' },
+      current.version,
+      key(),
+    );
+    const { run, claim } = await start({ task_id: current.id });
+    const beforeGeneration = await withTenant(databases.db, fixture.tenantId, (tx) =>
+      tx
+        .selectFrom('tasks')
+        .select('authz_generation')
+        .where('id', '=', current.id)
+        .executeTakeFirstOrThrow(),
+    );
+    const transferred = await acceptHandoff(tasks, current, fixture.alice, fixture.bob);
+    expect(transferred.owner_principal_id).toBe(fixture.bob.principalId);
+    expect(transferred.accountable_principal_id).toBe(fixture.alice.principalId);
+    expect(BigInt(transferred.execution_epoch)).toBe(BigInt(current.execution_epoch) + 1n);
+    await expect(worker.heartbeat(claim)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(
+      worker.reserve(claim, { reservation_key: key(), amount_microunits: '1', currency: 'USD' }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(
+      worker.report(claim, { status: 'completed', checkpoint: { stale: true } }, key()),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await withTenant(databases.db, fixture.tenantId, async (tx) => {
+      expect(
+        (await sql`select status from agent_runs where id=${run.id}`.execute(tx)).rows[0],
+      ).toEqual({
+        status: 'running',
+      });
+      expect(
+        (
+          await sql`select principal_id from task_participants where task_id=${current.id} and status='active' and role='owner'`.execute(
+            tx,
+          )
+        ).rows,
+      ).toEqual([{ principal_id: fixture.bob.principalId }]);
+      expect(
+        (
+          await sql`select aggregate_version from domain_events where aggregate_id=${current.id} and event_type='task.handoff_accepted'`.execute(
+            tx,
+          )
+        ).rows,
+      ).toEqual([{ aggregate_version: transferred.version }]);
+      const afterGeneration = await tx
+        .selectFrom('tasks')
+        .select('authz_generation')
+        .where('id', '=', current.id)
+        .executeTakeFirstOrThrow();
+      expect(BigInt(afterGeneration.authz_generation)).toBe(
+        BigInt(beforeGeneration.authz_generation) + 1n,
+      );
+      expect(
+        (
+          await sql`select o.target from outbox o join domain_events e on e.tenant_id=o.tenant_id and e.id=o.event_id where e.aggregate_id=${current.id} and e.event_type='task.handoff_accepted'`.execute(
+            tx,
+          )
+        ).rows,
+      ).toEqual([{ target: `task:${current.id}` }]);
     });
   });
   it('rejects heartbeat/report after expiry even before takeover, increments generation on recovery, and rejects the old holder', async () => {
