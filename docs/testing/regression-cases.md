@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 85 个测试文件、483 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 86 个测试文件、487 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -184,6 +184,14 @@
 | [it:5](../../apps/web/src/tasks/task-state.test.ts#L5) | task command boundaries → does not lose precision when converting money across the safe-number boundary |
 | [it:14](../../apps/web/src/tasks/task-state.test.ts#L14) | task command boundaries → retries the same terms/version under the same key and changes it on deliberate rebase |
 | [it:20](../../apps/web/src/tasks/task-state.test.ts#L20) | task command boundaries → requires explicit nonempty acceptance criteria and bounds their count |
+
+## apps/worker/src/notification-loop.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:5](../../apps/worker/src/notification-loop.test.ts#L5) | notification dispatcher pacing → visits every tenant before draining another full batch and waits only once idle |
+| [it:30](../../apps/worker/src/notification-loop.test.ts#L30) | notification dispatcher pacing → backs off a failed round while still giving another tenant its bounded batch |
+| [it:53](../../apps/worker/src/notification-loop.test.ts#L53) | notification dispatcher pacing → stops at the in-flight batch boundary without scheduling another tenant or cleanup |
 
 ## packages/actions/src/journal.test.ts
 
@@ -700,19 +708,20 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:111](../../tests/integration/notifications.test.ts#L111) | durable authorization-aware notification intents → coalesces conversation notifications, tolerates duplicates and late older work without taking projector outbox rows |
-| [it:165](../../tests/integration/notifications.test.ts#L165) | durable authorization-aware notification intents → closes non-conversation outbox with explicit invalidation receipts, and read never resolves a Task blocker |
-| [it:204](../../tests/integration/notifications.test.ts#L204) | durable authorization-aware notification intents → checks workspace and conversation ACL before paging, unread counts and opening, including removal and re-add |
-| [it:233](../../tests/integration/notifications.test.ts#L233) | durable authorization-aware notification intents → does not lose an earlier-started event that commits after a newer event was dispatched |
-| [it:266](../../tests/integration/notifications.test.ts#L266) | durable authorization-aware notification intents → fans out large audiences in bounded resumable pages and receipts make retries harmless |
-| [it:280](../../tests/integration/notifications.test.ts#L280) | durable authorization-aware notification intents → backfills old audit facts without generating stale reminders and still closes their non-conversation outbox |
-| [it:294](../../tests/integration/notifications.test.ts#L294) | durable authorization-aware notification intents → keeps unread during DND, mute and category suppression, with per-device gating and sensitive-free payloads |
-| [it:354](../../tests/integration/notifications.test.ts#L354) | durable authorization-aware notification intents → rechecks ACL and revoked sessions before transport, cleans only that device binding, and denies other users device mutation |
-| [it:390](../../tests/integration/notifications.test.ts#L390) | durable authorization-aware notification intents → binds cursors to the caller and enforces real HTTP session/CSRF with opaque click resolution |
-| [it:468](../../tests/integration/notifications.test.ts#L468) | encrypted Web Push subscription and bounded durable delivery → encrypts the endpoint and keys, replaces the session binding, and removes ciphertext when disabled |
-| [it:504](../../tests/integration/notifications.test.ts#L504) | encrypted Web Push subscription and bounded durable delivery → caps retries across worker restarts and removes expired subscriptions on 410 outcomes |
-| [it:560](../../tests/integration/notifications.test.ts#L560) | encrypted Web Push subscription and bounded durable delivery → rechecks authority immediately before transport and fences old delivery settlement after subscription rotation |
-| [it:601](../../tests/integration/notifications.test.ts#L601) | Web Push public HTTP boundary → requires session CSRF and validates configured provider endpoints without exposing private keys |
+| [it:111](../../tests/integration/notifications.test.ts#L111) | durable authorization-aware notification intents → reports a full partial-fanout batch until every current recipient is handled exactly once |
+| [it:134](../../tests/integration/notifications.test.ts#L134) | durable authorization-aware notification intents → coalesces conversation notifications, tolerates duplicates and late older work without taking projector outbox rows |
+| [it:188](../../tests/integration/notifications.test.ts#L188) | durable authorization-aware notification intents → closes non-conversation outbox with explicit invalidation receipts, and read never resolves a Task blocker |
+| [it:227](../../tests/integration/notifications.test.ts#L227) | durable authorization-aware notification intents → checks workspace and conversation ACL before paging, unread counts and opening, including removal and re-add |
+| [it:256](../../tests/integration/notifications.test.ts#L256) | durable authorization-aware notification intents → does not lose an earlier-started event that commits after a newer event was dispatched |
+| [it:289](../../tests/integration/notifications.test.ts#L289) | durable authorization-aware notification intents → fans out large audiences in bounded resumable pages and receipts make retries harmless |
+| [it:303](../../tests/integration/notifications.test.ts#L303) | durable authorization-aware notification intents → backfills old audit facts without generating stale reminders and still closes their non-conversation outbox |
+| [it:317](../../tests/integration/notifications.test.ts#L317) | durable authorization-aware notification intents → keeps unread during DND, mute and category suppression, with per-device gating and sensitive-free payloads |
+| [it:377](../../tests/integration/notifications.test.ts#L377) | durable authorization-aware notification intents → rechecks ACL and revoked sessions before transport, cleans only that device binding, and denies other users device mutation |
+| [it:413](../../tests/integration/notifications.test.ts#L413) | durable authorization-aware notification intents → binds cursors to the caller and enforces real HTTP session/CSRF with opaque click resolution |
+| [it:491](../../tests/integration/notifications.test.ts#L491) | encrypted Web Push subscription and bounded durable delivery → encrypts the endpoint and keys, replaces the session binding, and removes ciphertext when disabled |
+| [it:527](../../tests/integration/notifications.test.ts#L527) | encrypted Web Push subscription and bounded durable delivery → caps retries across worker restarts and removes expired subscriptions on 410 outcomes |
+| [it:583](../../tests/integration/notifications.test.ts#L583) | encrypted Web Push subscription and bounded durable delivery → rechecks authority immediately before transport and fences old delivery settlement after subscription rotation |
+| [it:624](../../tests/integration/notifications.test.ts#L624) | Web Push public HTTP boundary → requires session CSRF and validates configured provider endpoints without exposing private keys |
 
 ## tests/integration/organization.test.ts
 

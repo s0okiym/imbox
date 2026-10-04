@@ -5,6 +5,43 @@ import {
   pushConfiguration,
 } from '@imbox/notifications';
 import { createDatabase, assertRuntimeRole, sql, type Db } from '@imbox/db';
+/** Give every tenant one bounded batch per round, yielding without an idle delay while full. */
+export async function runNotificationDispatchLoop(options: {
+  tenants: readonly string[];
+  signal: AbortSignal;
+  dispatch: (tenant: string) => Promise<{ batch_full: boolean }>;
+  cleanup?: (tenant: string) => Promise<unknown>;
+  failed: (tenant: string) => void;
+  wait?: (milliseconds: number, signal: AbortSignal) => Promise<void>;
+}) {
+  const wait =
+    options.wait ?? ((milliseconds, signal) => delay(milliseconds, undefined, { signal }));
+  let cleanupAt = 0;
+  while (!options.signal.aborted) {
+    const clean = Date.now() >= cleanupAt;
+    let full = false;
+    let failed = false;
+    for (const tenant of options.tenants) {
+      if (options.signal.aborted) break;
+      try {
+        const result = await options.dispatch(tenant);
+        full = result.batch_full || full;
+        if (clean && !options.signal.aborted) await options.cleanup?.(tenant);
+      } catch {
+        failed = true;
+        options.failed(tenant);
+      }
+    }
+    if (clean) cleanupAt = Date.now() + 60_000;
+    if (options.signal.aborted) break;
+    try {
+      await wait(full && !failed ? 0 : 250, options.signal);
+    } catch (error) {
+      if (!options.signal.aborted) throw error;
+    }
+  }
+}
+
 /** Notification work has an independent loop and cannot hold up chat projection dispatch. */
 export async function runNotificationLoop(db: Db, tenants: readonly string[], signal: AbortSignal) {
   const dispatch = createNotificationDispatcher({ db }),
@@ -49,31 +86,20 @@ export async function runNotificationLoop(db: Db, tenants: readonly string[], si
         }
       }
     })();
-    let cleanupAt = 0;
-    while (!signal.aborted) {
-      const clean = Date.now() >= cleanupAt;
-      for (const tenant of tenants) {
-        if (signal.aborted) break;
-        try {
-          await dispatch(tenant, { limit: 50, fanoutLimit: 100 });
-          if (clean && service) await service.cleanupDevices(tenant, 50);
-        } catch {
-          process.stderr.write(
-            JSON.stringify({
-              level: 'error',
-              event: 'notification_batch_failed',
-              tenant_id: tenant,
-            }) + '\n',
-          );
-        }
-      }
-      if (clean) cleanupAt = Date.now() + 60000;
-      try {
-        await delay(250, undefined, { signal });
-      } catch {
-        break;
-      }
-    }
+    await runNotificationDispatchLoop({
+      tenants,
+      signal,
+      dispatch: (tenant) => dispatch(tenant, { limit: 50, fanoutLimit: 100 }),
+      ...(service ? { cleanup: (tenant: string) => service.cleanupDevices(tenant, 50) } : {}),
+      failed: (tenant) =>
+        process.stderr.write(
+          JSON.stringify({
+            level: 'error',
+            event: 'notification_batch_failed',
+            tenant_id: tenant,
+          }) + '\n',
+        ),
+    });
     await pushLoop;
   } finally {
     await identityDb?.destroy();

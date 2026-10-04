@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "commit": "107dab867fe5273d7c07f859a4a361cdbd2cfdce",
+  "run_id": 37231677177,
+  "job_id": 111522519857,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37231677177",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 185,
+    "seconds": 5.29
+  },
+  "integration": {
+    "files": 35,
+    "passed": 283,
+    "seconds": 118.78
+  },
+  "browser": {
+    "passed": 32,
+    "minutes_rounded": 3.4
+  },
+  "actual_model": {
+    "passed": 1,
+    "seconds": 4.93
+  },
+  "deployment": {
+    "passed": 3,
+    "seconds": 13.44
+  },
+  "scope": "Capacity observer modes baseline; excludes later notification pacing changes; capacity workloads are local evidence, not part of this CI"
+}

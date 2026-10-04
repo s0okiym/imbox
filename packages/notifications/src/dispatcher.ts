@@ -35,16 +35,19 @@ export function createNotificationDispatcher(options: { db: Db; historyHours?: n
     const batches = limit(query.limit ?? 50, 200);
     const fanoutLimit = limit(query.fanoutLimit ?? 100, 200);
     // No watermark: a transaction can commit an older ID/time after a newer transaction.
-    const backfilled = backfillComplete.has(tenantId)?0:await withTenant(options.db, tenantId, async (tx) =>
-      Number(
-        (
-          await sql`insert into notification_event_queue(tenant_id,event_id) select e.tenant_id,e.id from domain_events e where not exists(select 1 from notification_event_queue q where q.event_id=e.id) order by e.created_at,e.id limit ${batches} on conflict do nothing`.execute(
-            tx,
-          )
-        ).numAffectedRows ?? 0n,
-      ),
-    );
-    if(backfilled<batches) backfillComplete.add(tenantId);
+    const backfilled = backfillComplete.has(tenantId)
+      ? 0
+      : await withTenant(options.db, tenantId, async (tx) =>
+          Number(
+            (
+              await sql`insert into notification_event_queue(tenant_id,event_id) select e.tenant_id,e.id from domain_events e where not exists(select 1 from notification_event_queue q where q.event_id=e.id) order by e.created_at,e.id limit ${batches} on conflict do nothing`.execute(
+                tx,
+              )
+            ).numAffectedRows ?? 0n,
+          ),
+        );
+    if (backfilled < batches) backfillComplete.add(tenantId);
+    let processed = 0;
     let completed = 0;
     let recipients = 0;
     let outboxCompleted = 0;
@@ -105,6 +108,7 @@ export function createNotificationDispatcher(options: { db: Db; historyHours?: n
         return { complete: !more, count: actors.length, closed };
       });
       if (!result) break;
+      processed++;
       completed += Number(result.complete);
       recipients += result.count;
       outboxCompleted += result.closed;
@@ -122,6 +126,13 @@ export function createNotificationDispatcher(options: { db: Db; historyHours?: n
       for (const row of rows) n += await finishNonConversation(tx, tenantId, row.event_id);
       return n;
     });
-    return { backfilled, completed, recipients, outbox_completed: outboxCompleted };
+    return {
+      backfilled,
+      processed,
+      batch_full: processed === batches || backfilled === batches,
+      completed,
+      recipients,
+      outbox_completed: outboxCompleted,
+    };
   };
 }

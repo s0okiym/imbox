@@ -108,6 +108,29 @@ async function block(id: string) {
   });
 }
 describe('durable authorization-aware notification intents', () => {
+  it('reports a full partial-fanout batch until every current recipient is handled exactly once', async () => {
+    const c = await conversation(true);
+    await dispatch(f.tenantId);
+    await send(c.id);
+    const first = await dispatch(f.tenantId, { limit: 1, fanoutLimit: 1 });
+    expect(first).toMatchObject({ processed: 1, completed: 0, recipients: 1, batch_full: true });
+    const second = await dispatch(f.tenantId, { limit: 1, fanoutLimit: 1 });
+    expect(second).toMatchObject({ processed: 1, completed: 1, recipients: 1, batch_full: true });
+    const empty = await dispatch(f.tenantId, { limit: 1, fanoutLimit: 1 });
+    expect(empty).toMatchObject({ processed: 0, completed: 0, recipients: 0, batch_full: false });
+    await withTenant(db.db, f.tenantId, async (tx) => {
+      const rows = (
+        await sql<{
+          recipient_id: string;
+        }>`select recipient_id from notification_intents where source_kind='message' order by recipient_id`.execute(
+          tx,
+        )
+      ).rows;
+      expect(rows.map((r) => r.recipient_id)).toEqual(
+        [f.bob.principalId, f.charlie.principalId].sort(),
+      );
+    });
+  });
   it('coalesces conversation notifications, tolerates duplicates and late older work without taking projector outbox rows', async () => {
     const c = await conversation();
     const first = await send(c.id);

@@ -276,13 +276,14 @@ export async function runCapacityProbe() {
     const dispatchNotifications = createNotificationDispatcher({ db: workerDb });
     notificationPump = (async () => {
       while (!stop) {
+        let full = false;
         try {
-          await dispatchNotifications(f.tenantId);
+          full = (await dispatchNotifications(f.tenantId)).batch_full;
         } catch {
           workerFailures++;
           error('notification_dispatch');
         }
-        await delay(250);
+        await delay(full ? 0 : 250);
       }
     })();
     sampler = (async () => {
