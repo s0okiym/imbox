@@ -16087,6 +16087,9 @@
         "title": "StoredArtifact",
         "type": "object",
         "properties": {
+          "can_append_version": {
+            "type": "boolean"
+          },
           "id": {
             "$ref": "#/components/schemas/Identifier"
           },

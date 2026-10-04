@@ -390,7 +390,7 @@ export function ResourceWorkspace({
                   onChanged={changedArtifact}
                   accessLost={accessLost}
                   refresh={refresh}
-                  editable={selectedArtifact.created_by === session.principal.id}
+                  editable={selectedArtifact.can_append_version ?? false}
                   {...(session.capabilities.includes('artifacts.comments')
                     ? { collaboration: { session, conversations, tasks } }
                     : {})}

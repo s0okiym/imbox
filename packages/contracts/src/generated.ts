@@ -949,6 +949,7 @@ export interface StoredArtifactPage {
   next_cursor?: Cursor;
 }
 export interface StoredArtifact {
+  can_append_version?: boolean;
   id: Identifier;
   title: string;
   kind: 'text' | 'markdown' | 'file';

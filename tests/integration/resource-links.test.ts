@@ -83,11 +83,12 @@ const group = (history_policy: 'all' | 'since_join' = 'all') =>
 async function ready(
   scope: { conversation_id: string } | { task_id: string },
   text = 'A fixed evidence source',
+  auth = fixture.alice,
 ) {
   const bytes = Buffer.from(text);
   const sha256 = createHash('sha256').update(bytes).digest('hex');
   const ticket = await resources.createUpload(
-    fixture.alice,
+    auth,
     {
       ...scope,
       filename: 'evidence.md',
@@ -103,7 +104,7 @@ async function ready(
     body: bytes,
   });
   expect(uploaded.status, await uploaded.text()).toBe(200);
-  return resources.completeUpload(fixture.alice, ticket.id, key());
+  return resources.completeUpload(auth, ticket.id, key());
 }
 const send = (conversationId: string, resourceId: string, token = key()) =>
   messaging.createMessage(
@@ -312,6 +313,132 @@ describe('transactional message attachments and fixed Task Artifact evidence', (
     );
     expect(returned.decision).toBe('return');
     expect((await tasks.getTask(fixture.alice, work.id)).status).toBe('active');
+  });
+  it('allows current task contributors to append with explicit authorship, rejects stale competing edits and fences demotion', async () => {
+    let work = await task();
+    work = await tasks.changeParticipant(
+      fixture.alice,
+      work.id,
+      fixture.bob.principalId,
+      'contributor',
+      work.version,
+      key(),
+    );
+    work = await tasks.changeParticipant(
+      fixture.alice,
+      work.id,
+      fixture.charlie.principalId,
+      'reviewer',
+      work.version,
+      key(),
+    );
+    const first = await ready({ task_id: work.id }, 'Original');
+    const artifact = await resources.createArtifact(
+      fixture.alice,
+      { resource_id: first.id, title: 'Shared task output' },
+      key(),
+    );
+    expect((await resources.getArtifact(fixture.bob, artifact.id)).can_append_version).toBe(true);
+    expect((await resources.getArtifact(fixture.charlie, artifact.id)).can_append_version).toBe(
+      false,
+    );
+    const bobContent = await ready({ task_id: work.id }, 'Bob contribution', fixture.bob);
+    await expect(
+      resources.createArtifactVersion(
+        fixture.charlie,
+        artifact.id,
+        { resource_id: bobContent.id },
+        artifact.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    const bobKey = key();
+    const updated = await resources.createArtifactVersion(
+      fixture.bob,
+      artifact.id,
+      { resource_id: bobContent.id },
+      artifact.version,
+      bobKey,
+    );
+    expect(updated.created_by).toBe(fixture.alice.principalId);
+    const versions = await resources.listArtifactVersions(fixture.alice, artifact.id);
+    expect(versions.items.at(-1)).toMatchObject({
+      created_by: fixture.bob.principalId,
+      resource: { sha256: bobContent.sha256 },
+    });
+    const aliceContent = await ready({ task_id: work.id }, 'Alice racing update');
+    const bobNext = await ready({ task_id: work.id }, 'Bob racing update', fixture.bob);
+    const results = await Promise.allSettled([
+      resources.createArtifactVersion(
+        fixture.alice,
+        artifact.id,
+        { resource_id: aliceContent.id },
+        updated.version,
+        key(),
+      ),
+      resources.createArtifactVersion(
+        fixture.bob,
+        artifact.id,
+        { resource_id: bobNext.id },
+        updated.version,
+        key(),
+      ),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(results.find((r) => r.status === 'rejected')).toMatchObject({
+      reason: { code: 'VERSION_CONFLICT' },
+    });
+    const current = await resources.getArtifact(fixture.alice, artifact.id);
+    expect(current.head_version).toBe('3');
+    await tasks.changeParticipant(
+      fixture.alice,
+      work.id,
+      fixture.bob.principalId,
+      'observer',
+      work.version,
+      key(),
+    );
+    expect((await resources.getArtifact(fixture.bob, artifact.id)).can_append_version).toBe(false);
+    await expect(
+      resources.createArtifactVersion(
+        fixture.bob,
+        artifact.id,
+        { resource_id: bobContent.id },
+        artifact.version,
+        bobKey,
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(
+      resources.createArtifactVersion(
+        fixture.bob,
+        artifact.id,
+        { resource_id: bobNext.id },
+        current.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect((await resources.listArtifactVersions(fixture.alice, artifact.id)).items).toHaveLength(
+      3,
+    );
+  });
+  it('keeps conversation artifacts creator-only even for another conversation writer', async () => {
+    const chat = await group();
+    const content = await ready({ conversation_id: chat.id });
+    const artifact = await resources.createArtifact(
+      fixture.alice,
+      { resource_id: content.id, title: 'Creator-owned output' },
+      key(),
+    );
+    expect((await resources.getArtifact(fixture.bob, artifact.id)).can_append_version).toBe(false);
+    await expect(
+      resources.createArtifactVersion(
+        fixture.bob,
+        artifact.id,
+        { resource_id: content.id },
+        artifact.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
   it('serializes competing Artifact versions without replacing the evidence already submitted to two reviewers', async () => {
     let work = await tasks.createTask(

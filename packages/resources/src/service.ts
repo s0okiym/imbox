@@ -61,7 +61,7 @@ export function createResourceService(options: {
       (await sql<ArtifactRow>`select * from artifacts where id=${id}`.execute(tx)).rows[0] ??
       fail('NOT_FOUND', 404);
     await scopeAccess(tx, auth, row, write, row.created_at);
-    if (write && row.created_by !== auth.principalId) fail('FORBIDDEN', 403);
+    if (write && !row.task_id && row.created_by !== auth.principalId) fail('FORBIDDEN', 403);
     return (
       await sql<ArtifactRow>`select * from artifacts where id=${id} ${write ? sql`for update` : sql`for share`}`.execute(
         tx,
@@ -78,7 +78,21 @@ export function createResourceService(options: {
       )
     ).rows[0]!;
     const content = await resource(tx, auth, latest.resource_id);
+    let canAppendVersion = false;
+    if (row.task_id || row.created_by === auth.principalId) {
+      try {
+        await scopeAccess(tx, auth, row, true, row.created_at);
+        canAppendVersion = true;
+      } catch (error) {
+        if (
+          !(error instanceof ApplicationError) ||
+          !['FORBIDDEN', 'NOT_FOUND', 'VERSION_CONFLICT'].includes(error.code)
+        )
+          throw error;
+      }
+    }
     return {
+      can_append_version: canAppendVersion,
       id: row.id,
       title: row.title,
       kind: row.kind,

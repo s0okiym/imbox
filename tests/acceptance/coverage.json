@@ -241,9 +241,10 @@
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
         "docs/testing/artifact-review-races-2026-10-05.md",
-        "docs/testing/artifact-disclosure-version-2026-10-05.md"
+        "docs/testing/artifact-disclosure-version-2026-10-05.md",
+        "docs/testing/artifact-contributors-2026-10-05.md"
       ],
-      "notes": "已补产物同版本双写竞争（仅一次成功）以及新版写入与两名审核者同时验收（唯一决定/事件、幂等重试、固定旧版 hash）；删除来源拒绝仍保留。当前 Artifact 仅创建者能更新，跨作者编辑策略及外部发布 Action 对旧批准/新版产物的联合矩阵仍未完成。 2026-10-05 补验内部分享：新 head 不改变旧分享字节，旧摘要配新版本及旧幂等键换版均拒绝，新明确授权才能下载新版；不替代外部发布 Action 批准矩阵。"
+      "notes": "任务产物已允许当前 owner/contributor 追加不可变版本，并记录实际版本作者；真实 Alice/Bob 竞争同一版本仅一人成功，降为 observer 后新提交和旧幂等重放均拒绝。4 项资源浏览器流程通过，含贡献者上传新版和降权后入口消失。会话产物仍限创建者。固定证据、多审核者竞争和分享版本隔离已有证据；分支/合并及外部发布 Action 旧批准/新产物联合矩阵仍待完成。"
     },
     {
       "id": "AC-19",

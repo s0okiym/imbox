@@ -374,3 +374,62 @@ test('fixed-version comments anchor selected Unicode text and a controlled share
     await x.close();
   }
 });
+
+test('task contributor appends an Artifact version and loses the edit entry after demotion', async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  try {
+    const work = await f.tasks.changeParticipant(
+      f.f.alice,
+      f.task.id,
+      f.f.bob.principalId,
+      'contributor',
+      f.task.version,
+      randomUUID(),
+    );
+    await page.getByRole('button', { name: '文件与制品', exact: true }).click();
+    await page
+      .getByRole('combobox', { name: '文件访问范围', exact: true })
+      .selectOption(`task:${work.id}`);
+    await page.getByRole('button', { name: '上传文件', exact: true }).first().click();
+    await upload(page, 'owner.txt', '负责人原始版本');
+    await expect(page.getByLabel('文件详情')).toBeVisible();
+    await page.getByRole('button', { name: '保存为版本化制品', exact: true }).click();
+    await page.getByRole('textbox', { name: '制品标题', exact: true }).fill('多人协作成果');
+    await page.getByRole('button', { name: '创建制品', exact: true }).click();
+    await expect(page.getByLabel('制品详情')).toBeVisible();
+    const artifact = (await f.resources.listArtifacts(f.f.alice, { task_id: work.id })).items[0]!;
+    await f.login(f.f.bob.principalId);
+    await page.getByRole('button', { name: '文件与制品', exact: true }).click();
+    await page
+      .getByRole('combobox', { name: '文件访问范围', exact: true })
+      .selectOption(`task:${work.id}`);
+    await page.getByRole('tab', { name: '制品版本', exact: true }).click();
+    await page
+      .getByRole('navigation', { name: '制品列表' })
+      .getByRole('button', { name: /多人协作成果/ })
+      .click();
+    await page.getByRole('button', { name: '上传新版本', exact: true }).click();
+    await upload(page, 'contributor.txt', '贡献者新增版本');
+    await page.getByRole('button', { name: '追加新版本', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: /^版本 2 的固定引用/ })).toBeVisible();
+    const versions = await f.resources.listArtifactVersions(f.f.alice, artifact.id);
+    expect(versions.items.at(-1)?.created_by).toBe(f.f.bob.principalId);
+    await page.getByRole('button', { name: /^版本 2 contributor.txt/ }).click();
+    expect(await downloadedText(page)).toBe('贡献者新增版本');
+    await f.tasks.changeParticipant(
+      f.f.alice,
+      work.id,
+      f.f.bob.principalId,
+      'observer',
+      work.version,
+      randomUUID(),
+    );
+    await page.getByRole('button', { name: '刷新资源', exact: true }).click();
+    await expect(page.getByRole('button', { name: '上传新版本', exact: true })).toHaveCount(0);
+    expect((await f.resources.getArtifact(f.f.bob, artifact.id)).can_append_version).toBe(false);
+  } finally {
+    await f.close();
+  }
+});

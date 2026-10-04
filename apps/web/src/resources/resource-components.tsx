@@ -357,6 +357,7 @@ export function ArtifactContent({
     <>
       <p className="execution-note">
         当前版本 {artifact.head_version}。每个版本固定内容；下载和证据引用都针对明确版本。
+        {artifact.resource.task_id && '任务负责人和贡献者可追加版本；并发修改需要刷新后重新提交。'}
       </p>
       {editable && (
         <button className="button subtle" onClick={() => setUploading(true)}>

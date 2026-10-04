@@ -170,3 +170,7 @@ Node.js 24.21.0、pnpm 10.34.6，PostgreSQL 18、SeaweedFS S3、Ollama 固定模
 ## 2026-10-05 Artifact 分享新旧版本隔离
 
 Artifact collaboration 8/8 集成通过（10.25 秒）。真实对象字节证明旧分享不随 head 更新，混用摘要及复用旧请求键换版均拒绝，新版需要新的明确分享。见 [版本隔离证据](artifact-disclosure-version-2026-10-05.md)。完整外部发布批准矩阵和跨作者编辑仍待完成，AC-18 保持 partial。
+
+## 2026-10-05 任务产物跨作者编辑
+
+当前任务 owner/contributor 已可追加版本，Web 根据服务端当前能力显示入口。真实跨作者版本竞争、只读角色拒绝和降权后幂等重放拒绝均通过：29 资源集成、188 单元、4 浏览器流程。详见 [多人编辑证据](artifact-contributors-2026-10-05.md)。分支/合并和外部发布批准矩阵仍待完成，AC-18 保持 partial。
