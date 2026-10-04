@@ -62,3 +62,5 @@ Worker 仅处理 `WORKER_TENANT_IDS` 列出的租户。部署时核查完整租�
 日常管理入口见 [组织与工作区成员管理](organization-management.md)，含已有人员添加/角色/停用/恢复及独立账本回退兼容要求。
 
 应用级镜像与 HTTPS/WSS 网关的部署入口见 [容器部署](container-deployment.md)。
+
+账号标识、绑定邀请、预览确认和新成员入组见 [成员邀请](member-invitations.md)。

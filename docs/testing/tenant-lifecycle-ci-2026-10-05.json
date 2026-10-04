@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "commit": "19e653c6908885f3191973b6467f01807cecd97f",
+  "run_id": 37226267210,
+  "job_id": 111506441408,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37226267210",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 181
+  },
+  "integration": {
+    "files": 34,
+    "passed": 267
+  },
+  "browser": {
+    "passed": 30,
+    "minutes_rounded": 3.1
+  },
+  "actual_model": {
+    "passed": 1
+  },
+  "deployment": {
+    "passed": 3
+  },
+  "scope": "Tenant membership lifecycle, including corrected browser selectors; excludes subsequent account/invitation changes"
+}

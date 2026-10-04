@@ -27,6 +27,85 @@ export function registerOrganizationRoutes(
     },
   };
   app.get(
+    '/v1/organization/invitations',
+    { schema: { querystring, response: { 200: schemas.OrganizationInvitationPage } } },
+    async (r) => organization.listInvitations(await auth(r), page(r)),
+  );
+  app.post(
+    '/v1/organization/invitations',
+    {
+      schema: {
+        body: schemas.CreateOrganizationInvitationInput,
+        response: { 201: schemas.CreatedOrganizationInvitation },
+      },
+    },
+    async (r, reply) =>
+      reply
+        .code(201)
+        .send(
+          await organization.createInvitation(
+            await auth(r),
+            assertContract('CreateOrganizationInvitationInput', r.body),
+            key(r),
+          ),
+        ),
+  );
+  app.post(
+    '/v1/organization/invitations/:id/revoke',
+    {
+      schema: {
+        params: schemas.ResourceParams,
+        body: schemas.RevokeOrganizationInvitationInput,
+        response: { 200: schemas.OrganizationInvitation },
+      },
+    },
+    async (r) => {
+      const a = await auth(r),
+        match = r.headers['if-match'];
+      if (typeof match !== 'string' || !/^"[1-9][0-9]*"$/.test(match))
+        throw new ApplicationError('VALIDATION_FAILED', 400);
+      return organization.revokeInvitation(
+        a,
+        id(r),
+        assertContract('RevokeOrganizationInvitationInput', r.body),
+        assertContract('Version', match.slice(1, -1)),
+        key(r),
+      );
+    },
+  );
+  app.post(
+    '/v1/account/invitations/preview',
+    {
+      schema: {
+        body: schemas.AcceptOrganizationInvitationInput,
+        response: { 200: schemas.OrganizationInvitationPreview },
+      },
+    },
+    async (r) => {
+      const account = await identity.account(authenticationInput(r));
+      return organization.previewInvitation(
+        account.principal.id,
+        assertContract('AcceptOrganizationInvitationInput', r.body),
+      );
+    },
+  );
+  app.post(
+    '/v1/account/invitations/accept',
+    {
+      schema: {
+        body: schemas.AcceptOrganizationInvitationInput,
+        response: { 200: schemas.AcceptedOrganizationInvitation },
+      },
+    },
+    async (r) => {
+      const account = await identity.account(authenticationInput(r));
+      return organization.acceptInvitation(
+        account.principal.id,
+        assertContract('AcceptOrganizationInvitationInput', r.body),
+      );
+    },
+  );
+  app.get(
     '/v1/organization/members',
     { schema: { querystring, response: { 200: schemas.ManagedTenantMemberPage } } },
     async (r) => organization.listTenantMembers(await auth(r), page(r)),

@@ -253,6 +253,12 @@ export async function applyPolicyRecord(tx: Tx, record: PolicyRecord) {
       }
       break;
     }
+    case 'revocation.invitation': {
+      await sql`update organization_invitations set status='revoked',version=version+1,updated_at=clock_timestamp() where id=${id} and version<=${record.target_version}::bigint and status='pending'`.execute(
+        tx,
+      );
+      break;
+    }
     case 'revocation.tenant_member': {
       await sql`update tenant_principals set status='disabled',membership_policy_version=membership_policy_version+1,authz_revision=authz_revision+1,version=version+1,updated_at=clock_timestamp() where principal_id=${id} and membership_policy_version<=${record.target_version}::bigint and status='active'`.execute(
         tx,

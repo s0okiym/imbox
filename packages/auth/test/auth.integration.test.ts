@@ -358,6 +358,26 @@ describe('OIDC authorization code flow over real HTTP', () => {
     expect(finish.headers.location).toBe('/work');
     expect(finish.cookies.find((item) => item.name === 'imbox_session')?.httpOnly).toBe(true);
     expect(finish.cookies.find((item) => item.name === 'imbox_oidc')?.value).toBe('');
+    const sessionCookie = finish.cookies.find((item) => item.name === 'imbox_session')!.value;
+    const account = await app.inject({
+      method: 'GET',
+      url: '/v1/account',
+      cookies: { imbox_session: sessionCookie },
+    });
+    expect(account.statusCode).toBe(200);
+    expect(account.json()).toMatchObject({ principal: { kind: 'human', status: 'active' } });
+    expect('issuer' in account.json()).toBe(false);
+    expect('subject' in account.json()).toBe(false);
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: '/v1/me',
+          cookies: { imbox_session: sessionCookie },
+        })
+      ).statusCode,
+    ).toBe(403);
+
     const replay = await app.inject({
       method: 'GET',
       url: callback.pathname + callback.search,

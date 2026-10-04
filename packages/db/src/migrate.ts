@@ -1,3 +1,4 @@
+import { organizationInvitationsSql } from './migrations/032-organization-invitations.js';
 import { tenantMembershipPolicySql } from './migrations/031-tenant-membership-policy.js';
 import { workspaceProvisioningSql } from './migrations/030-workspace-provisioning.js';
 import { webPushSql } from './migrations/029-web-push.js';
@@ -63,6 +64,7 @@ export const migrations = [
   { id: '029-web-push', sql: webPushSql },
   { id: '030-workspace-provisioning', sql: workspaceProvisioningSql },
   { id: '031-tenant-membership-policy', sql: tenantMembershipPolicySql },
+  { id: '032-organization-invitations', sql: organizationInvitationsSql },
 ] as const;
 
 /** Explicit command only. Atomic migration batch, immutable checksums, serialized owner DDL. */

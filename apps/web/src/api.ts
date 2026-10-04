@@ -89,6 +89,58 @@ export class ApiClient {
     return payload as T;
   }
 
+  account(signal?: AbortSignal): Promise<C['Account']> {
+    return this.request('/v1/account', signal ? { signal } : {});
+  }
+  previewInvitation(
+    body: C['AcceptOrganizationInvitationInput'],
+    signal: AbortSignal,
+  ): Promise<C['OrganizationInvitationPreview']> {
+    return this.request('/v1/account/invitations/preview', { method: 'POST', body, signal });
+  }
+  acceptInvitation(
+    body: C['AcceptOrganizationInvitationInput'],
+    signal: AbortSignal,
+  ): Promise<C['AcceptedOrganizationInvitation']> {
+    return this.request('/v1/account/invitations/accept', { method: 'POST', body, signal });
+  }
+  organizationInvitations(
+    signal: AbortSignal,
+    cursor?: string,
+  ): Promise<C['OrganizationInvitationPage']> {
+    return this.request(
+      '/v1/organization/invitations?' +
+        new URLSearchParams({ limit: '100', ...(cursor ? { cursor } : {}) }),
+      { signal },
+    );
+  }
+  createInvitation(
+    body: C['CreateOrganizationInvitationInput'],
+    idempotencyKey: string,
+    signal: AbortSignal,
+  ): Promise<C['CreatedOrganizationInvitation']> {
+    return this.request('/v1/organization/invitations', {
+      method: 'POST',
+      body,
+      idempotencyKey,
+      signal,
+    });
+  }
+  revokeInvitation(
+    id: string,
+    body: C['RevokeOrganizationInvitationInput'],
+    version: string,
+    idempotencyKey: string,
+    signal: AbortSignal,
+  ): Promise<C['OrganizationInvitation']> {
+    return this.request('/v1/organization/invitations/' + encodeURIComponent(id) + '/revoke', {
+      method: 'POST',
+      body,
+      version,
+      idempotencyKey,
+      signal,
+    });
+  }
   managedTenantMembers(
     signal: AbortSignal,
     cursor?: string,
@@ -321,6 +373,12 @@ export function describeError(error: unknown): string {
     UNAUTHENTICATED: '登录已失效，请重新登录。',
     FORBIDDEN: '当前身份无法访问此内容，已清除相关视图。',
     NOT_FOUND: '此内容不可用或你已失去访问权限。',
+    INVITATION_UNAVAILABLE: '邀请不可用、已过期或不属于当前账号，请联系邀请人。',
+    INVITATION_PENDING_EXISTS: '该账号已有待处理邀请，请先撤销旧邀请再创建。',
+    INVITATION_ALREADY_ACCEPTED: '邀请已经接受，请通过组织成员管理调整权限。',
+    INVITATION_KEY_CHANGED: '部署密钥已轮换，请撤销旧邀请后重新创建。',
+    ALREADY_ORGANIZATION_MEMBER:
+      '该账号已有组织成员记录，请使用成员管理处理，邀请不能恢复已停用成员。',
     LAST_TENANT_OWNER: '请先指定另一名有效的组织所有者，再停用或降权当前所有者。',
     LAST_WORKSPACE_ADMIN: '请先指定另一名有效的工作区管理员，再停用或降权当前管理员。',
     VERSION_CONFLICT: '内容已被更新。请查看最新版本后重新编辑。',

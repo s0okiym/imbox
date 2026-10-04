@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "recorded_at": "2026-10-05T03:45:49.654573+08:00",
+  "parent_commit": "19e653c6908885f3191973b6467f01807cecd97f",
+  "source_index_sha256": "ae768179bed18835c74badca38c20191f9020294cf6b3dabdbc815e4a8271305",
+  "source_index_command": "git ls-files -s -- . ':!docs/**' ':!README.md' | sha256sum",
+  "lock_sha256": "8523fe4133a22be8e649c4ed6e08f894da6d16bf9198613e3b5c0edfed79f880",
+  "migration": "032-organization-invitations",
+  "engineering": {
+    "status": "passed",
+    "command": "pnpm verify",
+    "follow_up": "Final HTTP preview assertions passed focused and full integration; CI redaction rule separately checked with synthetic credentials"
+  },
+  "unit": {
+    "files": 32,
+    "passed": 181,
+    "seconds": 7.77
+  },
+  "integration": {
+    "files": 35,
+    "passed": 277,
+    "seconds": 220.53
+  },
+  "browser": {
+    "passed": 31,
+    "minutes_rounded": 5.9,
+    "retries": 0,
+    "initial_full_attempt": {
+      "passed": 30,
+      "failed": 1,
+      "minutes_rounded": 6.0,
+      "failure": "Readonly textarea exact-label locator failed; replaced with password input, then preview/confirmation added and full suite rerun"
+    }
+  },
+  "actual_model": {
+    "passed": 1,
+    "seconds": 10.71
+  },
+  "deployment": {
+    "passed": 3,
+    "seconds": 21.29,
+    "verified_at": "2026-10-04T19:45:16.770Z",
+    "images": {
+      "api": "sha256:cd3bf1c8c745a9b5aa8d7db99d5d253317741a42e9f96d99e425c349aecd90b6",
+      "worker": "sha256:a0513a20e5b7fa5d330970a023d29a4c9d170617d67bce09f1c898624bd5b80c",
+      "tool-runner": "sha256:b6473e10d9b4dbd675227692aee8019583bb68c12a6b9b213ddab937f5980b95",
+      "web": "sha256:6aaff392c94901bca452f917a177b286f1812fdc5136c5e6c06ae267a9e5deac"
+    },
+    "checks": [
+      "frozen-production-dependencies",
+      "non-root",
+      "read-only-root",
+      "TLS-SPA-cache",
+      "API-no-store",
+      "production-dev-login-disabled",
+      "cookie-CSRF",
+      "worker-message-projection",
+      "WSS-upgrade",
+      "API-restart"
+    ],
+    "scope": "Local Docker deployment using a fixture session and localhost CA; no production IdP, ACME domain or external provider acceptance claimed"
+  },
+  "regression_catalog": {
+    "files": 85,
+    "named_declarations": 472,
+    "check": "passed"
+  },
+  "acceptance": {
+    "verified": 27,
+    "partial": 13,
+    "pending": 1,
+    "production_gate": "blocked"
+  },
+  "remote_ci": "pending for this commit; parent result archived separately"
+}

@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 83 个测试文件、461 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 85 个测试文件、472 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -226,10 +226,10 @@
 | [it:291](../../packages/auth/test/auth.integration.test.ts#L291) | Opaque browser sessions with real database roles → allows only own session inspection/revocation and does not expose hashes |
 | [it:307](../../packages/auth/test/auth.integration.test.ts#L307) | Opaque browser sessions with real database roles → development login is closed by default, denies nonallowlisted identities and is forbidden in production |
 | [it:345](../../packages/auth/test/auth.integration.test.ts#L345) | OIDC authorization code flow over real HTTP → sets a bound login cookie and rotates to a session through the actual callback route |
-| [it:370](../../packages/auth/test/auth.integration.test.ts#L370) | OIDC authorization code flow over real HTTP → validates PKCE/state/nonce and JWT signature, maps issuer+subject, and consumes attempt exactly once |
-| [it:395](../../packages/auth/test/auth.integration.test.ts#L395) | OIDC authorization code flow over real HTTP → rejects incorrect state, wrong browser binding, wrong callback URL and expired attempts before token exchange |
-| [it.each:422](../../packages/auth/test/auth.integration.test.ts#L422) | OIDC authorization code flow over real HTTP → rejects invalid token %s |
-| [it:433](../../packages/auth/test/auth.integration.test.ts#L433) | OIDC authorization code flow over real HTTP → rejects open redirects and concurrent callback replay |
+| [it:390](../../packages/auth/test/auth.integration.test.ts#L390) | OIDC authorization code flow over real HTTP → validates PKCE/state/nonce and JWT signature, maps issuer+subject, and consumes attempt exactly once |
+| [it:415](../../packages/auth/test/auth.integration.test.ts#L415) | OIDC authorization code flow over real HTTP → rejects incorrect state, wrong browser binding, wrong callback URL and expired attempts before token exchange |
+| [it.each:442](../../packages/auth/test/auth.integration.test.ts#L442) | OIDC authorization code flow over real HTTP → rejects invalid token %s |
+| [it:453](../../packages/auth/test/auth.integration.test.ts#L453) | OIDC authorization code flow over real HTTP → rejects open redirects and concurrent callback replay |
 
 ## packages/contracts/test/contracts.test.ts
 
@@ -382,6 +382,12 @@
 | 声明 | 用例 |
 |---|---|
 | [test:11](../../tests/e2e/governance.spec.ts#L11) | exports only the selected live scope, verifies a complete file, and shows deployed privacy policy |
+
+## tests/e2e/invitations.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:8](../../tests/e2e/invitations.spec.ts#L8) | a logged-in unjoined person uses their own account identity to accept a bound invitation; owners can revoke unused codes |
 
 ## tests/e2e/knowledge.spec.ts
 
@@ -584,6 +590,21 @@
 | [it:78](../../tests/integration/http.test.ts#L78) | HTTP contracts, real sessions and persisted messaging → rejects unsafe cross-origin requests and forged actor fields before persistence |
 | [it:101](../../tests/integration/http.test.ts#L101) | HTTP contracts, real sessions and persisted messaging → sends, reads, edits and retracts messages with strong ETags and server-authoritative authors |
 | [it:161](../../tests/integration/http.test.ts#L161) | HTTP contracts, real sessions and persisted messaging → normalizes malformed, oversized and unknown endpoint errors without stack or credential leaks |
+
+## tests/integration/invitations.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:61](../../tests/integration/invitations.test.ts#L61) | issues only principal-bound human invitations, retains no plaintext code, and retries creation with the same credential |
+| [it:114](../../tests/integration/invitations.test.ts#L114) | joins once under concurrent acceptance and never restores a later disabled membership on receipt retry |
+| [it:142](../../tests/integration/invitations.test.ts#L142) | uses database expiry, permits explicit revocation of expired invitations, and never silently replaces a pending grant |
+| [it:169](../../tests/integration/invitations.test.ts#L169) | fences invitations after issuer authority is changed and restored |
+| [it:201](../../tests/integration/invitations.test.ts#L201) | serializes invitation acceptance against revocation without a partial membership grant |
+| [it:217](../../tests/integration/invitations.test.ts#L217) | independently persists consumption before database commit and prevents regrant after rollback |
+| [it:246](../../tests/integration/invitations.test.ts#L246) | fails closed before granting membership when the independent consumption ledger is unavailable |
+| [it:262](../../tests/integration/invitations.test.ts#L262) | allows a session-only account to inspect its own identity, requires CSRF to join, and rechecks tenant access afterward |
+| [it:349](../../tests/integration/invitations.test.ts#L349) | previews only the bound recipient’s grant without joining, and rejects metadata after access is disabled |
+| [it:378](../../tests/integration/invitations.test.ts#L378) | rechecks expiry after slow durable consumption and rolls back the entire membership grant |
 
 ## tests/integration/knowledge.test.ts
 

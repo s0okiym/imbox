@@ -53,14 +53,12 @@ export async function registerAuthRoutes(
         return await handler(request, reply);
       } catch (error) {
         if (error instanceof AuthError)
-          return reply
-            .code(error.statusCode)
-            .send({
-              code: error.code,
-              message: error.message,
-              request_id: request.id,
-              retryable: error.statusCode === 503,
-            });
+          return reply.code(error.statusCode).send({
+            code: error.code,
+            message: error.message,
+            request_id: request.id,
+            retryable: error.statusCode === 503,
+          });
         throw error;
       }
     };
@@ -147,6 +145,10 @@ export async function registerAuthRoutes(
       });
       return reply.code(204).send();
     }),
+  );
+  app.get(
+    '/v1/account',
+    handled(async (request) => identity.account(authenticationInput(request))),
   );
   app.get(
     '/v1/me',

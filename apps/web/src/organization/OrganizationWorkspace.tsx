@@ -1,3 +1,4 @@
+import { Invitations } from './Invitations.js';
 import { TenantMembers } from './TenantMembers.js';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { ContractTypes as C } from '@imbox/contracts';
@@ -267,6 +268,7 @@ function OrganizationScope({ session, onClose, onSessionLost, onSessionUpdated }
             onSessionUpdated={onSessionUpdated}
             onChanged={() => setRevision((n) => n + 1)}
           />
+          <Invitations api={api} workspaces={workspaces} onSessionLost={onSessionLost} />
           <form onSubmit={(e) => void submit(e, 'create')}>
             <label>
               新工作区名称

@@ -45,7 +45,7 @@ Web 默认 `http://localhost:5173`，同源代理 API 4100。修改 Web 地址�
 
 ## 验证
 
-最近完成的远程候选 `d946f34` 通过完整 CI：181 单元、253 集成、27 浏览器以及 1 项真实模型验证，见 [候选证据](docs/testing/handoff-manifest-ci-2026-10-05.json)。后续组织管理增量的源码与实测结果见 [本轮证据](docs/testing/organization-management-evidence-2026-10-05.md)；生产准出门槛独立保留。
+已归档远程候选 `19e653c` 通过完整 CI：181 单元、267 集成、30 浏览器、1 项真实模型及 3 项容器验证，见 [候选证据](docs/testing/tenant-lifecycle-ci-2026-10-05.json)。新成员可通过 [账号与邀请](docs/operations/member-invitations.md) 接入；该增量另行验证，生产准出门槛独立保留。
 
 ```sh
 pnpm verify

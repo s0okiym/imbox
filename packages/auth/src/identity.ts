@@ -246,6 +246,23 @@ export function createIdentityService(options: IdentityOptions) {
         sessionId: session.id,
       };
     },
+    async account(input: AuthenticationInput) {
+      if (input.authorization !== undefined)
+        throw new AuthError('AUTH_METHOD_UNSUPPORTED', 401, 'Use session authentication');
+      const session = await currentSession(input.cookie);
+      checkUnsafeRequest(input, session);
+      return {
+        principal: {
+          id: session.principal_id,
+          kind: 'human' as const,
+          display_name: session.display_name,
+          status: 'active' as const,
+        },
+        csrf_token: secrets.csrfToken(input.cookie!),
+        session_id: session.id,
+        session_expires_at: new Date(session.expires_at).toISOString(),
+      };
+    },
     async me(input: AuthenticationInput) {
       const auth = await this.authenticate(input);
       const session = await currentSession(input.cookie);

@@ -4,7 +4,7 @@
 
 ## 身份准备
 
-先配置实际 OIDC 提供方、正确的回调地址和生产 HTTPS。用户完成一次 OIDC 登录后，平台按精确 `(issuer, subject)` 创建或找到全局 human principal；还没有组织权限的用户不能访问工作区。由部署管理员在受控数据库会话中核对 `external_identities` 的精确 issuer/subject 与 `principals`，取得用户 UUID。不能按邮件地址或同名显示名称猜测、合并用户，也不能将 Agent UUID 当作人类管理员。
+先配置实际 OIDC 提供方、正确的回调地址和生产 HTTPS。用户完成一次 OIDC 登录后，平台按精确 `(issuer, subject)` 创建或找到全局 human principal；还没有组织权限的用户不能访问工作区。用户可在“当前账号与入组”查看自己的 UUID 并交给部署管理员；必要时管理员在受控数据库会话中核对 `external_identities` 的精确 issuer/subject 与 `principals`。不能按邮件地址或同名显示名称猜测、合并用户，也不能将 Agent UUID 当作人类管理员。
 
 本机试用可使用开发 seed 已创建的 human UUID。真实生产不得启用开发登录或把 Alice/Bob 种子身份作为业务管理员。
 
@@ -42,4 +42,4 @@ pnpm workspace:provision /absolute/private/workspace.json --apply
 
 运维 owner 可查询 `workspace_provisioning_receipts` 核对组织、工作区、清单摘要、申请人、变更引用、数据库操作者和时间。运行账号没有此表的授权；回执不经过聊天事件广播。迁移 owner 本身具有管理数据库的能力，其凭证与数据库审计需要在部署环境独立保管。
 
-当前边界：入口只解决首次开户与初始成员导入。日常组织角色/停用/恢复和多工作区成员管理已有 Web 入口，见 [组织管理](organization-management.md)；自助邀请及新增人员入组仍需后续实现；不要将这个命令用于绕过正常撤权流程。真实 IdP/TLS、生产部署和恢复后组织授权复核仍按准出门槛验收。
+当前边界：入口只解决首次开户与初始成员导入。日常组织角色/停用/恢复和多工作区成员管理已有 Web 入口，见 [组织管理](organization-management.md)；绑定账号的新成员邀请已有 [接入入口](member-invitations.md)，用户可自行提供已登录账号的 UUID；不要将这个命令用于绕过正常撤权流程。真实 IdP/TLS、生产部署和恢复后组织授权复核仍按准出门槛验收。

@@ -12,6 +12,411 @@
     }
   ],
   "paths": {
+    "/v1/account/invitations/preview": {
+      "post": {
+        "operationId": "previewOrganizationInvitation",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationInvitationPreview"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptOrganizationInvitationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account": {
+      "get": {
+        "operationId": "getCurrentAccount",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/invitations/accept": {
+      "post": {
+        "operationId": "acceptOrganizationInvitation",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedOrganizationInvitation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptOrganizationInvitationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organization/invitations": {
+      "get": {
+        "operationId": "listOrganizationInvitations",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationInvitationPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOrganizationInvitation",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IdempotencyKey"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedOrganizationInvitation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationInvitationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organization/invitations/{id}/revoke": {
+      "post": {
+        "operationId": "revokeOrganizationInvitation",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IdempotencyKey"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 256,
+              "pattern": "^\"[^\"\\r\\n]+\"$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationInvitation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeOrganizationInvitationInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/organization/members": {
       "get": {
         "operationId": "listManagedTenantMembers",
@@ -12446,6 +12851,231 @@
       }
     },
     "schemas": {
+      "OrganizationInvitationPreview": {
+        "title": "OrganizationInvitationPreview",
+        "type": "object",
+        "properties": {
+          "invitation_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "tenant_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "tenant_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "workspace_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "role": {
+            "enum": [
+              "member",
+              "guest"
+            ]
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "accepted"
+            ]
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/UtcTimestamp"
+          }
+        },
+        "required": [
+          "invitation_id",
+          "tenant_id",
+          "tenant_name",
+          "workspace_id",
+          "workspace_name",
+          "role",
+          "status",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "OrganizationInvitation": {
+        "title": "OrganizationInvitation",
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "principal_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "role": {
+            "enum": [
+              "member",
+              "guest"
+            ]
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "accepted",
+              "revoked",
+              "expired"
+            ]
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/UtcTimestamp"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": [
+          "id",
+          "principal_id",
+          "workspace_id",
+          "role",
+          "status",
+          "version",
+          "expires_at",
+          "created_by"
+        ],
+        "additionalProperties": false
+      },
+      "OrganizationInvitationPage": {
+        "title": "OrganizationInvitationPage",
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationInvitation"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "$ref": "#/components/schemas/Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "CreateOrganizationInvitationInput": {
+        "title": "CreateOrganizationInvitationInput",
+        "type": "object",
+        "properties": {
+          "principal_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "role": {
+            "enum": [
+              "member",
+              "guest"
+            ]
+          },
+          "expires_in_hours": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "principal_id",
+          "workspace_id",
+          "role",
+          "expires_in_hours",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "CreatedOrganizationInvitation": {
+        "title": "CreatedOrganizationInvitation",
+        "type": "object",
+        "properties": {
+          "invitation": {
+            "$ref": "#/components/schemas/OrganizationInvitation"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "invitation"
+        ],
+        "additionalProperties": false
+      },
+      "RevokeOrganizationInvitationInput": {
+        "title": "RevokeOrganizationInvitationInput",
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "AcceptOrganizationInvitationInput": {
+        "title": "AcceptOrganizationInvitationInput",
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "AcceptedOrganizationInvitation": {
+        "title": "AcceptedOrganizationInvitation",
+        "type": "object",
+        "properties": {
+          "invitation_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "tenant_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": [
+          "invitation_id",
+          "tenant_id",
+          "workspace_id"
+        ],
+        "additionalProperties": false
+      },
       "ManagedTenantMember": {
         "title": "ManagedTenantMember",
         "type": "object",
@@ -17616,6 +18246,33 @@
           "expires_at",
           "revoked_at",
           "revision"
+        ],
+        "additionalProperties": false
+      },
+      "Account": {
+        "title": "Account",
+        "type": "object",
+        "properties": {
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          },
+          "csrf_token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "session_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "session_expires_at": {
+            "$ref": "#/components/schemas/UtcTimestamp"
+          }
+        },
+        "required": [
+          "principal",
+          "csrf_token",
+          "session_id",
+          "session_expires_at"
         ],
         "additionalProperties": false
       },

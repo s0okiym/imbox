@@ -127,6 +127,12 @@ export const definitions = {
     revoked_at: { anyOf: [ref('UtcTimestamp'), { type: 'null' }] },
     revision: ref('Version'),
   }),
+  Account: object({
+    principal: ref('Principal'),
+    csrf_token: str(128),
+    session_id: ref('Identifier'),
+    session_expires_at: ref('UtcTimestamp'),
+  }),
   Me: object({
     principal: ref('Principal'),
     tenant_id: ref('Identifier'),

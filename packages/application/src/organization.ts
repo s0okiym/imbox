@@ -1,3 +1,4 @@
+import { createInvitationOperations } from './organization-invitations.js';
 import { randomUUID } from 'node:crypto';
 import { assertContract, type ContractTypes as C } from '@imbox/contracts';
 import { sql, withTenant, lockPrincipal, type Db, type TenantTransaction as Tx } from '@imbox/db';
@@ -82,6 +83,11 @@ export function createOrganizationService(
     };
   }
   return {
+    ...createInvitationOperations(db, secret, {
+      ...options,
+      authorizeManager: admin,
+      lockManager: managementLock,
+    }),
     listTenantMembers(auth: AuthContext, input: C['PaginationQuery'] = {}) {
       return withTenant(db, auth.tenantId, async (tx) => {
         await admin(tx, auth);

@@ -1,3 +1,5 @@
+import { AccountEntry } from './organization/AccountEntry.js';
+import type { ContractTypes as C } from '@imbox/contracts';
 import { OrganizationWorkspace } from './organization/OrganizationWorkspace.js';
 import { VirtualMessages } from './messages/virtual-messages.js';
 import { AgentWorkspace } from './agents/AgentWorkspace.js';
@@ -95,6 +97,7 @@ export function App() {
     [navigate, session?.tenant_id, tenantId],
   );
   const [checking, setChecking] = useState(true);
+  const [joining, setJoining] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const authEpoch = useRef(0);
   const authController = useRef<AbortController | null>(null);
@@ -103,6 +106,7 @@ export function App() {
     authEpoch.current += 1;
     authController.current?.abort();
     setSession(null);
+    setJoining(false);
     setChecking(false);
     setNotice(message);
   }, []);
@@ -156,6 +160,7 @@ export function App() {
     authController.current = controller;
     const epoch = ++authEpoch.current;
     const next = nextTenant.trim();
+    setJoining(false);
     setTenantId(next);
     if (location.tenantId && location.tenantId !== next)
       navigate({ section: 'messages', tenantId: next }, true);
@@ -183,16 +188,19 @@ export function App() {
     }
   };
 
-  const logout = async (): Promise<void> => {
+  const logout = async (account?: C['Account']): Promise<void> => {
     const old = session;
     clearSession(null);
     await clearDeviceData().catch(() => {});
     broadcastSessionChange(sourceId);
-    if (old === null) return;
+    if (old === null && !account) return;
+    setChecking(true);
     try {
-      await new ApiClient(old.tenant_id, old.csrf_token).logout();
+      await new ApiClient(old?.tenant_id ?? '', old?.csrf_token ?? account!.csrf_token).logout();
     } catch {
       setNotice('本地内容已清除，服务端退出尚未确认。请联网后再次确认登录状态。');
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -200,7 +208,13 @@ export function App() {
     if (section === 'device') return <DeviceWorkspace onClose={() => setSection('messages')} />;
     return (
       <>
-        <LoginScreen tenantId={tenantId} checking={checking} notice={notice} onLogin={login} />
+        <LoginScreen
+          tenantId={tenantId}
+          checking={checking}
+          notice={notice}
+          onLogin={login}
+          onAccountLogout={logout}
+        />
         <button className="offline-entry" onClick={() => setSection('device')}>
           查看本机离线数据
         </button>
@@ -315,8 +329,14 @@ export function App() {
         >
           本机离线数据
         </button>
+        <button onClick={() => setJoining(true)}>账号与加入组织</button>
         <span>{session.workspaces[0]?.name ?? 'Imbox'}</span>
       </nav>
+      {joining && (
+        <Modal title="账号与加入组织" onClose={() => setJoining(false)}>
+          <AccountEntry checking={checking} onJoined={login} onLogout={logout} />
+        </Modal>
+      )}
       <div className="application-content">
         {section === 'device' ? (
           <DeviceWorkspace onClose={() => setSection('messages')} />
@@ -484,11 +504,13 @@ function LoginScreen({
   checking,
   notice,
   onLogin,
+  onAccountLogout,
 }: {
   readonly tenantId: string;
   readonly checking: boolean;
   readonly notice: string | null;
   readonly onLogin: (tenant: string, principalId?: string) => Promise<void>;
+  readonly onAccountLogout: (account: C['Account']) => Promise<void>;
 }) {
   const [tenant, setTenant] = useState(tenantId);
   return (
@@ -554,6 +576,7 @@ function LoginScreen({
           </button>
           {checking && <Spinner label="正在确认登录状态…" />}
           {notice !== null && <ErrorNotice>{notice}</ErrorNotice>}
+          <AccountEntry checking={checking} onJoined={onLogin} onLogout={onAccountLogout} />
           {DEV_LOGIN && (
             <section className="dev-login">
               <span className="dev-label">仅本地开发环境</span>
