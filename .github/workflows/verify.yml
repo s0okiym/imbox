@@ -13,6 +13,8 @@ jobs:
       POLICY_LEDGER_DIRECTORY: .artifacts/ci-policy-ledger
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
@@ -31,6 +33,10 @@ jobs:
         run: |
           set -o pipefail
           pnpm test:e2e 2>&1 | sed -u -E 's/(cookie:|authorization:|x-csrf-token:).*/\1 [REDACTED]/Ig; s/[a-f0-9-]{36}\.[a-f0-9-]{36}\.[A-Za-z0-9_-]{43}/[REDACTED_INVITATION]/g'
+      - name: Historical client compatibility (redact credentials)
+        run: |
+          set -o pipefail
+          pnpm test:compatibility 2>&1 | sed -u -E 's/(cookie:|authorization:|x-csrf-token:).*/\1 [REDACTED]/Ig; s/[a-f0-9-]{36}\.[a-f0-9-]{36}\.[A-Za-z0-9_-]{43}/[REDACTED_INVITATION]/g'
       - name: Start pinned local model and verify actual inference
         run: |
           docker compose -f infra/compose.yaml --profile model up -d model

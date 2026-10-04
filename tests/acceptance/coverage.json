@@ -308,14 +308,16 @@
         "tests/integration/http.test.ts",
         "tests/integration/agents.test.ts",
         "apps/web/src/conversation-sync.test.ts",
-        "tests/e2e/messaging.spec.ts"
+        "tests/e2e/messaging.spec.ts",
+        "tests/compatibility/historical-web.spec.ts"
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
-        "docs/testing/projection-compatibility-2026-10-05.md"
+        "docs/testing/projection-compatibility-2026-10-05.md",
+        "docs/testing/historical-client-2026-10-05.md"
       ],
-      "notes": "Web 对协议/schema v1 内未知展示实体使用固定本地提示，不展示未知载荷；HTTP 快照和 WebSocket 保持已知消息同步，控制帧及不兼容版本拒绝。已有未知路由/非法请求拒绝。真实历史客户端与服务端滚动升级、动作 schema 版本联合矩阵仍未完成。"
+      "notes": "Web 对协议/schema v1 内未知展示实体使用固定本地提示，不展示未知载荷；HTTP 快照和 WebSocket 保持已知消息同步，控制帧及不兼容版本拒绝。已有未知路由/非法请求拒绝。真实历史客户端与服务端滚动升级、动作 schema 版本联合矩阵仍未完成。 已补真实历史提交 2f75106 的独立生产 Web 构建，哈希核对后与当前服务端/当前客户端双向通信，未知展示安全降级后继续协作；生产登录、SW 更新、服务端滚动替换与动作 schema 组合仍待完成。"
     },
     {
       "id": "AC-22",

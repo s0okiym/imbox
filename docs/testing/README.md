@@ -112,3 +112,6 @@ Web Push 故障注入夹具把 Node ECDH 导出的私钥左侧补零到 32 字�
 组织管理回归：`tests/integration/organization.test.ts` 与 `tests/e2e/organization.spec.ts`。覆盖组织管理权、资源权限分离、成员命令、旧运行授权、独立账本恢复及 Web 明确确认；批次与限制见 [组织管理证据](organization-management-evidence-2026-10-05.md)。
 
 容器发布回归：先 `pnpm build:images`，再 `pnpm test:deployment`。使用真实 Docker API/Worker/Caddy，验证 TLS、WSS、会话/CSRF、消息投影及重启；配置前提与证明边界见 [容器部署](../operations/container-deployment.md)。
+
+
+历史前端兼容性使用 `pnpm test:compatibility`，固定源码提交、独立历史锁文件构建，并验证产物哈希后接入当前 API/WebSocket。默认基线为 `2f751069fc11062f48cfd5d377db2970e9088268`；可用 `IMBOX_COMPAT_CLIENT_COMMIT` 指定本地 Git 中已有的完整 SHA。脚本只执行离线依赖安装，缺少缓存会明确失败；不自动切换到当前客户端。边界与结果见 [历史制品验证](historical-client-2026-10-05.md)。

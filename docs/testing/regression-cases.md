@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 87 个测试文件、528 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 88 个测试文件、529 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -383,6 +383,12 @@
 | [it:53](../../packages/scheduling/src/calendar.test.ts#L53) | IANA daily calendar → uses inclusive start and an exclusive absolute deadline for one-off and daily schedules |
 | [it:71](../../packages/scheduling/src/calendar.test.ts#L71) | IANA daily calendar → rejects numeric offsets and invalid zones or local times |
 
+## tests/compatibility/historical-web.spec.ts
+
+| 声明 | 用例 |
+|---|---|
+| [test:30](../../tests/compatibility/historical-web.spec.ts#L30) | historical compiled client and current client exchange live messages and safely render future display events |
+
 ## tests/deployment/containers.test.ts
 
 | 声明 | 用例 |
@@ -428,7 +434,7 @@
 |---|---|
 | [test:23](../../tests/e2e/messaging.spec.ts#L23) | two people exchange messages, see edits/retractions, and never execute message markup |
 | [test:71](../../tests/e2e/messaging.spec.ts#L71) | a lost POST response reconciles to one persisted message and mobile layout remains usable |
-| [test:112](../../tests/e2e/messaging.spec.ts#L112) | an older client safely displays an unfamiliar projection notice and continues normal messaging |
+| [test:112](../../tests/e2e/messaging.spec.ts#L112) | the current client safely displays an unfamiliar projection notice and continues normal messaging |
 
 ## tests/e2e/notifications.spec.ts
 

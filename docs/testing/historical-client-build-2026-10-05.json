@@ -1,0 +1,13 @@
+{
+  "commit": "2f751069fc11062f48cfd5d377db2970e9088268",
+  "files": {
+    "assets/index-4wG66_KS.css": "851e09ca5efd415648185aca2ec8183b20e9915ea34370c33f75a076c6e68c67",
+    "assets/index-C7b8rTrQ.js": "49c8c7f74ba63b6f77b7155d3e02864ff7080a0fa169dd8cacc9e9ce9a347814",
+    "imbox-icon.svg": "643c048995fd62f4b83c3a5cd382c43a6605ad81f11119647acee03c06a910ea",
+    "index.html": "848136a39fd21b8106afad73a7602eee4c386e8c968000e94863f7f18ba09dad",
+    "manifest.webmanifest": "e3f508540361b5c003d1dbacc2aca4938b4bd0ff434b3ba1d96a9df106709eaa",
+    "sw.js": "1c90312a92379073c805bf5438b4fabf191a4267a9e283dcd34f6106ef2bfafe"
+  },
+  "server_parent": "91c2542",
+  "scope": "Historical/current production static clients with current API and WebSocket; local test-only same-origin proxy; service workers disabled."
+}

@@ -109,7 +109,7 @@ test('a lost POST response reconciles to one persisted message and mobile layout
   );
 });
 
-test('an older client safely displays an unfamiliar projection notice and continues normal messaging', async ({
+test('the current client safely displays an unfamiliar projection notice and continues normal messaging', async ({
   page,
 }) => {
   await login(page, 'Alice');

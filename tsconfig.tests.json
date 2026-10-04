@@ -12,6 +12,7 @@
     "tests/**/*.ts",
     "scripts/**/*.ts",
     "playwright.config.ts",
+    "playwright.compatibility.config.ts",
     "examples/**/*.ts"
   ]
 }

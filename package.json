@@ -29,6 +29,7 @@
     "db:migrate": "dotenv run -f .env -- pnpm --filter @imbox/db migrate",
     "db:seed": "tsx scripts/seed-dev.ts",
     "test:e2e": "playwright test",
+    "test:compatibility": "pnpm --filter @imbox/web build && node scripts/build-historical-web.mjs && playwright test --config playwright.compatibility.config.ts",
     "dev:web": "pnpm --filter @imbox/web dev",
     "db:seed:test": "tsx scripts/seed-dev.ts --test",
     "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
