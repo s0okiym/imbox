@@ -36,6 +36,9 @@ const connections = integer('CAPACITY_CONNECTIONS', 1000, 1000),
   history = integer('CAPACITY_HISTORY', 1000000, 1000000),
   seconds = integer('CAPACITY_SECONDS', 30, 300),
   rate = integer('CAPACITY_RATE', 50, 100);
+const profileFlag = process.env['CAPACITY_DB_PROFILE'] ?? '0';
+if (!['0', '1'].includes(profileFlag)) throw new Error('CAPACITY_DB_PROFILE must be 0 or 1');
+const databaseProfiling = profileFlag === '1';
 const percentile = (values: number[], p: number) =>
   values.length
     ? Math.round([...values].sort((a, b) => a - b)[Math.ceil(values.length * p) - 1]! * 100) / 100
@@ -103,9 +106,15 @@ export async function runCapacityProbe() {
     entry.maximum_waiting = Math.max(entry.maximum_waiting, event.waiting);
   };
   const owner = createDatabase(url(0), { max: 2, statementTimeoutMs: 120000 }),
-    db = createDatabase(url(1), { observe: observe('application') }),
-    identityDb = createDatabase(url(2), { max: 5, observe: observe('identity') }),
-    workerDb = createDatabase(url(1), { max: 5, observe: observe('worker') });
+    db = createDatabase(url(1), databaseProfiling ? { observe: observe('application') } : {}),
+    identityDb = createDatabase(url(2), {
+      max: 5,
+      ...(databaseProfiling ? { observe: observe('identity') } : {}),
+    }),
+    workerDb = createDatabase(url(1), {
+      max: 5,
+      ...(databaseProfiling ? { observe: observe('worker') } : {}),
+    });
   const sockets: WebSocket[] = [];
   let app: ReturnType<typeof createApp> | undefined,
     stop = false,
@@ -443,7 +452,7 @@ export async function runCapacityProbe() {
     );
     // Reconnection to 1,000 incremental facts is a separate scenario, not asserted by this probe.
     const report = {
-      version: 2,
+      version: 3,
       started_at: started,
       finished_at: new Date().toISOString(),
       fixture: {
@@ -464,6 +473,7 @@ export async function runCapacityProbe() {
         node: process.version,
         api_processes: 1,
         worker_loops: 2,
+        database_profiling: databaseProfiling,
         application_pool: 10,
         identity_pool: 5,
         worker_pool: 5,
@@ -481,8 +491,9 @@ export async function runCapacityProbe() {
             max_ms: Math.round(entry.max_ms * 100) / 100,
             mean_ms: Math.round((entry.total_ms / entry.calls) * 100) / 100,
           })),
-        database_profile_scope:
-          'load plus drain; query round trip excludes acquisition; acquire includes pool wait and new connection setup; concurrent totals overlap; no SQL or parameters retained',
+        database_profile_scope: databaseProfiling
+          ? 'load plus drain; query round trip excludes acquisition; acquire includes pool wait and new connection setup; concurrent totals overlap; no SQL or parameters retained'
+          : 'disabled: no database observer installed; empty profile arrays do not imply zero database work',
         notification_source_plan: notificationPlan,
         saved_messages: saved,
         committed_messages: committed.size,

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "commit": "7e28f08ea843f34853a67adbb1b57d7348cae901",
+  "run_id": 37230817527,
+  "job_id": 111519870880,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37230817527",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 185,
+    "seconds": 3.8
+  },
+  "integration": {
+    "files": 35,
+    "passed": 282,
+    "seconds": 95.97
+  },
+  "browser": {
+    "passed": 32,
+    "minutes_rounded": 2.9
+  },
+  "actual_model": {
+    "passed": 1,
+    "seconds": 3.49
+  },
+  "deployment": {
+    "passed": 3,
+    "seconds": 11.67
+  },
+  "scope": "Multi-agent wake-burst tests; excludes subsequent idle polling and capacity observer changes"
+}

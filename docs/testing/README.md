@@ -86,7 +86,7 @@ Playwright 使用独立测试会话与固定种子主体，自动启动本地 AP
 | 数据治理       | `tests/e2e/governance.spec.ts`、`tests/integration/recovery-drill.test.ts`                                              | 导出当前作用域及完整性；实际 dump/restore/S3 恢复与独立删除事实重放。                                                        |
 | 浏览器本地基础 | `apps/web/src/offline/offline-store.test.ts`、`app-location.test.ts`、`conversation-sync.test.ts`                       | IndexedDB 权限分区/过期/租约；无权威字段 URL；recent 截断标记传播。包含擦除与迟到写竞态；页面与生产 PWA 另有下列浏览器回归。 |
 
-`pnpm test:capacity` 使用独立随机数据库，默认百万历史消息、1,000 个实际 WebSocket、30 秒 / 50 消息每秒，同时运行聊天与通知派发。探针报告 `.artifacts/capacity-probe.json`，共享开发机结果不得替代设计环境或生产容量证明；当前不覆盖重连风暴及慢模型/文件并发。`pnpm test:recovery` 报告 `.artifacts/recovery-drill.json`，实际恢复不等于 WAL PITR 已验证。
+`pnpm test:capacity` 使用独立随机数据库，默认百万历史消息、1,000 个实际 WebSocket、30 秒 / 50 消息每秒，同时运行聊天与通知派发。探针 v3 默认 `CAPACITY_DB_PROFILE=0`，不安装逐查询观察器；定位时显式设置 `CAPACITY_DB_PROFILE=1`，报告记录开关，关闭时空诊断数组表示未采集。开启与关闭的结果不能混作同一测量条件。探针报告 `.artifacts/capacity-probe.json`，共享开发机结果不得替代设计环境或生产容量证明；当前不覆盖重连风暴及慢模型/文件并发。`pnpm test:recovery` 报告 `.artifacts/recovery-drill.json`，实际恢复不等于 WAL PITR 已验证。
 
 历史浏览器入口 `tests/e2e/recent-history.spec.ts` 使用 1,055 条真实消息与真实投影，验证 recent 快照、显式旧页、窗口外深链及删除。容量增量记录见 [容量工作记录](capacity-report.md)。
 
