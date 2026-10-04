@@ -76,3 +76,20 @@
 .composer-attachments button {
   color: var(--muted);
 }
+
+.version-comparison-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.version-comparison-columns pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 24rem;
+  overflow: auto;
+}
+@media (max-width: 700px) {
+  .version-comparison-columns {
+    grid-template-columns: 1fr;
+  }
+}

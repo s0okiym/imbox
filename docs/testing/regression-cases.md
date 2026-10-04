@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 86 个测试文件、493 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 87 个测试文件、496 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -161,6 +161,14 @@
 | [it:27](../../apps/web/src/resources/resource-api.test.ts#L27) | browser private resources → direct upload omits session/tenant/CSRF credentials and lets the browser set signed byte length |
 | [it:48](../../apps/web/src/resources/resource-api.test.ts#L48) | browser private resources → a lost completion response retries the same complete command without PUT or upload creation again |
 | [it:76](../../apps/web/src/resources/resource-api.test.ts#L76) | browser private resources → downloads through the fixed gateway, verifies bytes and rejects tampered content |
+
+## apps/web/src/resources/version-difference.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:4](../../apps/web/src/resources/version-difference.test.ts#L4) | fixed version text comparison → keeps shared edges separate and preserves intervening unchanged lines |
+| [it:22](../../apps/web/src/resources/version-difference.test.ts#L22) | fixed version text comparison → distinguishes empty content, line endings, trailing newline and BOM |
+| [it:36](../../apps/web/src/resources/version-difference.test.ts#L36) | fixed version text comparison → bounds previews by Unicode characters without splitting surrogate pairs or claiming completeness |
 
 ## apps/web/src/session-sync.test.ts
 
@@ -459,9 +467,9 @@
 | 声明 | 用例 |
 |---|---|
 | [test:186](../../tests/e2e/resources.spec.ts#L186) | real browser S3 upload creates immutable versions and submits the selected version as task evidence |
-| [test:244](../../tests/e2e/resources.spec.ts#L244) | conversation attachments publish after verification and deletion removes the usable attachment |
-| [test:300](../../tests/e2e/resources.spec.ts#L300) | fixed-version comments anchor selected Unicode text and a controlled share grants only its download until revoked |
-| [test:378](../../tests/e2e/resources.spec.ts#L378) | task contributor appends an Artifact version and loses the edit entry after demotion |
+| [test:252](../../tests/e2e/resources.spec.ts#L252) | conversation attachments publish after verification and deletion removes the usable attachment |
+| [test:308](../../tests/e2e/resources.spec.ts#L308) | fixed-version comments anchor selected Unicode text and a controlled share grants only its download until revoked |
+| [test:386](../../tests/e2e/resources.spec.ts#L386) | task contributor appends an Artifact version and loses the edit entry after demotion |
 
 ## tests/e2e/runtime-actions.spec.ts
 

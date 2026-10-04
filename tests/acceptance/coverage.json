@@ -242,9 +242,10 @@
         "docs/testing/provisioning-evidence-2026-10-04.json",
         "docs/testing/artifact-review-races-2026-10-05.md",
         "docs/testing/artifact-disclosure-version-2026-10-05.md",
-        "docs/testing/artifact-contributors-2026-10-05.md"
+        "docs/testing/artifact-contributors-2026-10-05.md",
+        "docs/testing/artifact-version-comparison-2026-10-05.md"
       ],
-      "notes": "任务产物已允许当前 owner/contributor 追加不可变版本，并记录实际版本作者；真实 Alice/Bob 竞争同一版本仅一人成功，降为 observer 后新提交和旧幂等重放均拒绝。4 项资源浏览器流程通过，含贡献者上传新版和降权后入口消失。会话产物仍限创建者。固定证据、多审核者竞争和分享版本隔离已有证据；分支/合并及外部发布 Action 旧批准/新产物联合矩阵仍待完成。"
+      "notes": "任务产物已允许当前 owner/contributor 追加不可变版本，并记录实际版本作者；真实 Alice/Bob 竞争同一版本仅一人成功，降为 observer 后新提交和旧幂等重放均拒绝。4 项资源浏览器流程通过，含贡献者上传新版和降权后入口消失。会话产物仍限创建者。固定证据、多审核者竞争和分享版本隔离已有证据；分支/合并及外部发布 Action 旧批准/新产物联合矩阵仍待完成。 Web 已提供固定双版本文本比较，含真实字节与同版本相等浏览器验证；每版本 256 KiB 在线边界，较长变化预览明确截断。"
     },
     {
       "id": "AC-19",

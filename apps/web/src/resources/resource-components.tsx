@@ -1,3 +1,4 @@
+import { VersionComparison } from './version-comparison.js';
 import { useEffect, useRef, useState } from 'react';
 import type { StoredArtifact, StoredArtifactVersion, StoredResource } from '@imbox/contracts';
 import { isAccessLoss, type Session } from '../api.js';
@@ -391,6 +392,14 @@ export function ArtifactContent({
           </article>
         ))}
       </section>
+      {versions.length > 1 && (
+        <VersionComparison
+          key={`${artifact.id}:${artifact.version}`}
+          api={api}
+          versions={versions}
+          accessLost={accessLost}
+        />
+      )}
       <ResourceContent
         key={current?.id ?? artifact.version_id}
         api={api}

@@ -211,6 +211,14 @@ test('real browser S3 upload creates immutable versions and submits the selected
     dialog = page.getByRole('dialog');
     await dialog.getByRole('button', { name: '追加新版本', exact: true }).click();
     await expect(page.getByRole('textbox', { name: /^版本 2 的固定引用/ })).toBeVisible();
+    await page.getByRole('button', { name: '比较内容', exact: true }).click();
+    await expect(page.getByLabel('起始版本变化范围')).toContainText('固定原始证据');
+    await expect(page.getByLabel('目标版本变化范围')).toContainText('更新后的草稿');
+    await page
+      .getByRole('combobox', { name: '比较目标版本', exact: true })
+      .selectOption({ label: '版本 1' });
+    await page.getByRole('button', { name: '比较内容', exact: true }).click();
+    await expect(page.getByText('两个版本内容完全相同。', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /^版本 1 evidence-v1.txt/ }).click();
     expect(await downloadedText(page)).toBe('固定原始证据');
     const artifact = (await f.resources.listArtifacts(f.f.alice, { task_id: f.task.id })).items[0]!;
