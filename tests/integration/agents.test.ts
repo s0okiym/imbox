@@ -9,7 +9,12 @@ import {
   type MessagingService,
   type TaskService,
 } from '@imbox/application';
-import { createRuntimeService, type RuntimeService } from '@imbox/runtime';
+import {
+  createRuntimeService,
+  createRuntimeWorker,
+  createRuntimeMaintenance,
+  type RuntimeService,
+} from '@imbox/runtime';
 import { withTenant, sql } from '@imbox/db';
 import { MACHINE_SCOPES, type ContractTypes as C } from '@imbox/contracts';
 import { createApp } from '../../apps/api/src/app.js';
@@ -75,7 +80,7 @@ async function agent(scopes: C['IssueAgentCredentialInput']['scopes'] = [...MACH
   const auth = await agents.authenticate(`Bearer ${token.access_token}`, f.tenantId, scopes[0]);
   return { installed, credential, client, token, auth };
 }
-async function run(a: Awaited<ReturnType<typeof agent>>) {
+async function run(a: Awaited<ReturnType<typeof agent>>, budget = '0') {
   const chat = await messaging.createConversation(
     f.alice,
     { workspace_id: f.workspaceId, kind: 'group', member_ids: [a.installed.principal_id] },
@@ -96,7 +101,7 @@ async function run(a: Awaited<ReturnType<typeof agent>>) {
       context: [{ type: 'message', id: message.id, version: message.version, required: true }],
       purpose: 'Read the explicit reference',
       destination: `agent:${a.installed.id}`,
-      budget: { currency: 'USD', limit_microunits: '0' },
+      budget: { currency: 'USD', limit_microunits: budget },
     },
     key(),
   );
@@ -374,6 +379,162 @@ describe('M4 machine identity and real HTTP external execution', () => {
       ),
     ).rejects.toMatchObject({ status: 409 });
     expect((await runtime.getRun(f.alice, before.id)).cancellation_acknowledged_at).toBeNull();
+    const late = await a.client.acknowledgeCancellation(before.id, stale.lease!.generation, key());
+    expect(await runtime.getRun(f.alice, before.id)).toMatchObject({
+      status: 'cancelled',
+      cancellation_acknowledged_at: late.acknowledged_at,
+    });
+  });
+  it('accepts only the last external worker late stop acknowledgement without restoring execution or publishing output', async () => {
+    const a = await agent(),
+      other = await agent();
+    const { created } = await run(a, '100');
+    const first = await a.client.claim(created.id, key());
+    await withTenant(databases.owner, f.tenantId, (tx) =>
+      sql`update agent_runs set lease_expires_at=clock_timestamp()-interval '1 second' where id=${created.id}`.execute(
+        tx,
+      ),
+    );
+    await expect(
+      a.client.acknowledgeCancellation(created.id, first.lease!.generation, key()),
+    ).rejects.toMatchObject({ status: 409 });
+    const latest = await a.client.claim(created.id, key());
+    const holder = `external:${a.installed.id}:${a.credential.credential.id}`;
+    const accounting = createRuntimeWorker({ db: databases.db, workerId: holder });
+    const reservation = await accounting.reserve(
+      { tenantId: f.tenantId, runId: created.id, holder, generation: latest.lease!.generation },
+      { reservation_key: key(), amount_microunits: '5', currency: 'USD' },
+    );
+    const current = await runtime.getRun(f.alice, created.id);
+    await runtime.controlRun(f.alice, created.id, 'cancel', current.version, key());
+    await expect(
+      a.client.acknowledgeCancellation(created.id, latest.lease!.generation, key()),
+    ).rejects.toMatchObject({ status: 409 });
+    await withTenant(databases.owner, f.tenantId, (tx) =>
+      sql`update agent_runs set lease_expires_at=clock_timestamp()-interval '1 second' where id=${created.id}`.execute(
+        tx,
+      ),
+    );
+    await expect(
+      a.client.acknowledgeCancellation(created.id, first.lease!.generation, key()),
+    ).rejects.toMatchObject({ status: 409 });
+    await expect(
+      other.client.acknowledgeCancellation(created.id, latest.lease!.generation, key()),
+    ).rejects.toMatchObject({ status: 404 });
+    const forged = await http(
+      a,
+      `/v1/machine/agent-runs/${created.id}/cancellation-ack`,
+      { generation: latest.lease!.generation, output: 'No output channel' },
+      { 'idempotency-key': key() },
+    );
+    expect(forged.status).toBe(400);
+    const replacementCredential = await agents.issueCredential(
+      f.alice,
+      a.installed.id,
+      { scopes: [...MACHINE_SCOPES], lifetime_seconds: 3600 },
+      key(),
+    );
+    const replacementClient = new ImboxAgentClient({
+      origin,
+      tenantId: f.tenantId,
+      allowLoopbackHttp: true,
+    });
+    await replacementClient.exchange({
+      credential: replacementCredential.secret!,
+      scopes: [...MACHINE_SCOPES],
+    });
+    await expect(
+      replacementClient.acknowledgeCancellation(created.id, latest.lease!.generation, key()),
+    ).rejects.toMatchObject({ status: 409 });
+    const token = key();
+    const receipt = await a.client.acknowledgeCancellation(
+      created.id,
+      latest.lease!.generation,
+      token,
+    );
+    expect(Object.keys(receipt).sort()).toEqual([
+      'acknowledged_at',
+      'generation',
+      'report_source',
+      'run_id',
+    ]);
+    expect(
+      await a.client.acknowledgeCancellation(created.id, latest.lease!.generation, token),
+    ).toEqual(receipt);
+    expect(
+      await a.client.acknowledgeCancellation(created.id, latest.lease!.generation, key()),
+    ).toEqual(receipt);
+    const stopped = await runtime.getRun(f.alice, created.id);
+    expect(stopped).toMatchObject({
+      status: 'cancelled',
+      cancellation_acknowledged_at: receipt.acknowledged_at,
+      output: null,
+      budget: current.budget,
+      lease_generation: latest.lease!.generation,
+    });
+    expect(stopped.budget.reserved_microunits).toBe('5');
+    const retained = await withTenant(databases.db, f.tenantId, (tx) =>
+      sql`select status,amount_microunits,actual_microunits from runtime_reservations where id=${reservation.id}`.execute(
+        tx,
+      ),
+    );
+    expect(retained.rows).toEqual([
+      { status: 'held', amount_microunits: '5', actual_microunits: null },
+    ]);
+    await expect(a.client.heartbeat(created.id, latest.lease!.generation)).rejects.toMatchObject({
+      status: 409,
+    });
+    await expect(a.client.claim(created.id, key())).rejects.toMatchObject({ status: 409 });
+    await expect(
+      a.client.report(
+        created.id,
+        {
+          generation: latest.lease!.generation,
+          status: 'completed',
+          checkpoint: {},
+          output: 'late output',
+        },
+        key(),
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    const events = await withTenant(databases.db, f.tenantId, (tx) =>
+      sql<{
+        count: string;
+      }>`select count(*) from domain_events where aggregate_id=${created.id} and event_type='run.cancellation_acknowledged' and actor_principal_id=${a.installed.principal_id}`.execute(
+        tx,
+      ),
+    );
+    expect(events.rows[0]!.count).toBe('1');
+    await agents.revokeCredential(f.alice, a.credential.credential.id, key());
+    await expect(
+      a.client.acknowledgeCancellation(created.id, latest.lease!.generation, token),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+  it('records late confirmation after platform expiry without replacing the expired state or its generation fence', async () => {
+    const a = await agent();
+    const { created } = await run(a);
+    const claim = await a.client.claim(created.id, key());
+    await withTenant(databases.owner, f.tenantId, (tx) =>
+      sql`update agent_runs set created_at=clock_timestamp()-interval '2 days' where id=${created.id}`.execute(
+        tx,
+      ),
+    );
+    await createRuntimeMaintenance(databases.db)(f.tenantId);
+    const expired = await runtime.getRun(f.alice, created.id);
+    expect(expired.status).toBe('expired');
+    expect(BigInt(expired.lease_generation)).toBeGreaterThan(BigInt(claim.lease!.generation));
+    const receipt = await a.client.acknowledgeCancellation(
+      created.id,
+      claim.lease!.generation,
+      key(),
+    );
+    expect(await runtime.getRun(f.alice, created.id)).toMatchObject({
+      status: 'expired',
+      lease_generation: expired.lease_generation,
+      cancellation_acknowledged_at: receipt.acknowledged_at,
+      output: null,
+      budget: expired.budget,
+    });
   });
   it('does not revive old tokens after global disable/re-enable or installation disable', async () => {
     const a = await agent();

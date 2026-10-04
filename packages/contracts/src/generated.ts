@@ -169,6 +169,8 @@ export interface ContractTypes {
   MachineClaim: MachineClaim;
   MachineHeartbeatInput: MachineHeartbeatInput;
   MachineHeartbeat: MachineHeartbeat;
+  MachineCancellationAckInput: MachineCancellationAckInput;
+  MachineCancellationAck: MachineCancellationAck;
   MachineReportInput: MachineReportInput;
   MachineRunPage: MachineRunPage;
   ActionParameters: ActionParameters;
@@ -1360,6 +1362,15 @@ export interface MachineHeartbeat {
   expires_at: UtcTimestamp;
   cancellation_requested: boolean;
   pause_requested: boolean;
+}
+export interface MachineCancellationAckInput {
+  generation: Version;
+}
+export interface MachineCancellationAck {
+  run_id: Identifier;
+  generation: Version;
+  acknowledged_at: UtcTimestamp;
+  report_source: 'external_report';
 }
 export interface MachineReportInput {
   generation: Version;

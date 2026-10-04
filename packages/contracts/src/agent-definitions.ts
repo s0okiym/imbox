@@ -34,8 +34,11 @@ export const MACHINE_SCOPES = [
 ] as const;
 const scopes = arr(en(...MACHINE_SCOPES), MACHINE_SCOPES.length, 1);
 export const agentDefinitions = {
-  AgentManagementAccess: obj({ can_manage: {type:'boolean'} }),
-  AgentCredentialPage: obj({items:arr(ref('AgentCredential'),200),next_cursor:ref('Cursor')},['items']),
+  AgentManagementAccess: obj({ can_manage: { type: 'boolean' } }),
+  AgentCredentialPage: obj(
+    { items: arr(ref('AgentCredential'), 200), next_cursor: ref('Cursor') },
+    ['items'],
+  ),
   AgentDeliveryInput: obj({ proposal_version: ref('Version') }),
   AgentDeliveryReceipt: obj({
     request_id: ref('Identifier'),
@@ -98,6 +101,13 @@ export const agentDefinitions = {
     expires_at: ref('UtcTimestamp'),
     cancellation_requested: { type: 'boolean' },
     pause_requested: { type: 'boolean' },
+  }),
+  MachineCancellationAckInput: obj({ generation: ref('Version') }),
+  MachineCancellationAck: obj({
+    run_id: ref('Identifier'),
+    generation: ref('Version'),
+    acknowledged_at: ref('UtcTimestamp'),
+    report_source: { type: 'string', const: 'external_report' },
   }),
   MachineReportInput: obj(
     {

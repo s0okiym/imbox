@@ -4053,6 +4053,45 @@
       ],
       "additionalProperties": false
     },
+    "MachineCancellationAckInput": {
+      "title": "MachineCancellationAckInput",
+      "type": "object",
+      "properties": {
+        "generation": {
+          "$ref": "#/$defs/Version"
+        }
+      },
+      "required": [
+        "generation"
+      ],
+      "additionalProperties": false
+    },
+    "MachineCancellationAck": {
+      "title": "MachineCancellationAck",
+      "type": "object",
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "generation": {
+          "$ref": "#/$defs/Version"
+        },
+        "acknowledged_at": {
+          "$ref": "#/$defs/UtcTimestamp"
+        },
+        "report_source": {
+          "type": "string",
+          "const": "external_report"
+        }
+      },
+      "required": [
+        "run_id",
+        "generation",
+        "acknowledged_at",
+        "report_source"
+      ],
+      "additionalProperties": false
+    },
     "MachineReportInput": {
       "title": "MachineReportInput",
       "type": "object",

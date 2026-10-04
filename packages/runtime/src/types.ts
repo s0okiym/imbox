@@ -26,6 +26,8 @@ export interface RunRow {
   cancellation_requested: boolean;
   cancellation_acknowledged_at: Date | null;
   pause_requested: boolean;
+  last_claim_holder: string | null;
+  last_claim_generation: string | null;
   lease_holder: string | null;
   lease_generation: string;
   lease_expires_at: Date | null;

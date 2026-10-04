@@ -180,9 +180,10 @@
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
-        "docs/testing/cancellation-ack-2026-10-05.md"
+        "docs/testing/cancellation-ack-2026-10-05.md",
+        "docs/testing/late-cancellation-ack-2026-10-05.md"
       ],
-      "notes": "平台取消与执行器停止确认时间独立；只有有效租约的 cancelled 回报写确认，外部确认标注自报。真实 HTTP 新 SDK 重连、取消后输出拒绝、回执丢失幂等确认及过期旧 Worker 拒绝有断言；浏览器验证未确认与已确认分别展示。独立迟到确认通道和真实远端部署失联恢复仍待完成。"
+      "notes": "平台取消与执行器确认独立；有效租约报告及过期后的独立确认已有真实 HTTP/SDK 回归。迟到确认绑定最后领取 Worker/代际和当前授权，不恢复执行、不发布输出、不释放未结预占，expired 状态保持；不同 Agent/凭证、旧代际和撤权重放拒绝。远端仍属自报，真实独立进程失联恢复与部署故障矩阵待完成。"
     },
     {
       "id": "AC-15",

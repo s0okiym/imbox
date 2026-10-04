@@ -7493,6 +7493,75 @@
         }
       }
     },
+    "/v1/machine/agent-runs/{id}/cancellation-ack": {
+      "post": {
+        "operationId": "machineAcknowledgeCancellation",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IdempotencyKey"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineCancellationAck"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MachineCancellationAckInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/machine/agent-runs/{id}/reports": {
       "post": {
         "operationId": "machineReportRun",
@@ -17156,6 +17225,45 @@
           "expires_at",
           "cancellation_requested",
           "pause_requested"
+        ],
+        "additionalProperties": false
+      },
+      "MachineCancellationAckInput": {
+        "title": "MachineCancellationAckInput",
+        "type": "object",
+        "properties": {
+          "generation": {
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "generation"
+        ],
+        "additionalProperties": false
+      },
+      "MachineCancellationAck": {
+        "title": "MachineCancellationAck",
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "generation": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "acknowledged_at": {
+            "$ref": "#/components/schemas/UtcTimestamp"
+          },
+          "report_source": {
+            "type": "string",
+            "const": "external_report"
+          }
+        },
+        "required": [
+          "run_id",
+          "generation",
+          "acknowledged_at",
+          "report_source"
         ],
         "additionalProperties": false
       },

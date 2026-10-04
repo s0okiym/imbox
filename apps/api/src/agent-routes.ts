@@ -203,6 +203,13 @@ export function registerAgentRoutes(
       'MachineHeartbeat',
       async (r, b) => agents.heartbeat(await machine(r, 'runs.execute'), id(r), b.generation),
     );
+    post(
+      '/v1/machine/agent-runs/:id/cancellation-ack',
+      'MachineCancellationAckInput',
+      'MachineCancellationAck',
+      async (r, b) =>
+        agents.acknowledgeCancellation(await machine(r, 'runs.report'), id(r), b, key(r)),
+    );
     post('/v1/machine/agent-runs/:id/reports', 'MachineReportInput', 'RuntimeRun', async (r, b) =>
       agents.report(await machine(r, 'runs.report'), id(r), b, key(r)),
     );

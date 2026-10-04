@@ -230,6 +230,13 @@ export class ImboxAgentClient {
       body: assertContract('MachineHeartbeatInput', { generation }),
     });
   }
+  acknowledgeCancellation(runId: string, generation: string, key: string) {
+    return this.call(
+      `/v1/machine/agent-runs/${this.id(runId)}/cancellation-ack`,
+      'MachineCancellationAck',
+      { method: 'POST', body: assertContract('MachineCancellationAckInput', { generation }), key },
+    );
+  }
   report(runId: string, input: MachineReportInput, key: string) {
     return this.call(`/v1/machine/agent-runs/${this.id(runId)}/reports`, 'RuntimeRun', {
       method: 'POST',

@@ -216,7 +216,7 @@ export function createRuntimeWorker(options: {
           await assertRunToolProgress(tx, run.id, 'claim');
           await claimCapacity(tx, run);
           const result = (
-            await sql<RunRow>`update agent_runs set status='running',version=version+1,lease_holder=${options.workerId},lease_generation=lease_generation+1,lease_expires_at=clock_timestamp()+${ttl}*interval '1 second',updated_at=clock_timestamp() where id=${runId} returning *`.execute(
+            await sql<RunRow>`update agent_runs set status='running',version=version+1,lease_holder=${options.workerId},last_claim_holder=${options.workerId},last_claim_generation=lease_generation+1,lease_generation=lease_generation+1,lease_expires_at=clock_timestamp()+${ttl}*interval '1 second',updated_at=clock_timestamp() where id=${runId} returning *`.execute(
               tx,
             )
           ).rows[0]!;
@@ -273,6 +273,65 @@ export function createRuntimeWorker(options: {
           tx,
         );
         return rows.map((row) => row.id);
+      });
+    },
+    async acknowledgeCancellation(
+      tenantId: string,
+      runId: string,
+      generation: string,
+      key: string,
+    ) {
+      const actor = options.claimActor;
+      if (!actor?.machine || actor.tenantId !== tenantId) fail('FORBIDDEN', 403);
+      return runtimeTransaction(options.db, tenantId, async (tx) => {
+        const { run } = await lockExecution(tx, runId, undefined, true);
+        const live = (
+          await sql<{
+            live: boolean;
+          }>`select coalesce(lease_expires_at>clock_timestamp(),false) as live from agent_runs where id=${runId}`.execute(
+            tx,
+          )
+        ).rows[0]!.live;
+        if (
+          run.execution_location !== 'external' ||
+          !run.cancellation_requested ||
+          !['cancelling', 'cancelled', 'expired'].includes(run.status) ||
+          live ||
+          run.last_claim_holder !== options.workerId ||
+          run.last_claim_generation !== generation
+        )
+          fail('VERSION_CONFLICT', 409);
+        await command(
+          tx,
+          actor,
+          'run.external.cancellation_ack',
+          key,
+          { runId, generation, holder: options.workerId },
+          async () => {
+            if (run.cancellation_acknowledged_at) return runId;
+            const updated = (
+              await sql<RunRow>`update agent_runs set cancellation_acknowledged_at=clock_timestamp(),status=case when status='cancelling' then 'cancelled' else status end,lease_holder=null,lease_expires_at=null,version=version+1,updated_at=clock_timestamp() where id=${runId} returning *`.execute(
+                tx,
+              )
+            ).rows[0]!;
+            await appendEvent(tx, actor, {
+              aggregateType: 'agent_run',
+              aggregateId: runId,
+              version: updated.version,
+              type: 'run.cancellation_acknowledged',
+              payload: { generation },
+              target: `run:${runId}`,
+            });
+            return runId;
+          },
+        );
+        const current = await runRow(tx, runId);
+        return {
+          run_id: runId,
+          generation,
+          acknowledged_at: current.cancellation_acknowledged_at!.toISOString(),
+          report_source: 'external_report' as const,
+        };
       });
     },
     async heartbeat(claim: LeaseClaim) {

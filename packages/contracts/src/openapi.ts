@@ -904,6 +904,16 @@ export const routeContracts: readonly RouteContract[] = [
   },
   {
     method: 'post',
+    path: '/v1/machine/agent-runs/{id}/cancellation-ack',
+    operationId: 'machineAcknowledgeCancellation',
+    response: 'MachineCancellationAck',
+    request: 'MachineCancellationAckInput',
+    success: '200',
+    machine: true,
+    csrf: false,
+  },
+  {
+    method: 'post',
     path: '/v1/machine/agent-runs/{id}/reports',
     operationId: 'machineReportRun',
     response: 'RuntimeRun',

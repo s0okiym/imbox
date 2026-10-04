@@ -606,6 +606,17 @@ export function createAgentService(options: {
       const result = await worker(auth).claim(auth.tenantId, runId, key);
       return { lease: result ? { run_id: result.runId, generation: result.generation } : null };
     },
+    async acknowledgeCancellation(
+      auth: AuthContext,
+      runId: string,
+      raw: { generation: string },
+      key: string,
+    ) {
+      assertContract('Identifier', runId);
+      assertContract('IdempotencyKey', key);
+      const input = assertContract('MachineCancellationAckInput', raw);
+      return worker(auth).acknowledgeCancellation(auth.tenantId, runId, input.generation, key);
+    },
     async heartbeat(auth: AuthContext, runId: string, generation: string) {
       assertContract('Identifier', runId);
       assertContract('Version', generation);
