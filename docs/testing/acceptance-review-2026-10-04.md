@@ -23,7 +23,7 @@
 | AC-15  | partial  | runtime 并发子任务预占只成功一次、root 四个并发槽、20 步上限及绝对期限；tasks 依赖环并发拒绝，scheduling 禁止 Agent 递归创建。深度边界和真实多 Agent 唤醒风暴仍待专门验证。     |
 | AC-16  | partial  | sync 投影事务回滚后持久重试、模型丢响应挂起、checkpoint 恢复不再请求模型；浏览器离线壳可用。尚未完成模型/对象/连接故障与积压同时出现时的长期联合演练。                          |
 | AC-17  | verified | agents 作者绑定认证身份，伪造 actor 字段拒绝；过期/轮换 lease 拒绝；completed 外部回报保留 external_report/external 标识，machine API 不提供人类批准/恢复入口。                 |
-| AC-18  | partial  | resource-links 固定提交版本与 hash，Artifact head 更新不改既有证据；删除来源后拒绝验收；评论 anchor 固定且不可变。独立的多人并发 Artifact 新版本/审批竞争仍待补验。             |
+| AC-18  | partial  | 已补产物同版本双写竞争（仅一次成功）以及新版写入与两名审核者同时验收（唯一决定/事件、幂等重试、固定旧版 hash）；删除来源拒绝仍保留。当前 Artifact 仅创建者能更新，跨作者编辑策略及外部发布 Action 对旧批准/新版产物的联合矩阵仍未完成。             |
 | AC-19  | partial  | knowledge、resources、notifications、exports 验证当前 ACL 与分页/计数/下载分块/导出中途撤权，推送发送前重验。真实厂商通知及离线设备得知撤权后的跨设备矩阵仍待验收。             |
 | AC-20  | partial  | governance/retention 验证派生正文清除、独立意图重放；真实隔离 dump/对象恢复重放四条事实，PWA 清除本机副本。生产备份链、所有组织授权历史和 WAL PITR 尚未覆盖。                   |
 | AC-21  | partial  | HTTP 对未知路由、畸形/超大正文和伪造字段安全拒绝，不泄漏 stack/连接串；不能据此宣称未知事件与旧客户端的完整兼容展示已通过，仍需版本矩阵测试。                                   |

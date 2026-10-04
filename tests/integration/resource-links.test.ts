@@ -1,3 +1,5 @@
+import { requiredActionsClosed } from '@imbox/actions';
+import { runtimeCompletionGate } from '@imbox/runtime';
 import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -58,7 +60,11 @@ beforeEach(async () => {
   resources = createResourceService({ db: databases.db, store, cursorSecret: secret });
   const hooks = resourceApplicationHooks();
   messaging = createMessagingService(databases.db, secret, { resources: hooks.messages });
-  tasks = createTaskService(databases.db, secret, { artifacts: hooks.artifacts });
+  tasks = createTaskService(databases.db, secret, {
+    artifacts: hooks.artifacts,
+    requiredActionsClosed: async (tx, id) =>
+      (await runtimeCompletionGate(tx, id)) && (await requiredActionsClosed(tx, id)),
+  });
   sync = createSyncService({ db: databases.db, cursorSecret: secret });
   worker = createOutboxProcessor({ db: databases.db });
 });
@@ -307,6 +313,175 @@ describe('transactional message attachments and fixed Task Artifact evidence', (
     expect(returned.decision).toBe('return');
     expect((await tasks.getTask(fixture.alice, work.id)).status).toBe('active');
   });
+  it('serializes competing Artifact versions without replacing the evidence already submitted to two reviewers', async () => {
+    let work = await tasks.createTask(
+      fixture.alice,
+      {
+        workspace_id: fixture.workspaceId,
+        title: 'Concurrent fixed evidence',
+        goal: 'Review exactly the submitted bytes',
+        acceptance_criteria: ['Fixed hash and version'],
+        reviewer_principal_ids: [fixture.bob.principalId, fixture.charlie.principalId],
+        budget: { currency: 'USD', limit_microunits: '1000000' },
+      },
+      key(),
+    );
+    work = await tasks.changeState(
+      fixture.alice,
+      work.id,
+      { state: 'active' },
+      work.version,
+      key(),
+    );
+    const first = await ready({ task_id: work.id }, 'Submitted immutable source');
+    const artifact = await resources.createArtifact(
+      fixture.alice,
+      { resource_id: first.id, title: 'Fixed report' },
+      key(),
+    );
+    const submitted = await tasks.submit(
+      fixture.alice,
+      work.id,
+      {
+        goal_version: work.goal_version,
+        summary: 'Review v1 only',
+        evidence: [evidence(artifact)],
+      },
+      work.version,
+      key(),
+    );
+    const second = await ready({ task_id: work.id }, 'Competing candidate two');
+    const third = await ready({ task_id: work.id }, 'Competing candidate three');
+    const changed = await Promise.allSettled(
+      [second, third].map((content) =>
+        resources.createArtifactVersion(
+          fixture.alice,
+          artifact.id,
+          { resource_id: content.id },
+          artifact.version,
+          key(),
+        ),
+      ),
+    );
+    expect(changed.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const rejected = changed.find((r) => r.status === 'rejected');
+    expect(rejected?.status === 'rejected' && rejected.reason.code).toBe('VERSION_CONFLICT');
+    expect((await resources.getArtifact(fixture.bob, artifact.id)).head_version).toBe('2');
+    for (const reviewer of [fixture.bob, fixture.charlie]) {
+      expect((await tasks.submissions(reviewer, work.id)).items[0]?.evidence).toEqual([
+        evidence(artifact),
+      ]);
+    }
+    work = await tasks.getTask(fixture.bob, work.id);
+    const reviewed = await tasks.review(
+      fixture.bob,
+      work.id,
+      {
+        submission_id: submitted.id,
+        decision: 'accept',
+        comment: 'Accept original v1, not current head',
+      },
+      work.version,
+      key(),
+    );
+    expect(reviewed.submission_id).toBe(submitted.id);
+    expect((await tasks.getTask(fixture.bob, work.id)).status).toBe('completed');
+    expect((await tasks.submissions(fixture.charlie, work.id)).items[0]?.evidence).toEqual([
+      evidence(artifact),
+    ]);
+  });
+
+  it('commits exactly one reviewer decision while an Artifact head update races with acceptance', async () => {
+    let work = await tasks.createTask(
+      fixture.alice,
+      {
+        workspace_id: fixture.workspaceId,
+        title: 'Concurrent acceptance',
+        goal: 'Keep fixed evidence during acceptance',
+        acceptance_criteria: ['One review and immutable evidence'],
+        reviewer_principal_ids: [fixture.bob.principalId, fixture.charlie.principalId],
+        budget: { currency: 'USD', limit_microunits: '1000000' },
+      },
+      key(),
+    );
+    work = await tasks.changeState(
+      fixture.alice,
+      work.id,
+      { state: 'active' },
+      work.version,
+      key(),
+    );
+    const first = await ready({ task_id: work.id }, 'The only submitted evidence');
+    const artifact = await resources.createArtifact(
+      fixture.alice,
+      { resource_id: first.id, title: 'Racing report' },
+      key(),
+    );
+    const second = await ready({ task_id: work.id }, 'Unsubmitted future head');
+    const submitted = await tasks.submit(
+      fixture.alice,
+      work.id,
+      {
+        goal_version: work.goal_version,
+        summary: 'Fixed evidence acceptance',
+        evidence: [evidence(artifact)],
+      },
+      work.version,
+      key(),
+    );
+    work = await tasks.getTask(fixture.alice, work.id);
+    const reviewKeys = [key(), key()];
+    const input = {
+      submission_id: submitted.id,
+      decision: 'accept' as const,
+      comment: 'Accept submitted v1',
+    };
+    const results = await Promise.allSettled([
+      resources.createArtifactVersion(
+        fixture.alice,
+        artifact.id,
+        { resource_id: second.id },
+        artifact.version,
+        key(),
+      ),
+      tasks.review(fixture.bob, work.id, input, work.version, reviewKeys[0]!),
+      tasks.review(fixture.charlie, work.id, input, work.version, reviewKeys[1]!),
+    ]);
+    const reviews = results.slice(1);
+    expect(reviews.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    if (results[0]?.status === 'rejected') expect(results[0].reason.code).toBe('VERSION_CONFLICT');
+    for (const result of reviews)
+      if (result.status === 'rejected') expect(result.reason.code).toBe('TASK_TERMINATED');
+    const winner = reviews.findIndex((r) => r.status === 'fulfilled');
+    const actor = [fixture.bob, fixture.charlie][winner]!;
+    const retry = await tasks.review(actor, work.id, input, work.version, reviewKeys[winner]!);
+    const persisted = await tasks.reviews(actor, work.id);
+    expect(persisted.items).toHaveLength(1);
+    expect(persisted.items[0]?.id).toBe(retry.id);
+    expect(persisted.items[0]?.submission_id).toBe(submitted.id);
+    const finalTask = await tasks.getTask(actor, work.id);
+    expect(finalTask.status).toBe('completed');
+    expect(finalTask.version).toBe(String(BigInt(work.version) + 1n));
+    expect((await tasks.submissions(actor, work.id)).items[0]?.evidence).toEqual([
+      evidence(artifact),
+    ]);
+    const head = await resources.getArtifact(actor, artifact.id);
+    expect(head.head_version).toBe(results[0]?.status === 'fulfilled' ? '2' : '1');
+    const counts = await withTenant(
+      databases.db,
+      fixture.tenantId,
+      async (tx) =>
+        (
+          await sql<{
+            n: string;
+          }>`select count(*)::text as n from domain_events where aggregate_id=${work.id} and event_type='task.reviewed'`.execute(
+            tx,
+          )
+        ).rows[0]!,
+    );
+    expect(counts.n).toBe('1');
+  });
+
   it('requires the exact Task and SHA-256, even when the submitter can read both Tasks', async () => {
     const source = await task();
     let target = await task();

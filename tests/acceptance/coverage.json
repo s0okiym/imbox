@@ -236,9 +236,10 @@
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
-        "docs/testing/provisioning-evidence-2026-10-04.json"
+        "docs/testing/provisioning-evidence-2026-10-04.json",
+        "docs/testing/artifact-review-races-2026-10-05.md"
       ],
-      "notes": "resource-links 固定提交版本与 hash，Artifact head 更新不改既有证据；删除来源后拒绝验收；评论 anchor 固定且不可变。独立的多人并发 Artifact 新版本/审批竞争仍待补验。"
+      "notes": "已补产物同版本双写竞争（仅一次成功）以及新版写入与两名审核者同时验收（唯一决定/事件、幂等重试、固定旧版 hash）；删除来源拒绝仍保留。当前 Artifact 仅创建者能更新，跨作者编辑策略及外部发布 Action 对旧批准/新版产物的联合矩阵仍未完成。"
     },
     {
       "id": "AC-19",

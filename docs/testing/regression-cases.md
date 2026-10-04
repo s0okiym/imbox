@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 85 个测试文件、472 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 85 个测试文件、474 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -748,13 +748,15 @@
 
 | 声明 | 用例 |
 |---|---|
-| [it:148](../../tests/integration/resource-links.test.ts#L148) | transactional message attachments and fixed Task Artifact evidence → persists one fixed same-scope attachment across retries and projects it through snapshots |
-| [it:170](../../tests/integration/resource-links.test.ts#L170) | transactional message attachments and fixed Task Artifact evidence → does not disclose another readable conversation or Task resource by attaching its ID |
-| [it:190](../../tests/integration/resource-links.test.ts#L190) | transactional message attachments and fixed Task Artifact evidence → invalidates old snapshots immediately on source deletion and emits an attachment-free replacement |
-| [it:218](../../tests/integration/resource-links.test.ts#L218) | transactional message attachments and fixed Task Artifact evidence → allows only an explicit new message to disclose an older same-conversation upload to a new member |
-| [it:243](../../tests/integration/resource-links.test.ts#L243) | transactional message attachments and fixed Task Artifact evidence → keeps the submitted Artifact version fixed when its head changes and refuses deleted-source acceptance |
-| [it:310](../../tests/integration/resource-links.test.ts#L310) | transactional message attachments and fixed Task Artifact evidence → requires the exact Task and SHA-256, even when the submitter can read both Tasks |
-| [it:359](../../tests/integration/resource-links.test.ts#L359) | transactional message attachments and fixed Task Artifact evidence → filters discovery before paging and binds cursors to the current reader and scope generation |
+| [it:154](../../tests/integration/resource-links.test.ts#L154) | transactional message attachments and fixed Task Artifact evidence → persists one fixed same-scope attachment across retries and projects it through snapshots |
+| [it:176](../../tests/integration/resource-links.test.ts#L176) | transactional message attachments and fixed Task Artifact evidence → does not disclose another readable conversation or Task resource by attaching its ID |
+| [it:196](../../tests/integration/resource-links.test.ts#L196) | transactional message attachments and fixed Task Artifact evidence → invalidates old snapshots immediately on source deletion and emits an attachment-free replacement |
+| [it:224](../../tests/integration/resource-links.test.ts#L224) | transactional message attachments and fixed Task Artifact evidence → allows only an explicit new message to disclose an older same-conversation upload to a new member |
+| [it:249](../../tests/integration/resource-links.test.ts#L249) | transactional message attachments and fixed Task Artifact evidence → keeps the submitted Artifact version fixed when its head changes and refuses deleted-source acceptance |
+| [it:316](../../tests/integration/resource-links.test.ts#L316) | transactional message attachments and fixed Task Artifact evidence → serializes competing Artifact versions without replacing the evidence already submitted to two reviewers |
+| [it:394](../../tests/integration/resource-links.test.ts#L394) | transactional message attachments and fixed Task Artifact evidence → commits exactly one reviewer decision while an Artifact head update races with acceptance |
+| [it:485](../../tests/integration/resource-links.test.ts#L485) | transactional message attachments and fixed Task Artifact evidence → requires the exact Task and SHA-256, even when the submitter can read both Tasks |
+| [it:534](../../tests/integration/resource-links.test.ts#L534) | transactional message attachments and fixed Task Artifact evidence → filters discovery before paging and binds cursors to the current reader and scope generation |
 
 ## tests/integration/resources.test.ts
 
