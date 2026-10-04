@@ -4,6 +4,8 @@
 
 ## 环境与启动
 
+本机功能试用可直接使用 [集中启动与停止入口](local-pilot.md)，支持保留配置、初始化、进程监督与就绪检查。
+
 开发/测试使用仓库固定的 Node.js 24、pnpm 10、PostgreSQL 18 与 SeaweedFS。`pnpm infra:up` 只启动本项目的 PostgreSQL/对象存储；`pnpm infra:setup:test` 只配置回环地址的固定测试桶与 4173 Origin CORS。不要使用测试账号或 seed 主体处理业务数据。
 
 先从 `.env.example` 建立仅服务账号可读的配置，替换会话、独立隐私账本及独立行动日志密钥。配置中区分迁移、应用、身份连接；应用和 Worker 启动时验证其数据库角色不具备 owner/BYPASSRLS 权限。环境文件不提交，不在 shell 调试输出中展开。

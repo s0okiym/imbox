@@ -15,6 +15,8 @@
 
 ## 本地运行
 
+推荐使用新的 [本机试用入口](docs/operations/local-pilot.md)：`pnpm install --frozen-lockfile` → `pnpm pilot:setup` → `pnpm pilot`。已有配置保留，应用进程集中启动与停止。阶段交付边界见 [后续优先级](docs/delivery-backlog.md)。下面保留手动操作方式。
+
 需要 `.node-version` 指定的 Node.js 24、`package.json` 指定的 pnpm 10，以及 Docker Compose。数据库监听 `127.0.0.1:55432`，避免占用宿主已有的 PostgreSQL。
 
 ```sh

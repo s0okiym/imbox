@@ -39,7 +39,10 @@
     "test:recovery": "vitest run --config vitest.integration.config.ts tests/integration/recovery-drill.test.ts",
     "infra:setup:test": "tsx scripts/setup-test-infra.ts",
     "test:catalog": "node scripts/regression-catalog.mjs",
-    "test:catalog:check": "node scripts/regression-catalog.mjs --check"
+    "test:catalog:check": "node scripts/regression-catalog.mjs --check",
+    "pilot:setup": "node scripts/pilot.mjs setup",
+    "pilot": "node scripts/pilot.mjs start",
+    "pilot:status": "node scripts/pilot.mjs status"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
