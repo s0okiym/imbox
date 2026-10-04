@@ -47,7 +47,8 @@
       "tests": ["tests/integration/agents.test.ts"],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
-        "docs/testing/provisioning-evidence-2026-10-04.json"
+        "docs/testing/provisioning-evidence-2026-10-04.json",
+        "docs/testing/handoff-manifest-evidence-2026-10-05.md"
       ],
       "notes": "agents 中 human→agent→agent 交接测试在 acknowledgeRequest 后断言 received_at 存在、status=pending、原 owner 不变，只有 decide accept 后才切换负责权。"
     },
@@ -88,7 +89,8 @@
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
-        "docs/testing/handoff-evidence-2026-10-05.md"
+        "docs/testing/handoff-evidence-2026-10-05.md",
+        "docs/testing/handoff-manifest-evidence-2026-10-05.md"
       ],
       "notes": "真实交接后旧 Worker 心跳、预占、结果提交均拒绝；已持久化意图尚未派发的 Action 被旧 epoch 围栏拒绝并释放预占；真实 HTTP 副作用发生后交接且丢响应，新 owner 只读核对、一次 POST 与一次费用结算。"
     },
@@ -371,7 +373,8 @@
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
-        "docs/testing/handoff-evidence-2026-10-05.md"
+        "docs/testing/handoff-evidence-2026-10-05.md",
+        "docs/testing/handoff-manifest-evidence-2026-10-05.md"
       ],
       "notes": "通过真实接受事务核对唯一 owner、accountable 不变、任务版本/epoch/授权代际提升及唯一交接事件和 outbox；旧 Worker 和未派发 Action 被拒绝，在途结果独立核对。"
     },
@@ -412,7 +415,8 @@
       ],
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
-        "docs/testing/provisioning-evidence-2026-10-04.json"
+        "docs/testing/provisioning-evidence-2026-10-04.json",
+        "docs/testing/handoff-manifest-evidence-2026-10-05.md"
       ],
       "notes": "runtime-knowledge 检查人类与 Agent 来源权限及披露范围，action 要求独立 grant/approval；分享固定版本/收件人代际，新群成员不继承旧分享。"
     },

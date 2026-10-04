@@ -216,6 +216,15 @@ export function RequestDetail({
             <p className="task-prose">{p.handoff.completed_summary || '无'}</p>
             <h3>待完成内容</h3>
             <p className="task-prose">{p.handoff.pending_summary || '无'}</p>
+            <h3>提案列出的待处理行动</h3>
+            <p>
+              共 {p.handoff.pending_action_ids.length} 项；这是发起时的清单，行动结果可能继续变化。
+            </p>
+            <ul aria-label="提案行动编号">
+              {p.handoff.pending_action_ids.map((id) => (
+                <li key={id}>{id}</li>
+              ))}
+            </ul>
             <p className="small muted">
               接管后，请到“行动”中核对仍在执行或结果未知的外部行动。交接不会撤销已经发出的操作。
             </p>

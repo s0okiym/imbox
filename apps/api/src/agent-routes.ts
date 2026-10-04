@@ -243,6 +243,11 @@ export function registerAgentRoutes(
       { schema: { params: schemas.ResourceParams, response: { 200: schemas.Task } } },
       async (r) => tasks.getTask(await machine(r, 'tasks.read'), id(r)),
     );
+    app.get(
+      '/v1/machine/tasks/:id/handoff-actions',
+      { schema: { params: schemas.ResourceParams, response: { 200: schemas.TaskHandoffActions } } },
+      async (r) => tasks.handoffActions(await machine(r, 'tasks.read'), id(r)),
+    );
     post(
       '/v1/machine/tasks',
       'CreateTaskInput',

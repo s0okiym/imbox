@@ -75,15 +75,21 @@ export function TaskWorkspace({
   const [escalationsOpen, setEscalationsOpen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
   const selection = useRef<AbortController | null>(null);
-  const refresh = useCallback(() => setRefreshTick((value) => value + 1), []);
+  const viewGeneration = useRef(0);
+  const refresh = useCallback(() => {
+    // Invalidate older reads immediately, before React runs effect cleanup.
+    viewGeneration.current += 1;
+    setRefreshTick((value) => value + 1);
+  }, []);
   useEffect(() => () => selection.current?.abort(), []);
   useEffect(() => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     const poll = async (): Promise<void> => {
+      const generation = viewGeneration.current;
       try {
         const me = await client.me(controller.signal);
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || generation !== viewGeneration.current) return;
         if (me.principal.id !== session.principal.id || me.tenant_id !== session.tenant_id) {
           onSessionLost('登录身份已变化，请重新确认。');
           return;
@@ -96,7 +102,7 @@ export function TaskWorkspace({
           pages((cursor) => api.tasks(controller.signal, cursor), controller.signal),
           pages((cursor) => api.requests(controller.signal, cursor), controller.signal),
         ]);
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || generation !== viewGeneration.current) return;
         setTasks(taskItems);
         setRequests(requestItems);
         setSelectedTaskId((id) =>
@@ -107,7 +113,7 @@ export function TaskWorkspace({
         );
         setError(null);
       } catch (failure: unknown) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || generation !== viewGeneration.current) return;
         if (isAccessLoss(failure)) {
           setTasks([]);
           setRequests([]);
@@ -173,6 +179,7 @@ export function TaskWorkspace({
     try {
       const task = await api.task(id, controller.signal);
       if (controller.signal.aborted) return;
+      refresh();
       setTasks((items) => [task, ...items.filter((item) => item.id !== task.id)]);
       setSelectedTaskId(task.id);
       onSelection?.('task', task.id);
@@ -197,6 +204,7 @@ export function TaskWorkspace({
     try {
       const request = await api.requestById(id, controller.signal);
       if (controller.signal.aborted) return;
+      refresh();
       setRequests((items) => [request, ...items.filter((item) => item.id !== request.id)]);
       setSelectedRequestId(request.id);
       onSelection?.('request', request.id);
@@ -211,9 +219,14 @@ export function TaskWorkspace({
     }
   };
   useEffect(() => {
-    if (initialTaskId) { if (selectedTaskId !== initialTaskId) void selectTask(initialTaskId); }
-    else if (initialRequestId) { if (selectedRequestId !== initialRequestId) void selectRequest(initialRequestId); }
-    else { setSelectedTaskId(null); setSelectedRequestId(null); }
+    if (initialTaskId) {
+      if (selectedTaskId !== initialTaskId) void selectTask(initialTaskId);
+    } else if (initialRequestId) {
+      if (selectedRequestId !== initialRequestId) void selectRequest(initialRequestId);
+    } else {
+      setSelectedTaskId(null);
+      setSelectedRequestId(null);
+    }
   }, [initialTaskId, initialRequestId]);
   const changedRequest = (request: CollaborationRequest): void =>
     setRequests((items) => [request, ...items.filter((item) => item.id !== request.id)]);
@@ -396,7 +409,10 @@ export function TaskWorkspace({
           refresh={refresh}
           accessLost={accessLost}
           onOpenRun={onOpenRun}
-          onBack={() => { setSelectedTaskId(null); onSelection?.('task', null); }}
+          onBack={() => {
+            setSelectedTaskId(null);
+            onSelection?.('task', null);
+          }}
         />
       ) : mode === 'requests' && selectedRequest !== null ? (
         <RequestDetail
@@ -415,7 +431,10 @@ export function TaskWorkspace({
           {...(acceptedTargets.has(selectedRequest.id)
             ? { acceptedTaskId: acceptedTargets.get(selectedRequest.id)! }
             : {})}
-          onBack={() => { setSelectedRequestId(null); onSelection?.('request', null); }}
+          onBack={() => {
+            setSelectedRequestId(null);
+            onSelection?.('request', null);
+          }}
         />
       ) : (
         <section className="task-welcome">
@@ -458,6 +477,7 @@ export function TaskWorkspace({
             setSelectedTaskId(task.id);
             setCreating(false);
             refresh();
+            onSelection?.('task', task.id);
           }}
         />
       )}

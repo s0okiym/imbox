@@ -4,6 +4,7 @@ import type {
   CreateTaskRequestInput,
   RuntimeRun,
   Task,
+  TaskHandoffActions,
   WorkProposal,
 } from '@imbox/contracts';
 import { ApiClient } from '../api.js';
@@ -268,8 +269,37 @@ export function ProposalForm({
   const [deadline, setDeadline] = useState('');
   const [escalation, setEscalation] = useState(task.accountable_principal_id);
   const handoff = kind === 'handoff';
+  const [actionSnapshot, setActionSnapshot] = useState<TaskHandoffActions | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionRefresh, setActionRefresh] = useState(0);
+  const [actionsConfirmed, setActionsConfirmed] = useState(false);
+  useEffect(() => {
+    setActionSnapshot(null);
+    setActionError(null);
+    setActionsConfirmed(false);
+    if (!handoff) return;
+    const controller = new AbortController();
+    void api
+      .handoffActions(base.id, controller.signal)
+      .then((snapshot) => {
+        if (!controller.signal.aborted) {
+          if (snapshot.task_version !== base.version)
+            setActionError('任务已更新，请关闭提案并重新核对。');
+          else setActionSnapshot(snapshot);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setActionError(taskError(error));
+      });
+    return () => controller.abort();
+  }, [api, base.id, base.version, handoff, actionRefresh]);
   const submit = async (): Promise<void> => {
     try {
+      if (
+        handoff &&
+        (!actionSnapshot || (actionSnapshot.pending_action_ids.length > 0 && !actionsConfirmed))
+      )
+        throw new Error('请先加载并核对待处理行动清单。');
       const expiration = localDeadline(expires);
       if (expiration === undefined || Date.parse(expiration) <= Date.now())
         throw new Error('请设置未来的提案回应期限。');
@@ -304,7 +334,7 @@ export function ProposalForm({
               handoff: {
                 completed_summary: completed.trim(),
                 pending_summary: pending.trim(),
-                pending_action_ids: [],
+                pending_action_ids: actionSnapshot!.pending_action_ids,
               },
             }
           : {}),
@@ -496,6 +526,43 @@ export function ProposalForm({
                 disabled={command.busy}
               />
             </Field>
+            <section aria-label="交接行动清单">
+              <h3>当前任务待处理行动</h3>
+              <p className="small muted">
+                这些编号随提案交给收件人，行动参数和凭证不会随之共享。子任务的行动仍需分别核对。
+              </p>
+              {actionError && <ErrorNotice>{actionError}</ErrorNotice>}
+              {!actionSnapshot && !actionError && <p role="status">正在核对行动…</p>}
+              {actionSnapshot && (
+                <>
+                  <p>本次清单共 {actionSnapshot.pending_action_ids.length} 项。</p>
+                  <ul>
+                    {actionSnapshot.pending_action_ids.map((id) => (
+                      <li key={id}>{id}</li>
+                    ))}
+                  </ul>
+                  {actionSnapshot.pending_action_ids.length > 0 && (
+                    <label className="task-confirmation">
+                      <input
+                        type="checkbox"
+                        checked={actionsConfirmed}
+                        onChange={(event) => setActionsConfirmed(event.target.checked)}
+                        disabled={command.busy}
+                      />
+                      我已核对并同意将以上行动编号随提案交给收件人。
+                    </label>
+                  )}
+                </>
+              )}
+              <button
+                type="button"
+                className="text-button"
+                disabled={command.busy}
+                onClick={() => setActionRefresh((value) => value + 1)}
+              >
+                重新核对行动清单
+              </button>
+            </section>
           </>
         )}
         <div className="task-form-grid">
@@ -550,7 +617,13 @@ export function ProposalForm({
           command={command}
           label="发送提案"
           onClose={events.onClose}
-          disabled={!recipient || roster.loading}
+          disabled={
+            !recipient ||
+            roster.loading ||
+            (handoff &&
+              (!actionSnapshot ||
+                (actionSnapshot.pending_action_ids.length > 0 && !actionsConfirmed)))
+          }
         />
       </form>
     </Modal>

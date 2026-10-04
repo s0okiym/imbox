@@ -95,6 +95,11 @@ export function registerTaskRoutes(
     { schema: { params: schemas.ResourceParams, response: { 200: schemas.TaskRunOrigin } } },
     async (r) => tasks.runOrigin(await auth(r), id(r)),
   );
+  app.get(
+    '/v1/tasks/:id/handoff-actions',
+    { schema: { params: schemas.ResourceParams, response: { 200: schemas.TaskHandoffActions } } },
+    async (r) => tasks.handoffActions(await auth(r), id(r)),
+  );
   post(
     '/v1/tasks',
     'CreateTaskInput',

@@ -3340,6 +3340,108 @@
         }
       }
     },
+    "/v1/tasks/{id}/handoff-actions": {
+      "get": {
+        "operationId": "getTaskHandoffActions",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskHandoffActions"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/machine/tasks/{id}/handoff-actions": {
+      "get": {
+        "operationId": "machineGetTaskHandoffActions",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "agentBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskHandoffActions"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/messages/{id}": {
       "get": {
         "operationId": "getMessage",
@@ -16976,6 +17078,8 @@
               "CHARGE_STATUS_UNKNOWN",
               "CONTENT_REJECTED",
               "CAPACITY_EXCEEDED",
+              "HANDOFF_ACTIONS_CHANGED",
+              "HANDOFF_ACTIONS_LIMIT",
               "STEP_LIMIT_EXCEEDED",
               "EXECUTION_EXPIRED",
               "RATE_LIMITED",
@@ -17970,7 +18074,8 @@
                   "$ref": "#/components/schemas/Identifier"
                 },
                 "minItems": 0,
-                "maxItems": 0
+                "maxItems": 100,
+                "uniqueItems": true
               }
             },
             "required": [
@@ -18596,6 +18701,33 @@
           "authz_generation",
           "projection_id",
           "projection_revision"
+        ],
+        "additionalProperties": false
+      },
+      "TaskHandoffActions": {
+        "title": "TaskHandoffActions",
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "task_version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "pending_action_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            },
+            "minItems": 0,
+            "maxItems": 100,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "task_id",
+          "task_version",
+          "pending_action_ids"
         ],
         "additionalProperties": false
       },

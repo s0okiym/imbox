@@ -22,7 +22,7 @@ import { sql, withTenant } from '@imbox/db';
 import { tenantFixture, testDatabases } from '../helpers/database.js';
 import { createIdentityService } from '@imbox/auth';
 import { createApp } from '../../apps/api/src/app.js';
-import { acceptHandoff } from '../helpers/handoff.js';
+import { acceptHandoff, proposeHandoff } from '../helpers/handoff.js';
 let databases: Awaited<ReturnType<typeof testDatabases>>,
   fixture: Awaited<ReturnType<typeof tenantFixture>>,
   actions: ActionService,
@@ -301,6 +301,180 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
       ),
     ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });
   });
+  it('discloses only explicit same-task action references and rejects omitted or foreign references', async () => {
+    const { action } = await proposed();
+    expect(await tasks.handoffActions(fixture.alice, task.id)).toEqual({
+      task_id: task.id,
+      task_version: task.version,
+      pending_action_ids: [action.id],
+    });
+    await expect(tasks.handoffActions(fixture.bob, task.id)).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+    await expect(tasks.handoffActions(fixture.charlie, task.id)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    await expect(
+      proposeHandoff(tasks, task, fixture.alice, fixture.charlie, []),
+    ).rejects.toMatchObject({ code: 'HANDOFF_ACTIONS_CHANGED' });
+    await expect(
+      proposeHandoff(tasks, task, fixture.alice, fixture.charlie, [key()]),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    const other = await tasks.createTask(
+      fixture.alice,
+      {
+        workspace_id: fixture.workspaceId,
+        title: 'Separate scope',
+        goal: task.goal,
+        acceptance_criteria: ['Independent work'],
+        reviewer_principal_ids: [fixture.alice.principalId],
+        budget: { currency: 'USD', limit_microunits: '100' },
+      },
+      key(),
+    );
+    await expect(
+      proposeHandoff(tasks, other, fixture.alice, fixture.charlie, [action.id]),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    const cancelled = await tasks.cancelTask(
+      fixture.alice,
+      other.id,
+      { reason: 'No work needed' },
+      other.version,
+      key(),
+    );
+    await expect(tasks.handoffActions(fixture.charlie, other.id)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    expect(await tasks.handoffActions(fixture.alice, other.id)).toEqual({
+      task_id: other.id,
+      task_version: cancelled.version,
+      pending_action_ids: [],
+    });
+    const request = await proposeHandoff(tasks, task, fixture.alice, fixture.charlie);
+    const disclosed = await tasks.getRequest(fixture.charlie, request.id);
+    expect(disclosed.proposal.handoff?.pending_action_ids).toEqual([action.id]);
+    expect(JSON.stringify(disclosed)).not.toContain('A deliberately approved delivery');
+    await expect(actions.getAction(fixture.charlie, action.id)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+  });
+  it('refuses oversized outstanding manifests instead of silently dropping action references', async () => {
+    const { grant } = await proposed();
+    const add = () =>
+      actions.createAction(
+        fixture.bob,
+        {
+          task_id: task.id,
+          grant_id: grant.id,
+          executor_principal_id: fixture.bob.principalId,
+          tool_id: 'demo.delivery',
+          tool_version: '1',
+          target_id: 'demo',
+          parameters: { text: 'Bounded pending work' },
+          resource_versions: [{ type: 'task', id: task.id, version: task.version }],
+          business_key: key(),
+          estimate: { currency: 'USD', limit_microunits: '10' },
+        },
+        key(),
+      );
+    for (let i = 0; i < 99; i++) await add();
+    const snapshot = await tasks.handoffActions(fixture.alice, task.id);
+    expect(snapshot.pending_action_ids).toHaveLength(100);
+    await add();
+    await expect(tasks.handoffActions(fixture.alice, task.id)).rejects.toMatchObject({
+      code: 'HANDOFF_ACTIONS_LIMIT',
+    });
+    await expect(
+      proposeHandoff(tasks, task, fixture.alice, fixture.charlie, snapshot.pending_action_ids),
+    ).rejects.toMatchObject({ code: 'HANDOFF_ACTIONS_LIMIT' });
+    expect((await tasks.getTask(fixture.alice, task.id)).owner_principal_id).toBe(
+      fixture.alice.principalId,
+    );
+    expect(attempts).toBe(0);
+  });
+  it('requires renewed agreement for actions added after a handoff offer and permits already completed references', async () => {
+    const first = await proposed();
+    const request = await proposeHandoff(tasks, task, fixture.alice, fixture.charlie);
+    const second = await proposed();
+    await expect(
+      tasks.decideRequest(
+        fixture.charlie,
+        request.id,
+        {
+          decision: 'accept',
+          proposal_version: request.proposal_version,
+          expected_task_version: request.expected_task_version,
+        },
+        request.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'HANDOFF_ACTIONS_CHANGED' });
+    expect((await tasks.getTask(fixture.alice, task.id)).owner_principal_id).toBe(
+      fixture.alice.principalId,
+    );
+    expect((await tasks.getRequest(fixture.charlie, request.id)).status).toBe('pending');
+    const revised = await tasks.reviseRequest(
+      fixture.alice,
+      request.id,
+      {
+        proposal: {
+          ...request.proposal,
+          handoff: {
+            ...request.proposal.handoff!,
+            pending_action_ids: [first.action.id, second.action.id],
+          },
+        },
+        expected_task_version: task.version,
+        request_expires_at: request.request_expires_at,
+      },
+      request.version,
+      key(),
+    );
+    await approve(first.action);
+    await runner().runOnce(fixture.tenantId, first.action.id);
+    expect((await tasks.handoffActions(fixture.alice, task.id)).pending_action_ids).toEqual([
+      second.action.id,
+    ]);
+    await tasks.decideRequest(
+      fixture.charlie,
+      revised.id,
+      {
+        decision: 'accept',
+        proposal_version: revised.proposal_version,
+        expected_task_version: revised.expected_task_version,
+      },
+      revised.version,
+      key(),
+    );
+    expect((await tasks.getTask(fixture.charlie, task.id)).owner_principal_id).toBe(
+      fixture.charlie.principalId,
+    );
+    expect((await actions.getAction(fixture.charlie, first.action.id)).status).toBe('succeeded');
+    expect(attempts).toBe(1);
+  });
+  it('serializes accepting a handoff against creating newly undisclosed work', async () => {
+    const request = await proposeHandoff(tasks, task, fixture.alice, fixture.charlie);
+    const outcomes = await Promise.allSettled([
+      tasks.decideRequest(
+        fixture.charlie,
+        request.id,
+        {
+          decision: 'accept',
+          proposal_version: request.proposal_version,
+          expected_task_version: request.expected_task_version,
+        },
+        request.version,
+        key(),
+      ),
+      proposed(),
+    ]);
+    expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
+    const current = await tasks.getTask(fixture.alice, task.id);
+    expect(current.owner_principal_id).toBe(
+      outcomes[0]!.status === 'fulfilled' ? fixture.charlie.principalId : fixture.alice.principalId,
+    );
+    expect(attempts).toBe(0);
+  });
   it('fences a prepared dispatch after real handoff and releases its unused reservation', async () => {
     const { action } = await proposed();
     await approve(action);
@@ -540,7 +714,7 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
       enableDevAuth: true,
       devPrincipalIds: [fixture.alice.principalId],
     });
-    const app = createApp({ readiness: async () => {}, identity, actions });
+    const app = createApp({ readiness: async () => {}, identity, actions, tasks });
     await app.ready();
     try {
       const session = await identity.devLogin({ principalId: fixture.alice.principalId, origin });
@@ -555,6 +729,17 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
       expect(
         (await app.inject({ method: 'GET', url: `/v1/actions/${action.id}`, headers })).statusCode,
       ).toBe(200);
+      const handoffResponse = await app.inject({
+        method: 'GET',
+        url: `/v1/tasks/${task.id}/handoff-actions`,
+        headers,
+      });
+      expect(handoffResponse.statusCode).toBe(200);
+      expect(handoffResponse.json()).toEqual({
+        task_id: task.id,
+        task_version: task.version,
+        pending_action_ids: [action.id],
+      });
       const payload = {
         decision: 'approve',
         action_version: action.approval_binding_version,

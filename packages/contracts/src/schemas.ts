@@ -208,6 +208,8 @@ export const definitions = {
         'CHARGE_STATUS_UNKNOWN',
         'CONTENT_REJECTED',
         'CAPACITY_EXCEEDED',
+        'HANDOFF_ACTIONS_CHANGED',
+        'HANDOFF_ACTIONS_LIMIT',
         'STEP_LIMIT_EXCEEDED',
         'EXECUTION_EXPIRED',
         'RATE_LIMITED',
@@ -421,7 +423,7 @@ export const definitions = {
       handoff: object({
         completed_summary: str(4000, 0),
         pending_summary: str(4000, 0),
-        pending_action_ids: array(ref('Identifier'), 0),
+        pending_action_ids: { ...array(ref('Identifier'), 100), uniqueItems: true },
       }),
     },
     [
@@ -610,6 +612,11 @@ export const definitions = {
       ...Object.keys(viewProperties),
     ],
   ),
+  TaskHandoffActions: object({
+    task_id: ref('Identifier'),
+    task_version: ref('Version'),
+    pending_action_ids: { ...array(ref('Identifier'), 100), uniqueItems: true },
+  }),
   Handoff: object({
     request_id: ref('Identifier'),
     task_id: ref('Identifier'),

@@ -522,6 +522,28 @@ export function createTaskService(
     for (const id of [...new Set(ids)]) roots.push((await row(tx, id)).root_task_id);
     await lockTaskRoots(tx, auth.tenantId, roots);
   }
+  async function pendingHandoffActions(tx: Tx, taskId: string): Promise<string[]> {
+    // Direct task actions only. Never expose parameters, credentials or descendant-task data.
+    const result = await sql<{ id: string }>`select a.id from actions a where a.task_id=${taskId}
+      and (a.status not in ('succeeded','failed','cancelled')
+        or (a.required and a.status<>'succeeded')
+        or exists(select 1 from action_reconciliation_cases c where c.tenant_id=a.tenant_id and c.action_id=a.id and c.status='open'))
+      order by a.id limit 101`.execute(tx);
+    if (result.rows.length > 100) fail('HANDOFF_ACTIONS_LIMIT', 409);
+    return result.rows.map((item) => item.id);
+  }
+  async function validateHandoffActions(tx: Tx, taskId: string, ids: string[]) {
+    if (ids.length) {
+      const references = await sql<{
+        id: string;
+      }>`select id from actions where task_id=${taskId} and id=any(${ids}::uuid[])`.execute(tx);
+      if (references.rows.length !== ids.length) fail('NOT_FOUND', 404);
+    }
+    // Completion after proposal is harmless; newly outstanding work requires a new explicit offer.
+    const offered = new Set(ids);
+    if ((await pendingHandoffActions(tx, taskId)).some((id) => !offered.has(id)))
+      fail('HANDOFF_ACTIONS_CHANGED', 409);
+  }
   async function validateProposal(
     tx: Tx,
     auth: AuthContext,
@@ -537,6 +559,7 @@ export function createTaskService(
     ]);
     if (kind === 'handoff' && !p.handoff) fail('VALIDATION_FAILED', 400);
     if (kind !== 'handoff' && p.handoff) fail('VALIDATION_FAILED', 400);
+    if (p.handoff) await validateHandoffActions(tx, t.id, p.handoff.pending_action_ids);
     if (kind !== 'delegate' && p.dependencies.length) fail('VALIDATION_FAILED', 400);
     const b = (await sql<C['Budget']>`select * from task_budgets where task_id=${t.id}`.execute(tx))
       .rows[0]!;
@@ -734,6 +757,21 @@ export function createTaskService(
     },
     async getTask(auth: AuthContext, id: string) {
       return transaction(auth, (tx) => dto(tx, auth, id));
+    },
+    async handoffActions(auth: AuthContext, id: string) {
+      assertContract('Identifier', id);
+      return transaction(auth, async (tx) => {
+        // A preview is advisory. Authorize before exposing lifecycle state; the
+        // proposal/acceptance transaction performs the authoritative root-locked check.
+        await access(tx, auth, await row(tx, id));
+        const t = await row(tx, id);
+        own(auth, t);
+        return assertContract('TaskHandoffActions', {
+          task_id: t.id,
+          task_version: t.version,
+          pending_action_ids: await pendingHandoffActions(tx, t.id),
+        });
+      });
     },
     async listTasks(auth: AuthContext, query: PageQuery = {}) {
       return transaction(auth, async (tx) => {
@@ -1304,6 +1342,7 @@ export function createTaskService(
             await evidence(tx, auth, r.proposal.inputs, t.id);
             for (const dep of r.proposal.dependencies) await access(tx, auth, await row(tx, dep));
             if (r.kind === 'handoff') {
+              await validateHandoffActions(tx, t.id, r.proposal.handoff!.pending_action_ids);
               const updated = await save(
                 tx,
                 t,

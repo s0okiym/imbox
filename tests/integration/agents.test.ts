@@ -354,6 +354,7 @@ describe('M4 machine identity and real HTTP external execution', () => {
     });
     expect((await tasks.getTask(f.alice, task.id)).owner_principal_id).toBe(f.alice.principalId);
     await expect(a.client.getTask(task.id)).rejects.toMatchObject({ status: 404 });
+    await expect(a.client.getTaskHandoffActions(task.id)).rejects.toMatchObject({ status: 404 });
     await a.client.decideRequest(
       request.id,
       request.version,
@@ -367,16 +368,23 @@ describe('M4 machine identity and real HTTP external execution', () => {
     task = await a.client.getTask(task.id);
     expect(task.owner_principal_id).toBe(a.installed.principal_id);
     expect(task.accountable_principal_id).toBe(f.alice.principalId);
-    const next = await tasks.createRequest(
-      a.auth,
+    expect(await a.client.getTaskHandoffActions(task.id)).toEqual({
+      task_id: task.id,
+      task_version: task.version,
+      pending_action_ids: [],
+    });
+    const limited = new ImboxAgentClient({ origin, tenantId: f.tenantId, allowLoopbackHttp: true });
+    await limited.exchange({ credential: a.credential.secret!, scopes: ['requests.read'] });
+    await expect(limited.getTaskHandoffActions(task.id)).rejects.toMatchObject({ status: 403 });
+    const next = await a.client.createTaskRequest(
       task.id,
+      task.version,
       {
         kind: 'handoff',
         recipient_principal_id: b.installed.principal_id,
         proposal,
         request_expires_at: new Date(Date.now() + 600000).toISOString(),
       },
-      task.version,
       key(),
     );
     await b.client.getRequest(next.id);

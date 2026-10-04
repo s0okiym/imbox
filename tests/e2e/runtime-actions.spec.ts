@@ -479,6 +479,85 @@ test('Run-bound tool UI requires human approval and explicit resume, reconciles 
   }
 });
 
+test('handoff UI requires explicit disclosure of the outstanding action manifest', async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  try {
+    const grant = await f.actions.createGrant(
+      f.f.alice,
+      {
+        task_id: f.task.id,
+        executor_principal_id: f.f.bob.principalId,
+        tool_id: 'demo.delivery',
+        tool_version: '1',
+        target_id: 'demo-provider',
+        allow_execute: true,
+        allow_disclosure: true,
+        resource_versions: [{ type: 'task', id: f.task.id, version: f.task.version }],
+        approver_principal_ids: [f.f.alice.principalId],
+        budget: { currency: 'USD', limit_microunits: '100' },
+        expires_at: new Date(Date.now() + 3600000).toISOString(),
+      },
+      randomUUID(),
+    );
+    const action = await f.actions.createAction(
+      f.f.bob,
+      {
+        task_id: f.task.id,
+        grant_id: grant.id,
+        executor_principal_id: f.f.bob.principalId,
+        tool_id: 'demo.delivery',
+        tool_version: '1',
+        target_id: 'demo-provider',
+        parameters: { text: 'Parameters must not appear in a handoff offer' },
+        resource_versions: [{ type: 'task', id: f.task.id, version: f.task.version }],
+        business_key: randomUUID(),
+        estimate: { currency: 'USD', limit_microunits: '10' },
+      },
+      randomUUID(),
+    );
+    await page.getByRole('button', { name: '任务工作台', exact: true }).click();
+    await page
+      .getByRole('navigation', { name: '任务列表' })
+      .getByText(f.task.title, { exact: true })
+      .click();
+    await page.getByRole('button', { name: '发起协作提案', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog
+      .getByRole('combobox', { name: '收件人', exact: true })
+      .selectOption({ label: 'Charlie' });
+    await dialog
+      .getByLabel('对收件人披露的说明', { exact: true })
+      .fill('共享待处理行动编号，接受后独立核对');
+    await dialog.getByLabel('已完成内容', { exact: true }).fill('已确认任务范围');
+    await dialog.getByLabel('待完成内容', { exact: true }).fill('核对遗留行动，再完成任务');
+    await expect(
+      dialog.getByLabel('交接行动清单').getByText(action.id, { exact: true }),
+    ).toBeVisible();
+    await expect(dialog.getByRole('button', { name: '发送提案', exact: true })).toBeDisabled();
+    await dialog.getByRole('checkbox', { name: /我已核对并同意将以上行动编号/ }).check();
+    await dialog.getByRole('button', { name: '发送提案', exact: true }).click();
+    await expect(dialog).not.toBeVisible();
+    await page.getByRole('tab', { name: /协作请求/ }).click();
+    await page.getByRole('button', { name: '发出的', exact: true }).click();
+    await page
+      .getByRole('navigation', { name: '协作请求列表' })
+      .getByRole('button', { name: new RegExp(f.task.title) })
+      .click();
+    await expect(
+      page.getByLabel('提案行动编号').getByText(action.id, { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByLabel('协作提案详情')).not.toContainText(
+      'Parameters must not appear in a handoff offer',
+    );
+    expect(f.sends()).toBe(0);
+    expect(f.effects()).toBe(0);
+  } finally {
+    await f.close();
+  }
+});
+
 test('recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes', async ({
   page,
 }) => {

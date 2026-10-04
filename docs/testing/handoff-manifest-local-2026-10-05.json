@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "recorded_at": "2026-10-05T01:09:28.666211+08:00",
+  "parent_commit": "10f5ba30a7398123f74cd96d08008a2fc595c0d4",
+  "source_index_sha256": "d3b1187feb76c25e9a21231046cb2dd5d2ae3fdbfda1836935400a7d7f4d18ce",
+  "source_index_command": "git ls-files -s -- . ':!docs/**' ':!README.md' | sha256sum",
+  "lock_sha256": "18543dbd50b7294533d136164f8b94777281864bc6df97e1992784cb6dbb6d55",
+  "validation_mode": "Incremental: full verify before machine endpoints; subsequent affected builds/types/lint, related integration and unit pass; final Web-only race repair covered by Web build/types/lint and browser regression. Full remote candidate run remains separate.",
+  "unit": {
+    "files": 32,
+    "passed": 181,
+    "seconds": 6.9
+  },
+  "related_integration": {
+    "files": 4,
+    "passed": 66,
+    "seconds": 49.84
+  },
+  "final_related_browser": {
+    "passed": 10,
+    "minutes_rounded": 2.1
+  },
+  "regression_catalog": {
+    "files": 80,
+    "named_declarations": 441
+  },
+  "acceptance": {
+    "verified": 27,
+    "partial": 13,
+    "pending": 1,
+    "production_gate": "blocked"
+  }
+}

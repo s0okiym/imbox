@@ -262,3 +262,11 @@ Scheduler 周期扫描 due schedules，锁定计划后按时区计算 occurrence
 开发环境默认：Run 步骤最多 20 次、单次模型请求超时 120 秒、工具超时按连接器定义、执行租约 60 秒且每 15 秒续约、最大委派深度 4、同根任务最多 4 个运行槽、默认请求有效期 24 小时。心跳丢失时先检查业务状态和在途行动，不靠单次定时器直接判定失败。这些值均可被组织更严格地限制，必须在 M0/M4 测量后冻结发布配置。
 
 工具/模型/队列/存储/调度/协议均有端口适配，但身份、契约、Action 和投影语义保持稳定。引入持久工作流引擎、公开插件或跨组织 Agent 时，必须复用执行代际、核对和披露要求，并增加兼容和故障用例。
+
+### 交接行动清单增量（2026-10-05）
+
+人类端使用 `GET /v1/tasks/{id}/handoff-actions`，机器端使用 `GET /v1/machine/tasks/{id}/handoff-actions`。二者共享当前 owner 检查和 `TaskHandoffActions` 契约；机器端另需 `tasks.read` scope。返回 `task_id`、`task_version`、`pending_action_ids`，不返回行动参数或凭证。
+
+SDK 提供 `getTaskHandoffActions(taskId)` 与 `createTaskRequest(taskId, version, input, idempotencyKey)`。Agent 必须把核对后的编号放入明确的 WorkProposal，再经 `tasks.write` 创建提案；收到、ACK、接受仍是分离命令。`HANDOFF_ACTIONS_CHANGED` 要求重新核对并提出最新条款，`HANDOFF_ACTIONS_LIMIT` 表示超过 100 项且没有返回截断清单。权限失败不能降级成空数组继续提交。
+
+详细并发边界、已完成引用及子任务范围见 [DEV-ADR-11](07-implementation-decisions.md)。

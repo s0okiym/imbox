@@ -240,6 +240,7 @@ export interface ContractTypes {
   Task: Task;
   RequestDecisionInput: RequestDecisionInput;
   CollaborationRequest: CollaborationRequest;
+  TaskHandoffActions: TaskHandoffActions;
   Handoff: Handoff;
   AgentRun: AgentRun;
   ApprovalDecisionInput: ApprovalDecisionInput;
@@ -1639,6 +1640,8 @@ export interface Error {
     | 'CHARGE_STATUS_UNKNOWN'
     | 'CONTENT_REJECTED'
     | 'CAPACITY_EXCEEDED'
+    | 'HANDOFF_ACTIONS_CHANGED'
+    | 'HANDOFF_ACTIONS_LIMIT'
     | 'STEP_LIMIT_EXCEEDED'
     | 'EXECUTION_EXPIRED'
     | 'RATE_LIMITED'
@@ -1884,9 +1887,9 @@ export interface WorkProposal {
     pending_summary: string;
     /**
      * @minItems 0
-     * @maxItems 0
+     * @maxItems 100
      */
-    pending_action_ids: [];
+    pending_action_ids: Identifier[];
   };
 }
 export interface CreateTaskRequestInput {
@@ -2049,6 +2052,15 @@ export interface RequestDecisionInput {
   proposal_version: Version;
   expected_task_version: Version;
   comment?: string;
+}
+export interface TaskHandoffActions {
+  task_id: Identifier;
+  task_version: Version;
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  pending_action_ids: Identifier[];
 }
 export interface Handoff {
   request_id: Identifier;

@@ -5210,6 +5210,8 @@
             "CHARGE_STATUS_UNKNOWN",
             "CONTENT_REJECTED",
             "CAPACITY_EXCEEDED",
+            "HANDOFF_ACTIONS_CHANGED",
+            "HANDOFF_ACTIONS_LIMIT",
             "STEP_LIMIT_EXCEEDED",
             "EXECUTION_EXPIRED",
             "RATE_LIMITED",
@@ -6204,7 +6206,8 @@
                 "$ref": "#/$defs/Identifier"
               },
               "minItems": 0,
-              "maxItems": 0
+              "maxItems": 100,
+              "uniqueItems": true
             }
           },
           "required": [
@@ -6830,6 +6833,33 @@
         "authz_generation",
         "projection_id",
         "projection_revision"
+      ],
+      "additionalProperties": false
+    },
+    "TaskHandoffActions": {
+      "title": "TaskHandoffActions",
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "task_version": {
+          "$ref": "#/$defs/Version"
+        },
+        "pending_action_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          },
+          "minItems": 0,
+          "maxItems": 100,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "task_id",
+        "task_version",
+        "pending_action_ids"
       ],
       "additionalProperties": false
     },

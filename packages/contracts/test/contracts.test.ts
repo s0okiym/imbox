@@ -335,23 +335,28 @@ describe('schema/OpenAPI generation foundation', () => {
     for (const name of schemaNames) {
       expect(schemaFor(name).$id).toBe(`https://imbox.local/schemas/v1/${name}.json`);
     }
-    const boundedMaps=new Set([
+    const boundedMaps = new Set([
       '/UploadTicket/properties/upload_headers',
       '/MachineReportInput/properties/checkpoint',
       '/InstallRuntimeAgentInput/properties/config',
       '/RuntimeContextItem/properties/payload',
       '/RuntimeContextItem/properties/authorization_snapshot',
     ]);
-    function walk(value: unknown,path=''): void {
-      if (Array.isArray(value)) {value.forEach((v,i)=>walk(v,`${path}/${i}`));return;}
+    function walk(value: unknown, path = ''): void {
+      if (Array.isArray(value)) {
+        value.forEach((v, i) => walk(v, `${path}/${i}`));
+        return;
+      }
       if (!value || typeof value !== 'object') return;
       const node = value as Record<string, unknown>;
-      if(node.type==='object'){
-        if(boundedMaps.has(path)){expect(typeof node.maxProperties).toBe('number');expect(Number(node.maxProperties)).toBeLessThanOrEqual(100);}
-        else expect(node.additionalProperties,`Unexpected open object at ${path}`).toBe(false);
+      if (node.type === 'object') {
+        if (boundedMaps.has(path)) {
+          expect(typeof node.maxProperties).toBe('number');
+          expect(Number(node.maxProperties)).toBeLessThanOrEqual(100);
+        } else expect(node.additionalProperties, `Unexpected open object at ${path}`).toBe(false);
       }
       if (node.type === 'array') expect(typeof node.maxItems).toBe('number');
-      Object.entries(node).forEach(([key,v])=>walk(v,`${path}/${key}`));
+      Object.entries(node).forEach(([key, v]) => walk(v, `${path}/${key}`));
     }
     walk(definitions);
   });
@@ -377,10 +382,14 @@ describe('schema/OpenAPI generation foundation', () => {
       },
     });
     expect(paths['/v1/actions']?.post?.['x-imbox-implementation-status']).toBe('implemented');
-    expect(paths['/v1/machine/agent-runs/{id}/reports']?.post?.security).toEqual([{agentBearer:[]}]);
-    const machineHeaders=paths['/v1/machine/agent-runs/{id}/reports']?.post?.parameters as Array<{name:string}>;
-    expect(machineHeaders.map(p=>p.name)).not.toContain('X-CSRF-Token');
-    expect(machineHeaders.map(p=>p.name)).not.toContain('Origin');
+    expect(paths['/v1/machine/agent-runs/{id}/reports']?.post?.security).toEqual([
+      { agentBearer: [] },
+    ]);
+    const machineHeaders = paths['/v1/machine/agent-runs/{id}/reports']?.post?.parameters as Array<{
+      name: string;
+    }>;
+    expect(machineHeaders.map((p) => p.name)).not.toContain('X-CSRF-Token');
+    expect(machineHeaders.map((p) => p.name)).not.toContain('Origin');
     expect(paths['/v1/actions/{id}/dispatch']).toBeUndefined();
     expect(JSON.stringify(document)).not.toContain('#/$defs/');
   });
@@ -488,4 +497,18 @@ describe('M2 explicit work commands and disclosure boundaries', () => {
     });
     invalid('WorkProposal', { ...proposal, credential: 'never-a-proposal-field' });
   });
+});
+
+it('bounds handoff manifests, rejects duplicates and preserves opaque references', () => {
+  const snapshot = { task_id: id, task_version: '1', pending_action_ids: [id2] };
+  expect(validateContract('TaskHandoffActions', snapshot).ok).toBe(true);
+  invalid('TaskHandoffActions', { ...snapshot, pending_action_ids: [id2, id2] });
+  invalid('TaskHandoffActions', {
+    ...snapshot,
+    pending_action_ids: Array.from(
+      { length: 101 },
+      (_, i) => `01929777-6d00-7000-8000-${String(i).padStart(12, '0')}`,
+    ),
+  });
+  invalid('TaskHandoffActions', { ...snapshot, parameters: { text: 'not disclosed' } });
 });

@@ -263,6 +263,22 @@ export class ImboxAgentClient {
   getTask(taskId: string) {
     return this.call(`/v1/machine/tasks/${this.id(taskId)}`, 'Task');
   }
+  getTaskHandoffActions(taskId: string) {
+    return this.call(`/v1/machine/tasks/${this.id(taskId)}/handoff-actions`, 'TaskHandoffActions');
+  }
+  createTaskRequest(
+    taskId: string,
+    version: string,
+    input: ContractTypes['CreateTaskRequestInput'],
+    key: string,
+  ) {
+    return this.call(`/v1/machine/tasks/${this.id(taskId)}/requests`, 'CollaborationRequest', {
+      method: 'POST',
+      body: assertContract('CreateTaskRequestInput', input),
+      key,
+      version,
+    });
+  }
   listMessages(conversationId: string, cursor?: string) {
     return this.call(
       `/v1/machine/conversations/${this.id(conversationId)}/messages${cursor ? `?cursor=${encodeURIComponent(assertContract('Cursor', cursor))}` : ''}`,

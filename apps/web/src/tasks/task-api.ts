@@ -11,6 +11,7 @@ import type {
   SubmissionInput,
   SubmissionPage,
   Task,
+  TaskHandoffActions,
   TaskPage,
   TaskParticipantInput,
   RuntimeRun,
@@ -111,6 +112,9 @@ export class TaskApi {
   }
   task(id: string, signal: AbortSignal): Promise<Task> {
     return this.request(`/v1/tasks/${encodeURIComponent(id)}`, signal);
+  }
+  handoffActions(id: string, signal: AbortSignal): Promise<TaskHandoffActions> {
+    return this.request(`/v1/tasks/${encodeURIComponent(id)}/handoff-actions`, signal);
   }
   create(input: CreateTaskInput, key: string, signal: AbortSignal): Promise<Task> {
     return this.request('/v1/tasks', signal, { body: input, key });

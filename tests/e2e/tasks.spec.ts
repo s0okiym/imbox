@@ -200,3 +200,56 @@ test('a rejected delegation leaves the parent owned and lets its owner delegate 
     await Promise.all(contexts.map((context) => context.close()));
   }
 });
+
+test('creating a task retains its selection across an older list response and a page reload', async ({
+  page,
+}) => {
+  await login(page, 'Alice');
+  let holdNext = true,
+    captured = false,
+    released = false;
+  let release!: () => void, finish!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const finished = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  await page.route('**/v1/tasks?*', async (route) => {
+    if (!holdNext) {
+      await route.continue();
+      return;
+    }
+    holdNext = false;
+    try {
+      const response = await route.fetch();
+      expect(response.status()).toBe(200);
+      captured = true;
+      await gate;
+      await route.fulfill({ response });
+    } catch (error: unknown) {
+      // An obsolete browser read may already have been aborted by the refresh.
+      if (!released) throw error;
+    } finally {
+      finish();
+    }
+  });
+  try {
+    await expect.poll(() => captured).toBe(true);
+    const title = `E2E 新建任务旧轮询 ${Date.now()}`;
+    await create(page, title);
+    released = true;
+    release();
+    await finished;
+    await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByLabel('任务详情').getByRole('heading', { name: title, level: 1 }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: '提交结果与证据', exact: true })).toBeVisible();
+  } finally {
+    released = true;
+    release();
+    if (captured) await finished;
+  }
+});

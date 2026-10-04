@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 80 个测试文件、434 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 80 个测试文件、441 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -257,12 +257,13 @@
 | [it:287](../../packages/contracts/test/contracts.test.ts#L287) | DTO and WebSocket distinctions → accepts materialized snapshot content and preserves opaque empty-page progress |
 | [it:324](../../packages/contracts/test/contracts.test.ts#L324) | DTO and WebSocket distinctions → does not apply the request-byte cap to bounded message pages |
 | [it:333](../../packages/contracts/test/contracts.test.ts#L333) | schema/OpenAPI generation foundation → publishes self-contained schemas with stable IDs and a 2020-12 dialect |
-| [it:359](../../packages/contracts/test/contracts.test.ts#L359) | schema/OpenAPI generation foundation → generates OpenAPI 3.1.1 distinguishing implemented and modeled route contracts |
-| [it:388](../../packages/contracts/test/contracts.test.ts#L388) | schema/OpenAPI generation foundation → requires the headers enforced by member mutations and models no-content auth results |
-| [it:405](../../packages/contracts/test/contracts.test.ts#L405) | schema/OpenAPI generation foundation → catches deleted components, broken references and duplicate operation IDs |
-| [it:431](../../packages/contracts/test/contracts.test.ts#L431) | M2 explicit work commands and disclosure boundaries → does not permit callers to set owner, actor, execution epoch, or numeric budgets |
-| [it:444](../../packages/contracts/test/contracts.test.ts#L444) | M2 explicit work commands and disclosure boundaries → pins evidence identity and rejects ambiguous artifact references and decision impersonation |
-| [it:469](../../packages/contracts/test/contracts.test.ts#L469) | M2 explicit work commands and disclosure boundaries → does not silently authorize external tools through a work proposal |
+| [it:364](../../packages/contracts/test/contracts.test.ts#L364) | schema/OpenAPI generation foundation → generates OpenAPI 3.1.1 distinguishing implemented and modeled route contracts |
+| [it:397](../../packages/contracts/test/contracts.test.ts#L397) | schema/OpenAPI generation foundation → requires the headers enforced by member mutations and models no-content auth results |
+| [it:414](../../packages/contracts/test/contracts.test.ts#L414) | schema/OpenAPI generation foundation → catches deleted components, broken references and duplicate operation IDs |
+| [it:440](../../packages/contracts/test/contracts.test.ts#L440) | M2 explicit work commands and disclosure boundaries → does not permit callers to set owner, actor, execution epoch, or numeric budgets |
+| [it:453](../../packages/contracts/test/contracts.test.ts#L453) | M2 explicit work commands and disclosure boundaries → pins evidence identity and rejects ambiguous artifact references and decision impersonation |
+| [it:478](../../packages/contracts/test/contracts.test.ts#L478) | M2 explicit work commands and disclosure boundaries → does not silently authorize external tools through a work proposal |
+| [it:502](../../packages/contracts/test/contracts.test.ts#L502) | bounds handoff manifests, rejects duplicates and preserves opaque references |
 
 ## packages/db/test/postgres.integration.test.ts
 
@@ -434,7 +435,8 @@
 | [test:315](../../tests/e2e/runtime-actions.spec.ts#L315) | grant → proposal → exact human approval → lost response → lookup has one external effect |
 | [test:380](../../tests/e2e/runtime-actions.spec.ts#L380) | a revoked source removes previously visible run context from the browser |
 | [test:401](../../tests/e2e/runtime-actions.spec.ts#L401) | Run-bound tool UI requires human approval and explicit resume, reconciles one unknown effect, then only summarizes |
-| [test:482](../../tests/e2e/runtime-actions.spec.ts#L482) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
+| [test:482](../../tests/e2e/runtime-actions.spec.ts#L482) | handoff UI requires explicit disclosure of the outstanding action manifest |
+| [test:561](../../tests/e2e/runtime-actions.spec.ts#L561) | recovery UI freezes, verifies an orphan through read-only provider evidence, accounts once and explicitly unfreezes |
 
 ## tests/e2e/scheduling-promotion.spec.ts
 
@@ -451,6 +453,7 @@
 | [test:24](../../tests/e2e/tasks.spec.ts#L24) | a human explicitly submits fixed evidence and separately accepts it before a task completes |
 | [test:45](../../tests/e2e/tasks.spec.ts#L45) | reading a handoff proposal does not change ownership; explicit acceptance changes both views |
 | [test:99](../../tests/e2e/tasks.spec.ts#L99) | a rejected delegation leaves the parent owned and lets its owner delegate to another person |
+| [test:204](../../tests/e2e/tasks.spec.ts#L204) | creating a task retains its selection across an older list response and a page reload |
 
 ## tests/integration/action-journal.test.ts
 
@@ -482,17 +485,21 @@
 |---|---|
 | [it:230](../../tests/integration/actions.test.ts#L230) | controlled actions with real PostgreSQL, HTTP and independent signed journal → requires explicit approval, records durable intent before the effect, and settles once |
 | [it:260](../../tests/integration/actions.test.ts#L260) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retains an unknown result after response loss, queries it, and never resends the business action |
-| [it:304](../../tests/integration/actions.test.ts#L304) | controlled actions with real PostgreSQL, HTTP and independent signed journal → fences a prepared dispatch after real handoff and releases its unused reservation |
-| [it:330](../../tests/integration/actions.test.ts#L330) | controlled actions with real PostgreSQL, HTTP and independent signed journal → hands off during a committed external effect and lets the new owner reconcile without resending |
-| [it:379](../../tests/integration/actions.test.ts#L379) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retries confirmed no-effect attempts under the same action, fingerprint and business key |
-| [it:397](../../tests/integration/actions.test.ts#L397) | controlled actions with real PostgreSQL, HTTP and independent signed journal → invalidates old approval after changing parameters and refuses revoked grants before effects |
-| [it:415](../../tests/integration/actions.test.ts#L415) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects expired leases even before takeover and retains unresolved attempts |
-| [it:430](../../tests/integration/actions.test.ts#L430) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive a grant or action when a disabled global identity is re-enabled |
-| [it:451](../../tests/integration/actions.test.ts#L451) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive old authority after task membership removal/reinvitation or epoch changes |
-| [it:494](../../tests/integration/actions.test.ts#L494) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an expired approval before opening a network attempt |
-| [it:507](../../tests/integration/actions.test.ts#L507) | controlled actions with real PostgreSQL, HTTP and independent signed journal → deduplicates the same receipt and preserves a conflicting late receipt as an open case |
-| [it:531](../../tests/integration/actions.test.ts#L531) | controlled actions with real PostgreSQL, HTTP and independent signed journal → enforces human HTTP approval contracts and never exposes internal execution/report capabilities |
-| [it:601](../../tests/integration/actions.test.ts#L601) | controlled actions with real PostgreSQL, HTTP and independent signed journal → finds a whole action lost across a simulated database recovery and freezes new execution |
+| [it:304](../../tests/integration/actions.test.ts#L304) | controlled actions with real PostgreSQL, HTTP and independent signed journal → discloses only explicit same-task action references and rejects omitted or foreign references |
+| [it:361](../../tests/integration/actions.test.ts#L361) | controlled actions with real PostgreSQL, HTTP and independent signed journal → refuses oversized outstanding manifests instead of silently dropping action references |
+| [it:395](../../tests/integration/actions.test.ts#L395) | controlled actions with real PostgreSQL, HTTP and independent signed journal → requires renewed agreement for actions added after a handoff offer and permits already completed references |
+| [it:455](../../tests/integration/actions.test.ts#L455) | controlled actions with real PostgreSQL, HTTP and independent signed journal → serializes accepting a handoff against creating newly undisclosed work |
+| [it:478](../../tests/integration/actions.test.ts#L478) | controlled actions with real PostgreSQL, HTTP and independent signed journal → fences a prepared dispatch after real handoff and releases its unused reservation |
+| [it:504](../../tests/integration/actions.test.ts#L504) | controlled actions with real PostgreSQL, HTTP and independent signed journal → hands off during a committed external effect and lets the new owner reconcile without resending |
+| [it:553](../../tests/integration/actions.test.ts#L553) | controlled actions with real PostgreSQL, HTTP and independent signed journal → retries confirmed no-effect attempts under the same action, fingerprint and business key |
+| [it:571](../../tests/integration/actions.test.ts#L571) | controlled actions with real PostgreSQL, HTTP and independent signed journal → invalidates old approval after changing parameters and refuses revoked grants before effects |
+| [it:589](../../tests/integration/actions.test.ts#L589) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects expired leases even before takeover and retains unresolved attempts |
+| [it:604](../../tests/integration/actions.test.ts#L604) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive a grant or action when a disabled global identity is re-enabled |
+| [it:625](../../tests/integration/actions.test.ts#L625) | controlled actions with real PostgreSQL, HTTP and independent signed journal → does not revive old authority after task membership removal/reinvitation or epoch changes |
+| [it:668](../../tests/integration/actions.test.ts#L668) | controlled actions with real PostgreSQL, HTTP and independent signed journal → rejects an expired approval before opening a network attempt |
+| [it:681](../../tests/integration/actions.test.ts#L681) | controlled actions with real PostgreSQL, HTTP and independent signed journal → deduplicates the same receipt and preserves a conflicting late receipt as an open case |
+| [it:705](../../tests/integration/actions.test.ts#L705) | controlled actions with real PostgreSQL, HTTP and independent signed journal → enforces human HTTP approval contracts and never exposes internal execution/report capabilities |
+| [it:786](../../tests/integration/actions.test.ts#L786) | controlled actions with real PostgreSQL, HTTP and independent signed journal → finds a whole action lost across a simulated database recovery and freezes new execution |
 
 ## tests/integration/agents.test.ts
 
@@ -506,8 +513,8 @@
 | [it:257](../../tests/integration/agents.test.ts#L257) | M4 machine identity and real HTTP external execution → marks completed external reports as unverified and rechecks authorization on report replay |
 | [it:280](../../tests/integration/agents.test.ts#L280) | M4 machine identity and real HTTP external execution → does not revive old tokens after global disable/re-enable or installation disable |
 | [it:299](../../tests/integration/agents.test.ts#L299) | M4 machine identity and real HTTP external execution → requires explicit handoff acceptance for human→agent and agent→agent ownership changes |
-| [it:398](../../tests/integration/agents.test.ts#L398) | SDK retries a lost command response with identical key/body and produces one message |
-| [it:436](../../tests/integration/agents.test.ts#L436) | human Agent management read boundaries → lists credential metadata with actor-bound paging, never hashes or recoverable secrets |
+| [it:406](../../tests/integration/agents.test.ts#L406) | SDK retries a lost command response with identical key/body and produces one message |
+| [it:444](../../tests/integration/agents.test.ts#L444) | human Agent management read boundaries → lists credential metadata with actor-bound paging, never hashes or recoverable secrets |
 
 ## tests/integration/artifact-collaboration.test.ts
 

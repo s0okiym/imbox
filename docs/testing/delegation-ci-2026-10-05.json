@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "recorded_at": "2026-10-05T00:53:03.319735+08:00",
+  "commit": "10f5ba30a7398123f74cd96d08008a2fc595c0d4",
+  "run_id": 37217621037,
+  "job_id": 111481254660,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37217621037",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 180
+  },
+  "integration": {
+    "files": 33,
+    "passed": 249
+  },
+  "browser": {
+    "passed": 25,
+    "minutes_rounded": 2.8
+  },
+  "actual_model": {
+    "passed": 1
+  },
+  "scope": "Delegation reassignment browser regression; excludes subsequent handoff action manifest implementation"
+}

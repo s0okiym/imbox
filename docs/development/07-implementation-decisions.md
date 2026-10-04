@@ -6,7 +6,7 @@
 
 核心 API、Worker、领域逻辑、工具执行器和 SDK 使用 TypeScript / Node.js 24；Web 使用 React、Vite。PostgreSQL 保存权威业务状态、身份分区、预算、租约、领域事件与派发事实。对象存储使用兼容 S3 的私有桶。所有对外数据以 JSON Schema / OpenAPI 为契约，数据库时间裁定期限和租约。
 
-精确依赖版本以 `pnpm-lock.yaml` 和 `pnpm-workspace.yaml` 为准。浏览器持久数据采用 Dexie 4.4.6；虚拟列表已选定并安装 TanStack Virtual 3.14.13，页面装配仍待完成；IndexedDB 单元测试采用 fake-indexeddb 6.2.5。路由当前采用浏览器 URL / History API，没有把设计中的 React Router 7 静默升级成不同主版本。后续引入 Router 时必须保留当前深链语义及权限回归。[Dexie React 文档](https://dexie.org/docs/Tutorial/React)、[TanStack React Virtual 文档](https://tanstack.com/virtual/latest/docs/framework/react/react-virtual)、[React Router 安装文档](https://reactrouter.com/start/declarative/installation)。
+精确依赖版本以 `pnpm-lock.yaml` 和 `pnpm-workspace.yaml` 为准。浏览器持久数据采用 Dexie 4.4.6；虚拟列表已接入 TanStack Virtual 3.14.13，配合固定分页和有界消息窗口；IndexedDB 单元测试采用 fake-indexeddb 6.2.5。路由当前采用浏览器 URL / History API，没有把设计中的 React Router 7 静默升级成不同主版本。后续引入 Router 时必须保留当前深链语义及权限回归。[Dexie React 文档](https://dexie.org/docs/Tutorial/React)、[TanStack React Virtual 文档](https://tanstack.com/virtual/latest/docs/framework/react/react-virtual)、[React Router 安装文档](https://reactrouter.com/start/declarative/installation)。
 
 ## DEV-ADR-04：数据库直接扫描持久作业
 
@@ -83,3 +83,13 @@ Web Push 使用 `web-push` 3.6.7 生成 VAPID/aes128gcm 请求，自有传输层
 当前内存浏览窗口最高 1,000 条。到达上限后可沿原权限绑定游标打开更早窗口，释放较新的窗口；这不是服务端历史保留上限。历史窗口继续应用已加载消息的编辑/删除，不自动追加新消息改变正在浏览的范围。返回最新消息显式重取快照、重置历史游标；在较早窗口中先返回最新再发送，草稿保留。权限变化和断线重同步仍服从现有授权视图清理。
 
 浏览器回归使用 1,055 条真实业务消息，验证虚拟 DOM 数量有界、跨过 1,000 条窗口继续访问第一条、返回最新，以及窗口外深链的当前读取/删除。真实移动设备和辅助技术仍需要独立验收。
+
+## DEV-ADR-11：交接时显式披露待处理行动（2026-10-05）
+
+`GET /v1/tasks/{id}/handoff-actions`（机器端为 `/v1/machine/tasks/{id}/handoff-actions`，需 `tasks.read`）仅向当前有权 owner 返回任务版本和当前任务的待处理 Action 编号，不返回参数、凭证或子任务资料。待处理包含非终态行动、尚未成功的必需行动，以及存在开放核对案件的行动。单次最多 100 个引用；超过时明确返回 `HANDOFF_ACTIONS_LIMIT`，不截断后允许交接。
+
+Web 发起交接时加载此清单，非空清单必须勾选披露确认；`WorkProposal.handoff.pending_action_ids` 固定这些编号，接收人可以在接单前阅读。编号披露不授予 Action 详情或底层来源的读取权，也不继承任何工具执行授权。创建、修订和接受均在任务根锁内检查引用属于同一任务，并且没有遗漏当前待处理行动。新增未披露行动返回 `HANDOFF_ACTIONS_CHANGED`；已经完成的已列行动可以保留在协议中，不因正常进展无限重发提案。
+
+旧客户端仍可发送空清单，但任务存在待处理行动时会被拒绝；不能把缺少字段能力当作默许披露。接受失败时发起人通过修订 API，或在 Web 撤回后重新发起，提供最新条款；接收人重新明确接受。拒绝、澄清和撤回不要求清单仍为最新，以免阻断退出流程。
+
+本清单仅描述当前任务的行动；子任务沿用各自 owner、ACL 和协议，需单独核对。交接前已发往外部的调用可继续发生效果；交接后的旧执行授权仍失效，未知结果仍只读核对，不能凭交接事件直接重发。该实现不把编号清单变成工具执行授权，也不修改既有预算或任务验收语义。
