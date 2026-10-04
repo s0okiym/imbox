@@ -1,3 +1,4 @@
+import { OrganizationWorkspace } from './organization/OrganizationWorkspace.js';
 import { VirtualMessages } from './messages/virtual-messages.js';
 import { AgentWorkspace } from './agents/AgentWorkspace.js';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -275,6 +276,14 @@ export function App() {
             恢复核对
           </button>
         )}
+        {session.capabilities.includes('organization.management') && (
+          <button
+            aria-current={section === 'organization' ? 'page' : undefined}
+            onClick={() => setSection('organization')}
+          >
+            组织与成员
+          </button>
+        )}
         {agentsEnabled && (
           <button
             aria-current={section === 'agents' ? 'page' : undefined}
@@ -311,6 +320,15 @@ export function App() {
       <div className="application-content">
         {section === 'device' ? (
           <DeviceWorkspace onClose={() => setSection('messages')} />
+        ) : section === 'organization' &&
+          session.capabilities.includes('organization.management') ? (
+          <OrganizationWorkspace
+            key={identity}
+            session={session}
+            onClose={() => setSection('messages')}
+            onSessionLost={clearSession}
+            onSessionUpdated={setSession}
+          />
         ) : section === 'agents' && agentsEnabled ? (
           <AgentWorkspace
             key={identity}

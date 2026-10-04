@@ -2,6 +2,213 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://imbox.local/schemas/v1/contracts.json",
   "$defs": {
+    "OrganizationManagementAccess": {
+      "title": "OrganizationManagementAccess",
+      "type": "object",
+      "properties": {
+        "can_manage": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "can_manage"
+      ],
+      "additionalProperties": false
+    },
+    "ManagedWorkspace": {
+      "title": "ManagedWorkspace",
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "version": {
+          "$ref": "#/$defs/Version"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "ManagedWorkspacePage": {
+      "title": "ManagedWorkspacePage",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ManagedWorkspace"
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "$ref": "#/$defs/Cursor"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "OrganizationCandidate": {
+      "title": "OrganizationCandidate",
+      "type": "object",
+      "properties": {
+        "principal": {
+          "$ref": "#/$defs/Principal"
+        },
+        "tenant_role": {
+          "enum": [
+            "owner",
+            "admin",
+            "member",
+            "guest"
+          ]
+        }
+      },
+      "required": [
+        "principal",
+        "tenant_role"
+      ],
+      "additionalProperties": false
+    },
+    "OrganizationCandidatePage": {
+      "title": "OrganizationCandidatePage",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OrganizationCandidate"
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "$ref": "#/$defs/Cursor"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "ManagedWorkspaceMember": {
+      "title": "ManagedWorkspaceMember",
+      "type": "object",
+      "properties": {
+        "principal": {
+          "$ref": "#/$defs/Principal"
+        },
+        "role": {
+          "enum": [
+            "admin",
+            "member",
+            "guest"
+          ]
+        },
+        "status": {
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/Version"
+        },
+        "tenant_status": {
+          "enum": [
+            "active",
+            "disabled",
+            "historical"
+          ]
+        }
+      },
+      "required": [
+        "principal",
+        "role",
+        "status",
+        "version",
+        "tenant_status"
+      ],
+      "additionalProperties": false
+    },
+    "ManagedWorkspaceMemberPage": {
+      "title": "ManagedWorkspaceMemberPage",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ManagedWorkspaceMember"
+          },
+          "maxItems": 100
+        },
+        "next_cursor": {
+          "$ref": "#/$defs/Cursor"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "CreateManagedWorkspaceInput": {
+      "title": "CreateManagedWorkspaceInput",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "SetWorkspaceMemberInput": {
+      "title": "SetWorkspaceMemberInput",
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "role": {
+          "enum": [
+            "admin",
+            "member",
+            "guest"
+          ]
+        },
+        "status": {
+          "enum": [
+            "active",
+            "disabled"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "principal_id",
+        "role",
+        "status",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
     "MemorySourceRef": {
       "title": "MemorySourceRef",
       "type": "object",
@@ -5212,6 +5419,7 @@
             "CAPACITY_EXCEEDED",
             "HANDOFF_ACTIONS_CHANGED",
             "HANDOFF_ACTIONS_LIMIT",
+            "LAST_WORKSPACE_ADMIN",
             "STEP_LIMIT_EXCEEDED",
             "EXECUTION_EXPIRED",
             "RATE_LIMITED",

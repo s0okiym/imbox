@@ -14,6 +14,7 @@ export const POLICY_KINDS = [
   'revocation.artifact_share',
   'revocation.conversation',
   'revocation.task',
+  'revocation.workspace_member',
   'revocation.credential',
   'revocation.agent',
 ] as const;
@@ -52,7 +53,12 @@ function validate(record: PolicyRecord) {
     throw new Error('Invalid policy record');
   for (const id of [record.id, record.tenant_id, record.actor_id, record.target_id]) safeId(id);
   if (record.subject_id !== undefined) safeId(record.subject_id);
-  if (['revocation.conversation', 'revocation.task'].includes(record.kind) && !record.subject_id)
+  if (
+    ['revocation.conversation', 'revocation.task', 'revocation.workspace_member'].includes(
+      record.kind,
+    ) &&
+    !record.subject_id
+  )
     throw new Error('Missing revocation subject');
   const keys = [
     'kind',

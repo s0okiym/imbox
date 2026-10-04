@@ -19,6 +19,7 @@ import {
   createMessagingService,
   createSyncService,
   createTaskService,
+  createOrganizationService,
   createTaskMaintenance,
   configuredPolicyLedger,
   replayPolicyLedger,
@@ -94,6 +95,7 @@ const app = createApp({
   logger: true,
   knowledge,
   governance,
+  organization: createOrganizationService(db, secret, policyOptions),
   notifications: createNotificationService({
     db,
     push: pushConfiguration(),

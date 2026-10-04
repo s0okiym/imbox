@@ -2,8 +2,8 @@
 
 export type Identifier = string;
 export type Version = string;
-export type UtcTimestamp = string;
 export type Cursor = string;
+export type UtcTimestamp = string;
 export type IdempotencyKey = string;
 export type Counter = string;
 export type ArtifactCommentAnchor =
@@ -59,6 +59,15 @@ export type WsClientFrame = WsHello | WsSubscribe | WsAck | WsHeartbeat;
 export type WsServerFrame = WsWelcome | WsSubscribed | WsControl | WsHeartbeat | ProjectionEnvelope;
 
 export interface ContractTypes {
+  OrganizationManagementAccess: OrganizationManagementAccess;
+  ManagedWorkspace: ManagedWorkspace;
+  ManagedWorkspacePage: ManagedWorkspacePage;
+  OrganizationCandidate: OrganizationCandidate;
+  OrganizationCandidatePage: OrganizationCandidatePage;
+  ManagedWorkspaceMember: ManagedWorkspaceMember;
+  ManagedWorkspaceMemberPage: ManagedWorkspaceMemberPage;
+  CreateManagedWorkspaceInput: CreateManagedWorkspaceInput;
+  SetWorkspaceMemberInput: SetWorkspaceMemberInput;
   MemorySourceRef: MemorySourceRef;
   CreateMemoryInput: CreateMemoryInput;
   UpdateMemoryInput: UpdateMemoryInput;
@@ -260,6 +269,61 @@ export interface ContractTypes {
   WsHeartbeat: WsHeartbeat;
   WsClientFrame: WsClientFrame;
   WsServerFrame: WsServerFrame;
+}
+export interface OrganizationManagementAccess {
+  can_manage: boolean;
+}
+export interface ManagedWorkspace {
+  id: Identifier;
+  name: string;
+  version: Version;
+}
+export interface ManagedWorkspacePage {
+  /**
+   * @maxItems 100
+   */
+  items: ManagedWorkspace[];
+  next_cursor?: Cursor;
+}
+export interface OrganizationCandidate {
+  principal: Principal;
+  tenant_role: 'owner' | 'admin' | 'member' | 'guest';
+}
+export interface Principal {
+  id: Identifier;
+  kind: 'human' | 'agent' | 'service';
+  display_name: string;
+  status: 'active' | 'disabled' | 'deleted';
+}
+export interface OrganizationCandidatePage {
+  /**
+   * @maxItems 100
+   */
+  items: OrganizationCandidate[];
+  next_cursor?: Cursor;
+}
+export interface ManagedWorkspaceMember {
+  principal: Principal;
+  role: 'admin' | 'member' | 'guest';
+  status: 'active' | 'disabled';
+  version: Version;
+  tenant_status: 'active' | 'disabled' | 'historical';
+}
+export interface ManagedWorkspaceMemberPage {
+  /**
+   * @maxItems 100
+   */
+  items: ManagedWorkspaceMember[];
+  next_cursor?: Cursor;
+}
+export interface CreateManagedWorkspaceInput {
+  name: string;
+}
+export interface SetWorkspaceMemberInput {
+  principal_id: Identifier;
+  role: 'admin' | 'member' | 'guest';
+  status: 'active' | 'disabled';
+  reason: string;
 }
 export interface MemorySourceRef {
   kind: 'message' | 'task' | 'artifact_version';
@@ -1501,12 +1565,6 @@ export interface ProjectionContext {
   projection_id: Identifier;
   projection_revision: Version;
 }
-export interface Principal {
-  id: Identifier;
-  kind: 'human' | 'agent' | 'service';
-  display_name: string;
-  status: 'active' | 'disabled' | 'deleted';
-}
 export interface Workspace {
   id: Identifier;
   name: string;
@@ -1642,6 +1700,7 @@ export interface Error {
     | 'CAPACITY_EXCEEDED'
     | 'HANDOFF_ACTIONS_CHANGED'
     | 'HANDOFF_ACTIONS_LIMIT'
+    | 'LAST_WORKSPACE_ADMIN'
     | 'STEP_LIMIT_EXCEEDED'
     | 'EXECUTION_EXPIRED'
     | 'RATE_LIMITED'

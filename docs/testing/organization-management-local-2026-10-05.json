@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "recorded_at": "2026-10-05T01:57:13.809895+08:00",
+  "parent_commit": "d946f34b88d3510301f88fb41bcd7035a56bcb9f",
+  "source_index_sha256": "d6569d84f6aed9e6cb8f5ca43075612afc2b8818b78987bf48525218f5599cfb",
+  "source_index_command": "git ls-files -s -- . ':!docs/**' ':!README.md' | sha256sum",
+  "lock_sha256": "18543dbd50b7294533d136164f8b94777281864bc6df97e1992784cb6dbb6d55",
+  "environment": {
+    "node": "24.21.0",
+    "pnpm": "10.34.6",
+    "database": "PostgreSQL 18, dedicated test database and restricted application/identity roles",
+    "browser": "Chromium",
+    "new_database_migrations": false
+  },
+  "engineering": {
+    "command": "pnpm verify",
+    "status": "passed"
+  },
+  "unit": {
+    "files": 32,
+    "passed": 181,
+    "seconds": 7.08
+  },
+  "integration": {
+    "files": 34,
+    "passed": 261,
+    "seconds": 196.3
+  },
+  "browser": {
+    "passed": 29,
+    "minutes_rounded": 5.4,
+    "retries": 0
+  },
+  "actual_model": {
+    "passed": 1,
+    "seconds": 10.46,
+    "model": "qwen3:0.6b",
+    "digest": "sha256:7df6b6e09427a769808717c0a93cadc4ae99ed4eb8bf5ca557c90846becea435"
+  },
+  "regression_catalog": {
+    "files": 82,
+    "named_declarations": 451,
+    "check": "passed"
+  },
+  "acceptance": {
+    "verified": 27,
+    "partial": 13,
+    "pending": 1,
+    "production_gate": "blocked"
+  },
+  "remote_candidate": "New commit CI must be evaluated separately from parent d946f34; no new remote success claimed in this local record"
+}

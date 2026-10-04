@@ -12,6 +12,420 @@
     }
   ],
   "paths": {
+    "/v1/organization/access": {
+      "get": {
+        "operationId": "getOrganizationAccess",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationManagementAccess"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organization/workspaces": {
+      "get": {
+        "operationId": "listManagedWorkspaces",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedWorkspacePage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createManagedWorkspace",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IdempotencyKey"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedWorkspace"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateManagedWorkspaceInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organization/candidates": {
+      "get": {
+        "operationId": "listOrganizationCandidates",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationCandidatePage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organization/workspaces/{id}/members": {
+      "get": {
+        "operationId": "listManagedWorkspaceMembers",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedWorkspaceMemberPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setWorkspaceMember",
+        "x-imbox-implementation-status": "implemented",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "X-Imbox-Tenant-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IdempotencyKey"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 256,
+              "pattern": "^\"[^\"\\r\\n]+\"$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedWorkspace"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured error; authentication and authorization are enforced by the API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetWorkspaceMemberInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/notifications": {
       "get": {
         "operationId": "listNotifications",
@@ -11870,6 +12284,213 @@
       }
     },
     "schemas": {
+      "OrganizationManagementAccess": {
+        "title": "OrganizationManagementAccess",
+        "type": "object",
+        "properties": {
+          "can_manage": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_manage"
+        ],
+        "additionalProperties": false
+      },
+      "ManagedWorkspace": {
+        "title": "ManagedWorkspace",
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "ManagedWorkspacePage": {
+        "title": "ManagedWorkspacePage",
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagedWorkspace"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "$ref": "#/components/schemas/Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "OrganizationCandidate": {
+        "title": "OrganizationCandidate",
+        "type": "object",
+        "properties": {
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          },
+          "tenant_role": {
+            "enum": [
+              "owner",
+              "admin",
+              "member",
+              "guest"
+            ]
+          }
+        },
+        "required": [
+          "principal",
+          "tenant_role"
+        ],
+        "additionalProperties": false
+      },
+      "OrganizationCandidatePage": {
+        "title": "OrganizationCandidatePage",
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationCandidate"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "$ref": "#/components/schemas/Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "ManagedWorkspaceMember": {
+        "title": "ManagedWorkspaceMember",
+        "type": "object",
+        "properties": {
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          },
+          "role": {
+            "enum": [
+              "admin",
+              "member",
+              "guest"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "disabled"
+            ]
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "tenant_status": {
+            "enum": [
+              "active",
+              "disabled",
+              "historical"
+            ]
+          }
+        },
+        "required": [
+          "principal",
+          "role",
+          "status",
+          "version",
+          "tenant_status"
+        ],
+        "additionalProperties": false
+      },
+      "ManagedWorkspaceMemberPage": {
+        "title": "ManagedWorkspaceMemberPage",
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagedWorkspaceMember"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "$ref": "#/components/schemas/Cursor"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "CreateManagedWorkspaceInput": {
+        "title": "CreateManagedWorkspaceInput",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "SetWorkspaceMemberInput": {
+        "title": "SetWorkspaceMemberInput",
+        "type": "object",
+        "properties": {
+          "principal_id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "role": {
+            "enum": [
+              "admin",
+              "member",
+              "guest"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "disabled"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "principal_id",
+          "role",
+          "status",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
       "MemorySourceRef": {
         "title": "MemorySourceRef",
         "type": "object",
@@ -17080,6 +17701,7 @@
               "CAPACITY_EXCEEDED",
               "HANDOFF_ACTIONS_CHANGED",
               "HANDOFF_ACTIONS_LIMIT",
+              "LAST_WORKSPACE_ADMIN",
               "STEP_LIMIT_EXCEEDED",
               "EXECUTION_EXPIRED",
               "RATE_LIMITED",

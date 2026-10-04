@@ -1533,3 +1533,12 @@ a {
 }
 
 .offline-entry { position: fixed; bottom: 20px; right: 20px; z-index: 5; padding: 10px 16px; border: 1px solid #b8cbbd; border-radius: 12px; background: #edf2ec; color: #234331; }
+
+.organization-workspace { padding: 1.5rem; overflow: auto; width: 100%; }
+.organization-workspace header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.organization-workspace form { display: grid; gap: .75rem; max-width: 44rem; margin: 1rem 0 2rem; }
+.organization-workspace label { display: grid; gap: .35rem; }
+.organization-workspace input:not([type=checkbox]), .organization-workspace select, .organization-workspace textarea { padding: .6rem; max-width: 100%; }
+.organization-workspace table { border-collapse: collapse; width: 100%; }
+.organization-workspace th, .organization-workspace td { text-align: left; padding: .6rem; border-bottom: 1px solid #d8dee8; }
+.organization-workspace small { display: block; overflow-wrap: anywhere; }

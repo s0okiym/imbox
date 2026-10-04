@@ -2,12 +2,13 @@
 
 面向人与人、人和 AI Agent、Agent 之间沟通与协作的 AI 原生即时通信系统。
 
-当前为 V1 功能试用候选。已有可执行的身份认证、消息与权限、持久同步、Web 客户端、任务协作、持久 Agent Runtime、受控外部行动、机器身份与 SDK，以及受限文件产物、调度、治理、离线缓存与通知；容量优化与完整准出验证继续推进。具体完成边界见 [实施状态](docs/implementation-status.md)，不能把当前工程视作完整产品发布。
+当前为 V1 功能试用候选。已有可执行的身份认证、消息与权限、持久同步、Web 客户端、工作区成员管理、任务协作、持久 Agent Runtime、受控外部行动、机器身份与 SDK，以及受限文件产物、调度、治理、离线缓存与通知；容量优化与完整准出验证继续推进。具体完成边界见 [实施状态](docs/implementation-status.md)，不能把当前工程视作完整产品发布。
 
 ## 设计与工程
 
 - [产品与系统设计 v2.0](docs/imbox-product-and-system-design.md)：体验、领域、Agent 运行、权限、可靠性、未来扩展和验收标准。
 - [开发设计 v1.0](docs/development/README.md)：技术选型、数据与接口、客户端、安全运维和交付工作包。
+- [组织与工作区成员管理](docs/operations/organization-management.md)：创建工作区、管理已有成员及权限恢复边界。
 - [验证与回归说明](docs/testing/README.md)：真实数据库、协议、浏览器验证以及证据边界。
 - [开发总结](docs/development-summary.md)、[测试报告](docs/testing/test-report.md)、[准出记录](docs/release-readiness.md)：当前实现、实测结果与尚未解除的发布门槛。
 
@@ -44,7 +45,7 @@ Web 默认 `http://localhost:5173`，同源代理 API 4100。修改 Web 地址�
 
 ## 验证
 
-最近完成的功能候选通过完整远程 CI：180 单元、246 集成、24 浏览器以及 1 项真实模型验证。源码与运行链接见 [最终候选证据](docs/testing/final-candidate-evidence-2026-10-05.json)；生产准出门槛独立保留。
+最近完成的远程候选 `d946f34` 通过完整 CI：181 单元、253 集成、27 浏览器以及 1 项真实模型验证，见 [候选证据](docs/testing/handoff-manifest-ci-2026-10-05.json)。后续组织管理增量的源码与实测结果见 [本轮证据](docs/testing/organization-management-evidence-2026-10-05.md)；生产准出门槛独立保留。
 
 ```sh
 pnpm verify

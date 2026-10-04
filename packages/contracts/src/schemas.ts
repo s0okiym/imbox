@@ -1,4 +1,5 @@
 import { notificationDefinitions } from './notification-definitions.js';
+import { organizationDefinitions } from './organization-definitions.js';
 import { artifactCollaborationDefinitions } from './artifact-collaboration-definitions.js';
 import { governanceDefinitions } from './governance-definitions.js';
 import { recoveryDefinitions } from './recovery-definitions.js';
@@ -74,6 +75,7 @@ const viewProperties = {
 };
 
 export const definitions = {
+  ...organizationDefinitions,
   ...knowledgeDefinitions,
   ...recoveryDefinitions,
   ...notificationDefinitions,
@@ -210,6 +212,7 @@ export const definitions = {
         'CAPACITY_EXCEEDED',
         'HANDOFF_ACTIONS_CHANGED',
         'HANDOFF_ACTIONS_LIMIT',
+        'LAST_WORKSPACE_ADMIN',
         'STEP_LIMIT_EXCEEDED',
         'EXECUTION_EXPIRED',
         'RATE_LIMITED',

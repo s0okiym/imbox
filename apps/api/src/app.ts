@@ -1,3 +1,4 @@
+import { registerOrganizationRoutes } from './organization-routes.js';
 import { registerNotificationRoutes } from './notification-routes.js';
 import type { NotificationService } from '@imbox/notifications';
 import { registerRunToolRoutes } from './run-tool-routes.js';
@@ -21,7 +22,12 @@ import Fastify, { LogController, type FastifyInstance } from 'fastify';
 import { ContractValidationError, routeContracts, schemas } from '@imbox/contracts';
 import { ApplicationError } from '@imbox/application';
 import { AuthError, registerAuthRoutes, type IdentityService } from '@imbox/auth';
-import type { MessagingService, SyncService, TaskService } from '@imbox/application';
+import type {
+  MessagingService,
+  SyncService,
+  TaskService,
+  OrganizationService,
+} from '@imbox/application';
 import { registerSyncRoutes } from './sync-routes.js';
 import { registerTaskRoutes } from './task-routes.js';
 import { registerRuntimeRoutes } from './runtime-routes.js';
@@ -40,6 +46,7 @@ export interface AppOptions {
   messaging?: MessagingService;
   sync?: SyncService;
   tasks?: TaskService;
+  organization?: OrganizationService;
   runtime?: RuntimeService;
   actions?: ActionService;
   agents?: AgentService;
@@ -160,6 +167,7 @@ export function createApp(options: AppOptions): FastifyInstance {
           ...(options.maintenance ? ['tasks.escalations'] : []),
           ...(options.knowledge ? ['knowledge.memory', 'knowledge.search'] : []),
           ...(options.governance ? ['governance.exports', 'governance.policy'] : []),
+          ...(options.organization ? ['organization.management'] : []),
           ...(options.notifications ? ['notifications.inbox', 'notifications.preferences'] : []),
           ...(options.collaboration ? ['artifacts.comments', 'artifacts.shares'] : []),
           ...(options.scheduling ? ['agents.schedules'] : []),
@@ -225,6 +233,8 @@ export function createApp(options: AppOptions): FastifyInstance {
           identity: options.identity!,
           messaging: options.messaging,
         });
+      if (options.organization)
+        registerOrganizationRoutes(scope, options.identity!, options.organization);
       if (options.tasks) await registerTaskRoutes(scope, options.identity!, options.tasks);
       if (options.runtime)
         await registerRuntimeRoutes(scope, {

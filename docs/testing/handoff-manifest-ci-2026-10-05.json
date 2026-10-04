@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "commit": "d946f34b88d3510301f88fb41bcd7035a56bcb9f",
+  "run_id": 37219438802,
+  "job_id": 111486602127,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37219438802",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {"files": 32, "passed": 181},
+  "integration": {"files": 33, "passed": 253},
+  "browser": {"passed": 27, "minutes_rounded": 3.0},
+  "actual_model": {"passed": 1},
+  "scope": "Handoff action manifests, machine/SDK handoff preview and TaskWorkspace stale-poll protection; excludes subsequent organization management changes"
+}

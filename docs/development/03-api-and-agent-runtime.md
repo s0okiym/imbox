@@ -270,3 +270,9 @@ Scheduler 周期扫描 due schedules，锁定计划后按时区计算 occurrence
 SDK 提供 `getTaskHandoffActions(taskId)` 与 `createTaskRequest(taskId, version, input, idempotencyKey)`。Agent 必须把核对后的编号放入明确的 WorkProposal，再经 `tasks.write` 创建提案；收到、ACK、接受仍是分离命令。`HANDOFF_ACTIONS_CHANGED` 要求重新核对并提出最新条款，`HANDOFF_ACTIONS_LIMIT` 表示超过 100 项且没有返回截断清单。权限失败不能降级成空数组继续提交。
 
 详细并发边界、已完成引用及子任务范围见 [DEV-ADR-11](07-implementation-decisions.md)。
+
+## 组织工作区成员管理（2026-10-05 增量）
+
+`/v1/organization/access`、`/workspaces`、`/candidates` 及 `/workspaces/{id}/members` 提供 human 管理入口。创建使用 `CreateManagedWorkspaceInput`；成员写入使用 `SetWorkspaceMemberInput`，If-Match 指工作区版本，角色/状态/理由均显式提交。`LAST_WORKSPACE_ADMIN` 是 409 拒绝；`VERSION_CONFLICT` 后需重新核对，不能自动覆盖。
+
+列表每页最多 100 条并使用调用者、授权修订和用途绑定的游标。事件 `workspace.created` 与 `workspace.member_changed` 与写入同事务提交；工作区事件不投影为会话正文。完整路径、DTO 和鉴权要求以生成 OpenAPI 为准，操作范围见 [组织管理](../operations/organization-management.md)。

@@ -108,3 +108,5 @@ Web Push 故障注入夹具把 Node ECDH 导出的私钥左侧补零到 32 字�
 所有具名用例的可再生静态索引见 [回归用例目录](regression-cases.md)。新增或移动测试后运行 `pnpm test:catalog`，`pnpm test:catalog:check` 可核对目录与源文件一致；静态目录不会更改 AC/INV 的验收状态。
 
 组织接入回归见 `tests/integration/workspace-provisioning.test.ts`：只计划不写入、权限边界、原子初始化、并发重试不恢复撤权、真实认证与会话入口。私聊专用回归见 `direct-messaging.test.ts`。本轮验收逐项审查见 [AC/INV 审查记录](acceptance-review-2026-10-04.md)，其中 partial 和 pending 仍阻止完整生产准出。
+
+组织管理回归：`tests/integration/organization.test.ts` 与 `tests/e2e/organization.spec.ts`。覆盖组织管理权、资源权限分离、成员命令、旧运行授权、独立账本恢复及 Web 明确确认；批次与限制见 [组织管理证据](organization-management-evidence-2026-10-05.md)。

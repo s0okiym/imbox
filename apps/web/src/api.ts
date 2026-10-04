@@ -1,4 +1,5 @@
 import type {
+  ContractTypes as C,
   Conversation,
   ConversationMemberPage,
   ConversationPage,
@@ -43,7 +44,7 @@ export class ApiClient {
   private async request<T>(
     path: string,
     options: {
-      method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+      method?: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT';
       body?: unknown;
       idempotencyKey?: string;
       version?: string;
@@ -88,6 +89,66 @@ export class ApiClient {
     return payload as T;
   }
 
+  organizationAccess(signal: AbortSignal): Promise<C['OrganizationManagementAccess']> {
+    return this.request('/v1/organization/access', { signal });
+  }
+  managedWorkspaces(signal: AbortSignal, cursor?: string): Promise<C['ManagedWorkspacePage']> {
+    return this.request(
+      '/v1/organization/workspaces?' +
+        new URLSearchParams({ limit: '100', ...(cursor ? { cursor } : {}) }),
+      { signal },
+    );
+  }
+  organizationCandidates(
+    signal: AbortSignal,
+    cursor?: string,
+  ): Promise<C['OrganizationCandidatePage']> {
+    return this.request(
+      '/v1/organization/candidates?' +
+        new URLSearchParams({ limit: '100', ...(cursor ? { cursor } : {}) }),
+      { signal },
+    );
+  }
+  managedMembers(
+    id: string,
+    signal: AbortSignal,
+    cursor?: string,
+  ): Promise<C['ManagedWorkspaceMemberPage']> {
+    return this.request(
+      '/v1/organization/workspaces/' +
+        encodeURIComponent(id) +
+        '/members?' +
+        new URLSearchParams({ limit: '100', ...(cursor ? { cursor } : {}) }),
+      { signal },
+    );
+  }
+  createManagedWorkspace(
+    body: C['CreateManagedWorkspaceInput'],
+    idempotencyKey: string,
+    signal: AbortSignal,
+  ): Promise<C['ManagedWorkspace']> {
+    return this.request('/v1/organization/workspaces', {
+      method: 'POST',
+      body,
+      idempotencyKey,
+      signal,
+    });
+  }
+  setWorkspaceMember(
+    id: string,
+    body: C['SetWorkspaceMemberInput'],
+    version: string,
+    idempotencyKey: string,
+    signal: AbortSignal,
+  ): Promise<C['ManagedWorkspace']> {
+    return this.request('/v1/organization/workspaces/' + encodeURIComponent(id) + '/members', {
+      method: 'PUT',
+      body,
+      version,
+      idempotencyKey,
+      signal,
+    });
+  }
   me(signal?: AbortSignal): Promise<Session> {
     return this.request('/v1/me', signal === undefined ? {} : { signal });
   }
@@ -235,6 +296,7 @@ export function describeError(error: unknown): string {
     UNAUTHENTICATED: '登录已失效，请重新登录。',
     FORBIDDEN: '当前身份无法访问此内容，已清除相关视图。',
     NOT_FOUND: '此内容不可用或你已失去访问权限。',
+    LAST_WORKSPACE_ADMIN: '请先指定另一名有效的工作区管理员，再停用或降权当前管理员。',
     VERSION_CONFLICT: '内容已被更新。请查看最新版本后重新编辑。',
     IDEMPOTENCY_CONFLICT: '这个请求的内容已经改变，请核对后重新操作。',
     RATE_LIMITED: '操作有些频繁，请稍后重试。',

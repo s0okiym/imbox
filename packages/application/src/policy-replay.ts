@@ -253,6 +253,26 @@ export async function applyPolicyRecord(tx: Tx, record: PolicyRecord) {
       }
       break;
     }
+    case 'revocation.workspace_member': {
+      const changed =
+        await sql`update memberships set status='disabled',version=version+1,updated_at=clock_timestamp() where workspace_id=${id} and principal_id=${record.subject_id!} and version<=${record.target_version}::bigint and status='active'`.execute(
+          tx,
+        );
+      if (changed.numAffectedRows) {
+        await sql`update tenant_principals set authz_revision=authz_revision+1,version=version+1,updated_at=clock_timestamp() where principal_id=${record.subject_id!}`.execute(
+          tx,
+        );
+        const w = (
+          await sql<{
+            version: string;
+          }>`update workspaces set version=version+1,updated_at=clock_timestamp() where id=${id} returning version`.execute(
+            tx,
+          )
+        ).rows[0];
+        if (w) await policyEvent(tx, 'workspace', id, w.version, `workspace:${id}`);
+      }
+      break;
+    }
     case 'revocation.credential':
       await sql`update agent_credentials set status='revoked',revision=revision+1,revoked_at=clock_timestamp() where id=${id} and status='active'`.execute(
         tx,

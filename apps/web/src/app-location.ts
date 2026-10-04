@@ -7,6 +7,7 @@ export type AppSection =
   | 'resources'
   | 'knowledge'
   | 'recovery'
+  | 'organization'
   | 'governance'
   | 'agents'
   | 'notifications'
@@ -65,6 +66,8 @@ export function parseAppLocation(url: URL): AppLocation {
       return { ...base, section: 'agents' };
     case 'notifications':
       return { ...base, section: 'notifications' };
+    case 'organization':
+      return { ...base, section: 'organization' };
     case 'governance':
       return { ...base, section: 'governance' };
     default:

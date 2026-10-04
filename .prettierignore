@@ -6,3 +6,6 @@ coverage
 packages/contracts/src/generated.ts
 packages/contracts/openapi/openapi.json
 docs/testing/regression-cases.md
+
+playwright-report
+test-results
