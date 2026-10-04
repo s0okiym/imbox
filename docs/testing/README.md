@@ -110,3 +110,5 @@ Web Push 故障注入夹具把 Node ECDH 导出的私钥左侧补零到 32 字�
 组织接入回归见 `tests/integration/workspace-provisioning.test.ts`：只计划不写入、权限边界、原子初始化、并发重试不恢复撤权、真实认证与会话入口。私聊专用回归见 `direct-messaging.test.ts`。本轮验收逐项审查见 [AC/INV 审查记录](acceptance-review-2026-10-04.md)，其中 partial 和 pending 仍阻止完整生产准出。
 
 组织管理回归：`tests/integration/organization.test.ts` 与 `tests/e2e/organization.spec.ts`。覆盖组织管理权、资源权限分离、成员命令、旧运行授权、独立账本恢复及 Web 明确确认；批次与限制见 [组织管理证据](organization-management-evidence-2026-10-05.md)。
+
+容器发布回归：先 `pnpm build:images`，再 `pnpm test:deployment`。使用真实 Docker API/Worker/Caddy，验证 TLS、WSS、会话/CSRF、消息投影及重启；配置前提与证明边界见 [容器部署](../operations/container-deployment.md)。

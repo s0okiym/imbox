@@ -1,0 +1,55 @@
+{
+  "verified_at": "2026-10-04T18:31:28.575Z",
+  "images": {
+    "api": "sha256:0f2ad6895a3be092db6bfe11f1a350bd10b3c08a6e4e07c8ac73342e73e88c60",
+    "worker": "sha256:1aec7c33de9f953d906afd4b2abe3687a08ef24775069a1f64beea3bb63b868b",
+    "tool-runner": "sha256:1e8e009deb547bfa898d9b1c218061741dda53d86f81c46461a22578a7112b30",
+    "web": "sha256:0b0794856319043b09200d5be4a960b7c0f954860514a620df54d735a0c69f65"
+  },
+  "checks": [
+    "frozen-production-dependencies",
+    "non-root",
+    "read-only-root",
+    "TLS-SPA-cache",
+    "API-no-store",
+    "production-dev-login-disabled",
+    "cookie-CSRF",
+    "worker-message-projection",
+    "WSS-upgrade",
+    "API-restart"
+  ],
+  "scope": "Local Docker deployment using a fixture session and localhost CA; no production IdP, ACME domain or external provider acceptance claimed",
+  "version": 1,
+  "parent_commit": "6fb57662997c6fb9c1a2bcd0ffd5f7b2ca2f1a4b",
+  "source_index_sha256": "8f3538feab65269ba0e048dc611f6fcade53d06352447220d49154eb2c13ee9b",
+  "source_index_command": "git ls-files -s -- . ':!docs/**' ':!README.md' | sha256sum",
+  "lock_sha256": "8523fe4133a22be8e649c4ed6e08f894da6d16bf9198613e3b5c0edfed79f880",
+  "engineering": {
+    "status": "passed_components",
+    "detail": "env, contracts, build, runtime dependencies and typechecks passed in pnpm verify; after fixing a no-useless-escape lint error, pnpm lint and pnpm test:unit passed separately"
+  },
+  "unit": {
+    "files": 32,
+    "passed": 181,
+    "seconds": 8.22
+  },
+  "deployment": {
+    "files": 1,
+    "passed": 3,
+    "seconds": 20.62,
+    "optional_tool_compose": "configuration merge validated; no live connector container claim"
+  },
+  "regression_catalog": {
+    "files": 83,
+    "named_declarations": 454,
+    "check": "passed"
+  },
+  "acceptance": {
+    "verified": 27,
+    "partial": 13,
+    "pending": 1,
+    "production_gate": "blocked"
+  },
+  "platform": "linux/amd64, Docker 29.8.2, Compose 5.6.0, Node 24.21.0, pnpm 10.34.6",
+  "remote_candidate": "New commit CI pending; parent organization-management CI archived separately"
+}

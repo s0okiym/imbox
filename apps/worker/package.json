@@ -19,7 +19,8 @@
     "@imbox/resources": "workspace:*",
     "@imbox/knowledge": "workspace:*",
     "@imbox/governance": "workspace:*",
-    "@imbox/notifications": "workspace:*"
+    "@imbox/notifications": "workspace:*",
+    "@imbox/actions": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

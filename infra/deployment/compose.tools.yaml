@@ -1,0 +1,47 @@
+# Include explicitly when enabling the controlled connector. Keep this journal independent of DB backups.
+services:
+  api:
+    environment:
+      ACTION_JOURNAL_DIRECTORY: /var/lib/imbox/action-journal
+      DEMO_TOOL_ALLOW_LOOPBACK: 'false'
+    volumes:
+      - type: bind
+        source: ${IMBOX_ACTION_DIR:?Set the independent action journal directory}
+        target: /var/lib/imbox/action-journal
+        bind: { create_host_path: false }
+  worker:
+    environment:
+      ACTION_JOURNAL_DIRECTORY: /var/lib/imbox/action-journal
+      DEMO_TOOL_ALLOW_LOOPBACK: 'false'
+    volumes:
+      - type: bind
+        source: ${IMBOX_ACTION_DIR:?Set the independent action journal directory}
+        target: /var/lib/imbox/action-journal
+        bind: { create_host_path: false }
+  tool-runner:
+    image: ${IMBOX_TOOL_IMAGE:?Set the built tool-runner image reference}
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ['/tmp:size=64m,mode=1777']
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '3' }
+    env_file:
+      - path: ${IMBOX_TOOL_ENV_FILE:?Set the private tool-runner environment file}
+        format: raw
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      ACTION_JOURNAL_DIRECTORY: /var/lib/imbox/action-journal
+      DEMO_TOOL_ALLOW_LOOPBACK: 'false'
+    volumes:
+      - type: bind
+        source: ${IMBOX_ACTION_DIR:?Set the independent action journal directory}
+        target: /var/lib/imbox/action-journal
+        bind: { create_host_path: false }
+    depends_on:
+      api: { condition: service_healthy }

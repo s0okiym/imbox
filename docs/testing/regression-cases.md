@@ -2,7 +2,7 @@
 
 由 `pnpm test:catalog` 从 TypeScript 测试声明生成。参数化用例在此只登记声明，实际展开数量以测试运行报告为准；测试路径存在和标题登记不等于测试已通过，也不等于 AC/INV 已完整覆盖。
 
-共 82 个测试文件、451 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
+共 83 个测试文件、454 个具名声明。执行入口、环境和限制见 [回归说明](README.md)，产品验收映射见 [coverage.json](../../tests/acceptance/coverage.json)。
 
 ## apps/api/src/coalesced-read.test.ts
 
@@ -362,6 +362,14 @@
 | [it:33](../../packages/scheduling/src/calendar.test.ts#L33) | IANA daily calendar → coalesces several due days once, while skip advances the persisted cursor without catch-up |
 | [it:53](../../packages/scheduling/src/calendar.test.ts#L53) | IANA daily calendar → uses inclusive start and an exclusive absolute deadline for one-off and daily schedules |
 | [it:71](../../packages/scheduling/src/calendar.test.ts#L71) | IANA daily calendar → rejects numeric offsets and invalid zones or local times |
+
+## tests/deployment/containers.test.ts
+
+| 声明 | 用例 |
+|---|---|
+| [it:204](../../tests/deployment/containers.test.ts#L204) | runs the pinned production dependency tree as a non-root user on a read-only root filesystem |
+| [it:244](../../tests/deployment/containers.test.ts#L244) | serves the production SPA over TLS, preserves cache policy and keeps API and dev login outside the SPA fallback |
+| [it:268](../../tests/deployment/containers.test.ts#L268) | carries authenticated commands and WebSockets through TLS and lets the container worker commit the message projection |
 
 ## tests/e2e/agent-management.spec.ts
 

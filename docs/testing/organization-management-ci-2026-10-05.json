@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "commit": "6fb57662997c6fb9c1a2bcd0ffd5f7b2ca2f1a4b",
+  "run_id": 37222478375,
+  "job_id": 111495451306,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37222478375",
+  "status": "success",
+  "engineering": "passed",
+  "unit": {
+    "files": 32,
+    "passed": 181
+  },
+  "integration": {
+    "files": 34,
+    "passed": 261
+  },
+  "browser": {
+    "passed": 29,
+    "minutes_rounded": 2.7
+  },
+  "actual_model": {
+    "passed": 1
+  },
+  "scope": "Organization workspace membership management; excludes subsequent container deployment changes"
+}

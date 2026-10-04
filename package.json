@@ -23,7 +23,7 @@
     "test:unit": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:acceptance": "node scripts/acceptance-status.mjs",
-    "verify": "pnpm env:check && pnpm contracts:check && pnpm build && pnpm typecheck && pnpm typecheck:tests && pnpm lint && pnpm test:unit",
+    "verify": "pnpm env:check && pnpm contracts:check && pnpm build && pnpm check:runtime-dependencies && pnpm typecheck && pnpm typecheck:tests && pnpm lint && pnpm test:unit",
     "db:setup": "dotenv run -f .env -- pnpm --filter @imbox/db setup:dev",
     "db:setup:test": "dotenv run -f .env -- pnpm --filter @imbox/db setup:test",
     "db:migrate": "dotenv run -f .env -- pnpm --filter @imbox/db migrate",
@@ -43,7 +43,10 @@
     "pilot:setup": "node scripts/pilot.mjs setup",
     "pilot": "node scripts/pilot.mjs start",
     "pilot:status": "node scripts/pilot.mjs status",
-    "workspace:provision": "tsx scripts/provision-workspace-cli.ts"
+    "workspace:provision": "tsx scripts/provision-workspace-cli.ts",
+    "build:images": "node scripts/build-images.mjs",
+    "test:deployment": "vitest run --config vitest.deployment.config.ts",
+    "check:runtime-dependencies": "node infra/deployment/check-runtime-dependencies.mjs"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

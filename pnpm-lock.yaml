@@ -323,6 +323,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@imbox/actions':
+        specifier: workspace:*
+        version: link:../../packages/actions
       '@imbox/application':
         specifier: workspace:*
         version: link:../../packages/application

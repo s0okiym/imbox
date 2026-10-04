@@ -1,0 +1,24 @@
+# Whitelist build inputs. Credentials, local state and test reports never enter the build context.
+**
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig*.json
+!apps/
+!apps/**
+!packages/
+!packages/**
+!infra/
+!infra/deployment/
+!infra/deployment/Dockerfile
+!infra/deployment/Caddyfile
+!infra/deployment/stage-runtime.mjs
+!infra/deployment/check-runtime-dependencies.mjs
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/*.log
+**/*.tsbuildinfo
+**/coverage
+**/.artifacts

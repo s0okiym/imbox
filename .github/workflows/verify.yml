@@ -40,6 +40,10 @@ jobs:
           done
           docker compose -f infra/compose.yaml exec -T model ollama pull qwen3:0.6b
           pnpm test:model
+      - name: Build application images and verify TLS container workflow
+        run: |
+          pnpm build:images
+          pnpm test:deployment
       # Full V1 acceptance stays separately blocked until every AC/INV has reviewed evidence.
       - if: always()
         run: docker compose -f infra/compose.yaml --profile model down -v

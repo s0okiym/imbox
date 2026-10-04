@@ -1,0 +1,79 @@
+name: imbox-production
+x-runtime: &runtime
+  init: true
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: ['/tmp:size=64m,mode=1777']
+  stop_grace_period: 30s
+  logging:
+    driver: json-file
+    options: { max-size: '10m', max-file: '3' }
+
+services:
+  api:
+    <<: *runtime
+    image: ${IMBOX_API_IMAGE:?Set the built API image reference}
+    env_file:
+      - path: ${IMBOX_API_ENV_FILE:?Set the private API environment file}
+        format: raw
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: '4100'
+      ENABLE_DEV_AUTH: 'false'
+      OIDC_ALLOW_LOCAL_HTTP: 'false'
+      POLICY_LEDGER_DIRECTORY: /var/lib/imbox/policy-ledger
+    volumes:
+      - type: bind
+        source: ${IMBOX_POLICY_DIR:?Set the independent policy ledger directory}
+        target: /var/lib/imbox/policy-ledger
+        bind: { create_host_path: false }
+    expose: ['4100']
+  worker:
+    <<: *runtime
+    image: ${IMBOX_WORKER_IMAGE:?Set the built worker image reference}
+    env_file:
+      - path: ${IMBOX_WORKER_ENV_FILE:?Set the private worker environment file}
+        format: raw
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      POLICY_LEDGER_DIRECTORY: /var/lib/imbox/policy-ledger
+    volumes:
+      - type: bind
+        source: ${IMBOX_POLICY_DIR:?Set the independent policy ledger directory}
+        target: /var/lib/imbox/policy-ledger
+        bind: { create_host_path: false }
+    depends_on:
+      api: { condition: service_healthy }
+  web:
+    <<: *runtime
+    image: ${IMBOX_WEB_IMAGE:?Set the built web image reference}
+    environment:
+      IMBOX_PUBLIC_HOST: ${IMBOX_PUBLIC_HOST:?Set the public DNS hostname}
+    ports:
+      - '${IMBOX_HTTP_BIND:-0.0.0.0}:${IMBOX_HTTP_PORT:-80}:80'
+      - '${IMBOX_HTTPS_BIND:-0.0.0.0}:${IMBOX_HTTPS_PORT:-443}:443'
+    cap_add: [NET_BIND_SERVICE]
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api: { condition: service_healthy }
+  migrate:
+    <<: *runtime
+    profiles: [operations]
+    restart: 'no'
+    image: ${IMBOX_API_IMAGE:?Set the built API image reference}
+    env_file:
+      - path: ${IMBOX_MIGRATION_ENV_FILE:-.env.migration}
+        required: false
+        format: raw
+    entrypoint: [node, packages/db/dist/cli.js]
+
+volumes:
+  caddy_data:
+  caddy_config:

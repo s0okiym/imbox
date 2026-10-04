@@ -61,3 +61,5 @@ pnpm test:e2e
 `pnpm test:acceptance` 检查完整 AC/INV 清单的证据状态，在 V1 全范围完成前应保持阻断。设计文件保留稳定名称，版本和更新记录维护在文档内部。
 
 运行与故障处置见 [运维入口](docs/operations/README.md)，系统推送配置和设备验收见 [Web Push 手册](docs/operations/web-push.md)。
+
+应用镜像、HTTPS 网关、迁移和可选工具部署见 [容器部署手册](docs/operations/container-deployment.md)。
