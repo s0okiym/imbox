@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { assertContract, ContractValidationError, type ContractTypes } from '@imbox/contracts';
 export interface ToolDefinition {
   id: string;
@@ -31,6 +32,7 @@ export interface RecoveryIdentity {
   attemptId: string;
 }
 export interface ControlledTool {
+  readonly executionBinding: string;
   definition: ToolDefinition;
   execute(call: ToolCall): Promise<ToolObservation>;
   lookup(call: Pick<ToolCall, 'businessKey' | 'fingerprint'>): Promise<ToolObservation>;
@@ -71,12 +73,13 @@ function configuredUrl(value: string, allowInsecure = false) {
 /** Registry is trusted process configuration, never a model-supplied destination. */
 export function createHttpToolRegistry(configs: readonly HttpToolConfiguration[]): ToolRegistry {
   const tools = new Map<string, ControlledTool>();
-  for (const config of configs) {
+  for (const input of configs) {
+    const config = { ...input };
     const executeUrl = configuredUrl(config.executeUrl, config.allowInsecureLoopback);
     const lookupUrl = configuredUrl(config.lookupUrl, config.allowInsecureLoopback);
     if (executeUrl.origin !== lookupUrl.origin)
       throw new Error('Execution and lookup must share the configured provider origin');
-    const definition: ToolDefinition = {
+    const definition: ToolDefinition = Object.freeze({
       id: config.id,
       version: assertContract('Version', config.version),
       targetId: config.targetId,
@@ -86,7 +89,7 @@ export function createHttpToolRegistry(configs: readonly HttpToolConfiguration[]
       timeoutMs: config.timeoutMs ?? 5000,
       maxAttempts: config.maxAttempts ?? 3,
       retryDelayMs: config.retryDelayMs ?? 1000,
-    };
+    });
     if (
       !/^[A-Za-z0-9._-]{1,100}$/.test(definition.id) ||
       !/^[A-Za-z0-9._-]{1,100}$/.test(definition.targetId) ||
@@ -238,6 +241,17 @@ export function createHttpToolRegistry(configs: readonly HttpToolConfiguration[]
     const key = `${definition.id}:${definition.version}:${definition.targetId}`;
     if (tools.has(key)) throw new Error('Duplicate registered connector');
     tools.set(key, {
+      executionBinding: createHash('sha256')
+        .update(
+          JSON.stringify({
+            protocol: 'controlled_http_v1',
+            definition,
+            executeUrl: executeUrl.href,
+            lookupUrl: lookupUrl.href,
+            authorization: config.authorizationHeader ?? null,
+          }),
+        )
+        .digest('hex'),
       definition,
       execute: (call) => request(call, assertContract('ActionParameters', call.parameters)),
       lookup: (call) => request(call),

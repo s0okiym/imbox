@@ -35,6 +35,8 @@ let databases: Awaited<ReturnType<typeof testDatabases>>,
   actions: ActionService,
   tasks: TaskService,
   journal: JournalPort;
+let toolOrigin = '';
+let lookups = 0;
 const store = createS3ObjectStore({
   endpoint: process.env.TEST_S3_ENDPOINT ?? 'http://127.0.0.1:18333',
   region: 'us-east-1',
@@ -94,6 +96,7 @@ beforeEach(async () => {
   });
   sideEffects = 0;
   attempts = 0;
+  lookups = 0;
   mode = 'normal';
   receipts.clear();
   heldResponse = undefined;
@@ -107,6 +110,7 @@ beforeEach(async () => {
   const server = createServer((request, response) => {
     const url = new URL(request.url!, 'http://localhost');
     if (request.method === 'GET') {
+      lookups += 1;
       send(
         response,
         receipts.get(url.searchParams.get('business_key')!) ?? { status: 'not_found' },
@@ -167,6 +171,7 @@ beforeEach(async () => {
     );
   });
   const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  toolOrigin = origin;
   actions = createActionService({
     db: databases.db,
     journal,
@@ -220,6 +225,30 @@ afterEach(async () => {
   for (const close of cleanup.splice(0)) await close();
   if (directory) await rm(directory, { recursive: true, force: true });
 });
+function reconfiguredActions(
+  overrides: Partial<Parameters<typeof createHttpToolRegistry>[0][number]> = {},
+) {
+  return createActionService({
+    db: databases.db,
+    journal,
+    cursorSecret: secret,
+    sources: knowledgeRuntimeSourcePort(
+      createKnowledgeService({ db: databases.db, cursorSecret: secret }),
+    ),
+    tools: createHttpToolRegistry([
+      {
+        id: 'demo.delivery',
+        version: '1',
+        targetId: 'demo',
+        executeUrl: `${toolOrigin}/execute`,
+        lookupUrl: `${toolOrigin}/lookup`,
+        allowInsecureLoopback: true,
+        retryDelayMs: 0,
+        ...overrides,
+      },
+    ]),
+  });
+}
 async function proposed(
   refs: C['ActionResourceRef'][] = [{ type: 'task', id: task.id, version: task.version }],
   text = 'A deliberately approved delivery',
@@ -386,6 +415,95 @@ describe('controlled actions with real PostgreSQL, HTTP and independent signed j
       expect(sideEffects).toBe(0);
     },
   );
+  it.each(['execute', 'lookup', 'credential', 'policy'] as const)(
+    'rejects an existing grant after connector %s changes without changing logical IDs',
+    async (change) => {
+      const { action } = await proposed();
+      await approve(action);
+      actions = reconfiguredActions(
+        change === 'execute'
+          ? { executeUrl: `${toolOrigin}/replacement` }
+          : change === 'lookup'
+            ? { lookupUrl: `${toolOrigin}/replacement-lookup` }
+            : change === 'credential'
+              ? { authorizationHeader: 'Bearer different-test-account' }
+              : { timeoutMs: 4000 },
+      );
+      await expect(runner().runOnce(fixture.tenantId, action.id)).rejects.toMatchObject({
+        code: 'FORBIDDEN',
+      });
+      expect(attempts).toBe(0);
+      const fresh = await proposed();
+      await approve(fresh.action);
+      expect((await runner().runOnce(fixture.tenantId, fresh.action.id)).status).toBe('succeeded');
+      expect(sideEffects).toBe(1);
+    },
+  );
+  it('rechecks connector binding after durable intent and rejects unbound legacy authority', async () => {
+    const { action, grant } = await proposed();
+    await approve(action);
+    const claim = await actions.claim(fixture.tenantId, action.id, 'configuration-worker');
+    await actions.persistIntent(claim);
+    actions = reconfiguredActions({ executeUrl: `${toolOrigin}/replacement` });
+    await expect(actions.dispatch(claim)).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await actions.abortPrepared(claim);
+    actions = reconfiguredActions();
+    await withTenant(databases.owner, fixture.tenantId, (tx) =>
+      sql`update capability_grants set authority_snapshot=authority_snapshot-'tool_binding' where id=${grant.id}`.execute(
+        tx,
+      ),
+    );
+    await expect(
+      actions.createAction(
+        fixture.bob,
+        {
+          task_id: task.id,
+          grant_id: grant.id,
+          executor_principal_id: fixture.bob.principalId,
+          tool_id: 'demo.delivery',
+          tool_version: '1',
+          target_id: 'demo',
+          parameters: { text: 'Legacy authority cannot silently migrate' },
+          resource_versions: [{ type: 'task', id: task.id, version: task.version }],
+          business_key: key(),
+          estimate: { currency: 'USD', limit_microunits: '10' },
+        },
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(attempts).toBe(0);
+  });
+  it('keeps unknown effects unresolved until the original connector binding is restored', async () => {
+    const { action } = await proposed();
+    await approve(action);
+    mode = 'drop';
+    expect((await runner().runOnce(fixture.tenantId, action.id)).status).toBe('unknown');
+    const pending = await actions.getAction(fixture.alice, action.id);
+    actions = reconfiguredActions({ lookupUrl: `${toolOrigin}/replacement-lookup` });
+    await expect(
+      actions.reconcile(
+        fixture.alice,
+        action.id,
+        { reason: 'Wrong connector must not be queried' },
+        pending.version,
+        key(),
+      ),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(lookups).toBe(0);
+    expect((await actions.getAction(fixture.alice, action.id)).status).toBe('unknown');
+    actions = reconfiguredActions();
+    const result = await actions.reconcile(
+      fixture.alice,
+      action.id,
+      { reason: 'Query original connector' },
+      pending.version,
+      key(),
+    );
+    expect(result.outcome).toBe('succeeded');
+    expect(lookups).toBe(1);
+    expect(attempts).toBe(1);
+    expect(sideEffects).toBe(1);
+  });
   it('rejects oversized publication previews without returning truncated content', async () => {
     const file = await artifact('x'.repeat(4001));
     const grant = await actions.createGrant(

@@ -233,10 +233,21 @@ export function createActionService(options: Options) {
   }
   function registered(id: string, version: string, targetId: string) {
     try {
-      return tools.get(id, version, targetId);
+      const tool = tools.get(id, version, targetId);
+      if (
+        typeof tool.executionBinding !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(tool.executionBinding)
+      )
+        return fail('SERVICE_UNAVAILABLE', 503);
+      return tool;
     } catch {
       return fail('VALIDATION_FAILED', 400);
     }
+  }
+  function boundTool(g: GrantRow) {
+    const tool = registered(g.tool_id, g.tool_version, g.target_id);
+    if (g.authority_snapshot.tool_binding !== tool.executionBinding) fail('FORBIDDEN', 403);
+    return tool;
   }
   async function artifactBodies(
     tx: Tx,
@@ -360,6 +371,7 @@ export function createActionService(options: Options) {
     );
     const target = chain.at(-1)!;
     const snapshot = {
+      tool_binding: boundTool(g).executionBinding,
       issuer: await authority(tx, target, g.issued_by),
       executor: await authority(tx, target, g.executor_principal_id),
     };
@@ -990,7 +1002,7 @@ export function createActionService(options: Options) {
           await sql`insert into capability_grants(tenant_id,id,task_id,executor_principal_id,issued_by,tool_id,tool_version,target_id,allow_execute,allow_disclosure,resource_versions,approver_ids,currency,limit_microunits,expires_at) values(${auth.tenantId},${id},${t.id},${executor.principal_id},${auth.principalId},${input.tool_id},${input.tool_version},${input.target_id},${input.allow_execute},${input.allow_disclosure},${json(input.resource_versions)}::jsonb,${json(input.approver_principal_ids)}::jsonb,${input.budget.currency},${input.budget.limit_microunits},${input.expires_at})`.execute(
             tx,
           );
-          await sql`update capability_grants set ancestor_fences=${json(chain.map((item) => ({ taskId: item.id, executionEpoch: item.execution_epoch })))}::jsonb,authority_snapshot=${json({ issuer: await authority(tx, t, auth.principalId), executor: await authority(tx, t, executor.principal_id) })}::jsonb where id=${id}`.execute(
+          await sql`update capability_grants set ancestor_fences=${json(chain.map((item) => ({ taskId: item.id, executionEpoch: item.execution_epoch })))}::jsonb,authority_snapshot=${json({ tool_binding: registered(input.tool_id, input.tool_version, input.target_id).executionBinding, issuer: await authority(tx, t, auth.principalId), executor: await authority(tx, t, executor.principal_id) })}::jsonb where id=${id}`.execute(
             tx,
           );
           await appendEvent(tx, auth, {
@@ -1636,7 +1648,9 @@ export function createActionService(options: Options) {
                   : 'unknown',
           });
         });
-      const tool = registered(reference.tool_id, reference.tool_version, reference.target_id);
+      const tool = await transaction(auth, async (tx) =>
+        boundTool(await grant(tx, reference.grant_id)),
+      );
       const observation = await tool.lookup({
         businessKey: reference.business_key,
         fingerprint: reference.fingerprint,

@@ -66,3 +66,6 @@ pnpm test:deployment
 测试启动隔离 Compose 项目和 policy 卷，通过真实容器验证生产依赖、非 root/只读、TLS 缓存策略、禁止开发登录、Cookie/CSRF、Worker 消息投影、WSS 和 API 重启。测试使用外部生成的 fixture session 和 localhost CA，不是实际 OIDC 登录或浏览器 UI 验收。结束后清理测试容器、卷及私密 env 文件，保留脱敏 evidence；CI 串行运行此套件。可通过 `IMBOX_TEST_DOCKER_NETWORK` 和 `IMBOX_TEST_DATABASE_HOST` 适配测试网络。
 
 尚未通过本套件证明：可选工具容器的真实 HTTPS 副作用、公网证书、对象存储和模型的部署链路、跨主机高可用、备份恢复/PITR、生产容量、设备推送、滚动升级与 schema 回退。继续记录在准出清单，不以容器启动替代验收。
+
+
+工具连接配置现在参与授权绑定。API、Worker、tool-runner 必须使用一致的工具执行/查询地址、凭证和执行策略；配置调整或凭证轮换后，旧授权不能继续发送。升级前盘点待执行和 unknown 行动；缺少历史配置绑定时禁止自动回填，unknown 不得作为新行动重发。完整步骤边界见 [配置绑定约定](../development/tool-configuration-binding.md)。
