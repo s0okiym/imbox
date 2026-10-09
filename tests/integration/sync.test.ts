@@ -2,6 +2,9 @@ import { randomUUID, createHash } from 'node:crypto';
 import { createServer, request as httpRequest, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createModelDriver, createOllamaAdapter } from '@imbox/model-runtime';
 import { createResourceService, createS3ObjectStore } from '@imbox/resources';
@@ -34,6 +37,7 @@ const origin = 'http://imbox.test';
 const apps: ReturnType<typeof createApp>[] = [];
 const sockets: WebSocket[] = [];
 const workerProcesses: ChildProcess[] = [];
+const ledgerDirectories: string[] = [];
 beforeAll(async () => {
   databases = await testDatabases();
 });
@@ -52,6 +56,8 @@ afterEach(async () => {
       await exited;
     }
   }
+  for (const directory of ledgerDirectories.splice(0))
+    await rm(directory, { recursive: true, force: true });
   await Promise.all(apps.splice(0).map((app) => app.close()));
 });
 afterAll(async () => {
@@ -109,11 +115,16 @@ async function server(maxPendingAcks = 256, includeMessaging = false) {
   return { app, address, identity };
 }
 /** Fork the real worker entrypoint as an independent OS process bound to this test tenant. */
-function forkWorkerProcess(leaseSeconds: number) {
+async function forkWorkerProcess(leaseSeconds: number) {
   const appUrl = process.env.TEST_APP_DATABASE_URL;
   const identityUrl = process.env.TEST_IDENTITY_DATABASE_URL;
   if (!appUrl || !identityUrl)
     throw new Error('TEST_APP_DATABASE_URL and TEST_IDENTITY_DATABASE_URL are required');
+  // CI combines a job-level POLICY_LEDGER_DIRECTORY with the placeholder signing key from
+  // .env.example, which aborts worker startup. Give the child its own isolated empty ledger
+  // with a valid fixture key, mirroring the browser webServer fixtures.
+  const ledgerDirectory = await mkdtemp(join(tmpdir(), 'imbox-sync-worker-ledger-'));
+  ledgerDirectories.push(ledgerDirectory);
   const child = spawn(
     process.execPath,
     ['--import', 'tsx', fileURLToPath(new URL('../../apps/worker/src/main.ts', import.meta.url))],
@@ -123,6 +134,8 @@ function forkWorkerProcess(leaseSeconds: number) {
         ...process.env,
         DATABASE_URL: appUrl,
         IDENTITY_DATABASE_URL: identityUrl,
+        POLICY_LEDGER_DIRECTORY: ledgerDirectory,
+        POLICY_LEDGER_SIGNING_KEY: 'sync-worker-crash-policy-signing-key-fixture',
         WORKER_TENANT_IDS: fixture.tenantId,
         WORKER_POLL_INTERVAL_MS: '20',
         WORKER_LEASE_SECONDS: String(leaseSeconds),
@@ -159,9 +172,15 @@ function forkWorkerProcess(leaseSeconds: number) {
       `Worker process exited early (code ${code}, signal ${signal}): ${diagnostics.slice(-20).join(' | ')}`,
     );
   });
+  const startupTimeout = new Promise<never>((_, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Worker startup timed out: ${diagnostics.slice(-20).join(' | ')}`));
+    }, 30000);
+    timer.unref?.();
+  });
   return {
     child,
-    ready: Promise.race([ready, startupFailure]),
+    ready: Promise.race([ready, startupFailure, startupTimeout]),
     exit,
     diagnostics,
   };
@@ -904,48 +923,57 @@ describe('HTTP snapshots and real WebSocket delivery/recovery', () => {
       await gate;
     });
     await locked;
+    // Any failure past this point must still drop the row lock, or the dangling
+    // transaction hangs pool teardown in afterAll and masks the real error.
+    let lockReleased = false;
+    const releaseConversationLock = async () => {
+      if (lockReleased) return;
+      lockReleased = true;
+      releaseLock();
+      await holdConversationLock.catch(() => {});
+    };
 
-    const crashed = forkWorkerProcess(12);
-    await crashed.ready;
-    await expect
-      .poll(
-        async () =>
-          Number(
-            (
-              await withTenant(databases.db, fixture.tenantId, (tx) =>
-                sql<{
-                  count: string;
-                }>`select count(*)::text as count from outbox where status='leased'`.execute(tx),
-              )
-            ).rows[0]!.count,
-          ),
-        { timeout: 30000, interval: 100 },
-      )
-      .toBe(40);
+    try {
+      const crashed = await forkWorkerProcess(12);
+      await crashed.ready;
+      await expect
+        .poll(
+          async () =>
+            Number(
+              (
+                await withTenant(databases.db, fixture.tenantId, (tx) =>
+                  sql<{
+                    count: string;
+                  }>`select count(*)::text as count from outbox where status='leased'`.execute(tx),
+                )
+              ).rows[0]!.count,
+            ),
+          { timeout: 30000, interval: 100 },
+        )
+        .toBe(40);
 
-    // Hard-kill the independent process mid-projection: no failure handler runs.
-    const crashedExit = once(crashed.child, 'exit');
-    expect(crashed.child.kill('SIGKILL')).toBe(true);
-    const [crashedCode, crashedSignal] = (await crashedExit) as [
-      number | null,
-      NodeJS.Signals | null,
-    ];
-    expect(crashedCode).toBeNull();
-    expect(crashedSignal).toBe('SIGKILL');
-    releaseLock();
-    await holdConversationLock;
+      // Hard-kill the independent process mid-projection: no failure handler runs.
+      const crashedExit = once(crashed.child, 'exit');
+      expect(crashed.child.kill('SIGKILL')).toBe(true);
+      const [crashedCode, crashedSignal] = (await crashedExit) as [
+        number | null,
+        NodeJS.Signals | null,
+      ];
+      expect(crashedCode).toBeNull();
+      expect(crashedSignal).toBe('SIGKILL');
+      await releaseConversationLock();
 
-    // Stranded leases stay leased with a live lease, no dead letters and no projector receipts.
-    // Receipts are shared across consumers, so scope to the conversation projector; the
-    // independent notification loop may legitimately consume message events meanwhile.
-    const stranded = await withTenant(databases.db, fixture.tenantId, (tx) =>
-      sql<{
-        leased: string;
-        holders: string;
-        live: boolean;
-        dead: string;
-        receipts: string;
-      }>`select count(distinct o.id) filter (where o.status='leased')::text as leased,
+      // Stranded leases stay leased with a live lease, no dead letters and no projector receipts.
+      // Receipts are shared across consumers, so scope to the conversation projector; the
+      // independent notification loop may legitimately consume message events meanwhile.
+      const stranded = await withTenant(databases.db, fixture.tenantId, (tx) =>
+        sql<{
+          leased: string;
+          holders: string;
+          live: boolean;
+          dead: string;
+          receipts: string;
+        }>`select count(distinct o.id) filter (where o.status='leased')::text as leased,
                 count(distinct o.lease_holder) filter (where o.status='leased')::text as holders,
                 bool_and(o.lease_expires_at > clock_timestamp()) filter (where o.status='leased') as live,
                 count(distinct o.id) filter (where o.status='dead')::text as dead,
@@ -954,96 +982,101 @@ describe('HTTP snapshots and real WebSocket delivery/recovery', () => {
          join domain_events e on e.id = o.event_id
          left join consumer_receipts cr on cr.event_id = o.event_id and cr.consumer = 'conversation-projector:v1'
          where e.aggregate_type = 'message'`.execute(tx),
-    );
-    expect(stranded.rows[0]).toMatchObject({
-      leased: '40',
-      holders: '1',
-      live: true,
-      dead: '0',
-      receipts: '0',
-    });
-    expect(
-      (await sync.events(fixture.bob, conversation.id, { cursor: baseline.cursor })).items,
-    ).toHaveLength(0);
+      );
+      expect(stranded.rows[0]).toMatchObject({
+        leased: '40',
+        holders: '1',
+        live: true,
+        dead: '0',
+        receipts: '0',
+      });
+      expect(
+        (await sync.events(fixture.bob, conversation.id, { cursor: baseline.cursor })).items,
+      ).toHaveLength(0);
 
-    // A fresh independent worker cannot touch the stranded rows before lease expiry and
-    // then reclaims them exactly once afterwards.
-    const replacement = forkWorkerProcess(12);
-    await replacement.ready;
-    await expect
-      .poll(
-        async () =>
-          Number(
-            (
-              await withTenant(databases.db, fixture.tenantId, (tx) =>
-                sql<{
-                  count: string;
-                }>`select count(*)::text as count from outbox where status in ('pending','leased','dead')`.execute(
-                  tx,
-                ),
-              )
-            ).rows[0]!.count,
-          ),
-        { timeout: 45000, interval: 200 },
-      )
-      .toBe(0);
-    const recovered = await withTenant(databases.db, fixture.tenantId, (tx) =>
-      sql<{
-        status: string;
-        attempts: string;
-        receipts: string;
-      }>`select o.status, o.attempts::text as attempts,
+      // A fresh independent worker cannot touch the stranded rows before lease expiry and
+      // then reclaims them exactly once afterwards. Its own lease is production-scale so a
+      // slow runner cannot self-expire the recovery batch; reclaim timing is governed by
+      // the crashed worker's lease above.
+      const replacement = await forkWorkerProcess(60);
+      await replacement.ready;
+      await expect
+        .poll(
+          async () =>
+            Number(
+              (
+                await withTenant(databases.db, fixture.tenantId, (tx) =>
+                  sql<{
+                    count: string;
+                  }>`select count(*)::text as count from outbox where status in ('pending','leased','dead')`.execute(
+                    tx,
+                  ),
+                )
+              ).rows[0]!.count,
+            ),
+          { timeout: 45000, interval: 200 },
+        )
+        .toBe(0);
+      const recovered = await withTenant(databases.db, fixture.tenantId, (tx) =>
+        sql<{
+          status: string;
+          attempts: string;
+          receipts: string;
+        }>`select o.status, o.attempts::text as attempts,
                 (select count(*)::text from consumer_receipts cr where cr.event_id = o.event_id and cr.consumer = 'conversation-projector:v1') as receipts
          from outbox o join domain_events e on e.id = o.event_id
          where e.aggregate_type = 'message'`.execute(tx),
-    );
-    expect(recovered.rows).toHaveLength(40);
-    for (const row of recovered.rows) {
-      expect(row).toMatchObject({ status: 'completed', attempts: '2', receipts: '1' });
-    }
-
-    // The receiver resumes from its original cursor and gets every message exactly once.
-    const client = connect(host.address, bob.token);
-    const delivered: string[] = [];
-    client.socket.on('message', (data) => {
-      const frame = JSON.parse(data.toString()) as { payload?: { message?: { id: string } } };
-      if (frame.payload?.message?.id) delivered.push(frame.payload.message.id);
-    });
-    await client.hello();
-    client.socket.send(
-      JSON.stringify({ type: 'subscribe', stream_id: conversation.id, cursor: baseline.cursor }),
-    );
-    await client.next((frame) => frame.type === 'subscribed', 'recovered subscription');
-    for (const message of saved) {
-      const delivery = await client.next(
-        (frame) => frame.payload?.message?.id === message.id,
-        `replayed message ${saved.indexOf(message)}`,
       );
-      expect(delivery.payload?.message?.body).toBe(message.body);
+      expect(recovered.rows).toHaveLength(40);
+      for (const row of recovered.rows) {
+        expect(row).toMatchObject({ status: 'completed', attempts: '2', receipts: '1' });
+      }
+
+      // The receiver resumes from its original cursor and gets every message exactly once.
+      const client = connect(host.address, bob.token);
+      const delivered: string[] = [];
+      client.socket.on('message', (data) => {
+        const frame = JSON.parse(data.toString()) as { payload?: { message?: { id: string } } };
+        if (frame.payload?.message?.id) delivered.push(frame.payload.message.id);
+      });
+      await client.hello();
       client.socket.send(
-        JSON.stringify({ type: 'ack', stream_id: conversation.id, cursor: delivery.cursor }),
+        JSON.stringify({ type: 'subscribe', stream_id: conversation.id, cursor: baseline.cursor }),
       );
-    }
-    const live = await post('after-worker-crash-recovery', key(), key());
-    await client.next((frame) => frame.payload?.message?.id === live.id, 'live message');
-    client.socket.send(JSON.stringify({ type: 'ping', nonce: 'worker-crash-barrier' }));
-    await client.next((frame) => frame.type === 'pong', 'recovery barrier');
-    expect(delivered).toHaveLength(41);
-    expect(new Set(delivered)).toEqual(new Set([...saved.map((message) => message.id), live.id]));
-    const stored = await withTenant(databases.db, fixture.tenantId, (tx) =>
-      sql<{
-        count: string;
-      }>`select count(*)::text as count from messages where conversation_id=${conversation.id}`.execute(
-        tx,
-      ),
-    );
-    expect(Number(stored.rows[0]!.count)).toBe(41);
+      await client.next((frame) => frame.type === 'subscribed', 'recovered subscription');
+      for (const message of saved) {
+        const delivery = await client.next(
+          (frame) => frame.payload?.message?.id === message.id,
+          `replayed message ${saved.indexOf(message)}`,
+        );
+        expect(delivery.payload?.message?.body).toBe(message.body);
+        client.socket.send(
+          JSON.stringify({ type: 'ack', stream_id: conversation.id, cursor: delivery.cursor }),
+        );
+      }
+      const live = await post('after-worker-crash-recovery', key(), key());
+      await client.next((frame) => frame.payload?.message?.id === live.id, 'live message');
+      client.socket.send(JSON.stringify({ type: 'ping', nonce: 'worker-crash-barrier' }));
+      await client.next((frame) => frame.type === 'pong', 'recovery barrier');
+      expect(delivered).toHaveLength(41);
+      expect(new Set(delivered)).toEqual(new Set([...saved.map((message) => message.id), live.id]));
+      const stored = await withTenant(databases.db, fixture.tenantId, (tx) =>
+        sql<{
+          count: string;
+        }>`select count(*)::text as count from messages where conversation_id=${conversation.id}`.execute(
+          tx,
+        ),
+      );
+      expect(Number(stored.rows[0]!.count)).toBe(41);
 
-    // The replacement worker still shuts down gracefully through its normal stop path.
-    const replacementExit = once(replacement.child, 'exit');
-    expect(replacement.child.kill('SIGTERM')).toBe(true);
-    const [replacementCode] = (await replacementExit) as [number | null, unknown];
-    expect(replacementCode).toBe(0);
+      // The replacement worker still shuts down gracefully through its normal stop path.
+      const replacementExit = once(replacement.child, 'exit');
+      expect(replacement.child.kill('SIGTERM')).toBe(true);
+      const [replacementCode] = (await replacementExit) as [number | null, unknown];
+      expect(replacementCode).toBe(0);
+    } finally {
+      await releaseConversationLock();
+    }
   }, 90000);
 
   it('delivers persistent events, accepts transport ACK without changing read state, and resumes after disconnection', async () => {
