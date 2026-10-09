@@ -1,0 +1,129 @@
+{
+  "version": 1,
+  "commit": "39315090457ae8f70a2dab5aa72b218f3909a9a9",
+  "run_id": 37905724201,
+  "url": "https://github.com/s0okiym/imbox/actions/runs/37905724201",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 113738589885,
+      "name": "verify",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm install --frozen-lockfile",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run cp .env.example .env",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm infra:up",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm verify",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm test:catalog:check",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm infra:setup:test",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm db:setup:test",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm test:integration",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run pnpm exec playwright install --with-deps chromium",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Browser regression (redact credentials)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Historical client compatibility (redact credentials)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Start pinned local model and verify actual inference",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build application images and verify TLS container workflow",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run docker compose -f infra/compose.yaml --profile model down -v",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "scope": "Worker crash recovery regression (real independent worker process SIGKILL, lease-expiry reclaim, WORKER_LEASE_SECONDS knob) plus AC-14 coverage registration fix; the preceding candidate 490a7cb failed this pipeline at test:integration because the forked worker combined the CI job-level policy ledger directory with the placeholder signing key from .env.example and exited at startup, and the failure path leaked the conversation row lock which hung afterAll; both are fixed in 3931509 and documented in docs/testing/worker-crash-recovery-2026-10-08.md"
+}

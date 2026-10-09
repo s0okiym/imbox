@@ -45,3 +45,5 @@ AC-18 已完成当前 V1 的逐项审查：64 相关集成与 4 浏览器通过�
 Action 授权、执行前重验及外部效果边界已完成 AC-12 / INV-08 [逐项审查](testing/action-authorization-audit-2026-10-05.md)，本轮 76 相关集成通过。当前 30/41 verified，剩余 11 项仍阻断生产准出。
 
 历史 Web/API 候选 9a23f2c 的远程全步骤已通过，含历史兼容、真实模型与 TLS 容器工作流，见 [归档](testing/rolling-api-ci-2026-10-05.json)。后续迁移 036 增加数据库执行约束，升级须协调停止旧外部执行和恢复写入器，不能凭通信兼容结果混用旧执行栈；见 [本轮证据](testing/database-binding-fence-2026-10-05.md)。
+
+Worker 崩溃恢复候选 3931509 的远程全步骤已通过（工程、全量集成含独立进程 SIGKILL 用例、浏览器、历史兼容、真实模型与 TLS 容器），归档见 [CI 记录](testing/worker-crash-recovery-ci-2026-10-09.json)。前序 490a7cb 曾因 CI 占位账本密钥与失败路径锁泄漏失败，根因与修复记录在 [崩溃恢复证据](testing/worker-crash-recovery-2026-10-08.md)；验收仍 30/41，不解除 AC-16 剩余门槛。
