@@ -1,6 +1,8 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { createServer, request as httpRequest, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { createModelDriver, createOllamaAdapter } from '@imbox/model-runtime';
 import { createResourceService, createS3ObjectStore } from '@imbox/resources';
 import { modelFixture } from '../helpers/model.js';
@@ -31,6 +33,7 @@ const secret = 'sync-test-secret-at-least-thirty-two-bytes-long';
 const origin = 'http://imbox.test';
 const apps: ReturnType<typeof createApp>[] = [];
 const sockets: WebSocket[] = [];
+const workerProcesses: ChildProcess[] = [];
 beforeAll(async () => {
   databases = await testDatabases();
 });
@@ -42,6 +45,13 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   for (const socket of sockets.splice(0)) socket.terminate();
+  for (const child of workerProcesses.splice(0)) {
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit');
+      child.kill('SIGKILL');
+      await exited;
+    }
+  }
   await Promise.all(apps.splice(0).map((app) => app.close()));
 });
 afterAll(async () => {
@@ -97,6 +107,64 @@ async function server(maxPendingAcks = 256, includeMessaging = false) {
   apps.push(app);
   const address = await app.listen({ host: '127.0.0.1', port: 0 });
   return { app, address, identity };
+}
+/** Fork the real worker entrypoint as an independent OS process bound to this test tenant. */
+function forkWorkerProcess(leaseSeconds: number) {
+  const appUrl = process.env.TEST_APP_DATABASE_URL;
+  const identityUrl = process.env.TEST_IDENTITY_DATABASE_URL;
+  if (!appUrl || !identityUrl)
+    throw new Error('TEST_APP_DATABASE_URL and TEST_IDENTITY_DATABASE_URL are required');
+  const child = spawn(
+    process.execPath,
+    ['--import', 'tsx', fileURLToPath(new URL('../../apps/worker/src/main.ts', import.meta.url))],
+    {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        DATABASE_URL: appUrl,
+        IDENTITY_DATABASE_URL: identityUrl,
+        WORKER_TENANT_IDS: fixture.tenantId,
+        WORKER_POLL_INTERVAL_MS: '20',
+        WORKER_LEASE_SECONDS: String(leaseSeconds),
+        ENABLE_LOCAL_MODEL: 'false',
+      },
+    },
+  );
+  workerProcesses.push(child);
+  const diagnostics: string[] = [];
+  let announceReady: (() => void) | undefined;
+  const ready = new Promise<void>((resolve) => {
+    announceReady = resolve;
+  });
+  for (const stream of [child.stdout, child.stderr]) {
+    if (!stream) continue;
+    stream.setEncoding('utf8');
+    let buffer = '';
+    stream.on('data', (chunk: string) => {
+      buffer += chunk;
+      let newline = buffer.indexOf('\n');
+      while (newline !== -1) {
+        const line = buffer.slice(0, newline);
+        buffer = buffer.slice(newline + 1);
+        newline = buffer.indexOf('\n');
+        if (!line) continue;
+        if (diagnostics.length < 200) diagnostics.push(line);
+        if (line.includes('"worker_ready"')) announceReady?.();
+      }
+    });
+  }
+  const exit = once(child, 'exit');
+  const startupFailure = exit.then(([code, signal]) => {
+    throw new Error(
+      `Worker process exited early (code ${code}, signal ${signal}): ${diagnostics.slice(-20).join(' | ')}`,
+    );
+  });
+  return {
+    child,
+    ready: Promise.race([ready, startupFailure]),
+    exit,
+    diagnostics,
+  };
 }
 function connect(address: string, token: string) {
   const socket = new WebSocket(
@@ -776,6 +844,207 @@ describe('HTTP snapshots and real WebSocket delivery/recovery', () => {
       store?.destroy();
     }
   }, 60000);
+
+  it('recovers outbox stranded by a killed independent worker process through lease expiry without loss or duplication', async () => {
+    const conversation = await group();
+    await drain();
+    const baseline = await sync.snapshot(fixture.bob, conversation.id);
+    const host = await server(256, true);
+    const alice = await host.identity.devLogin({ principalId: fixture.alice.principalId, origin });
+    const bob = await host.identity.devLogin({ principalId: fixture.bob.principalId, origin });
+    const saved: Array<{ id: string; body: string }> = [];
+    const post = async (body: string, command: string, clientId: string) => {
+      const reply = await fetch(`${host.address}/v1/conversations/${conversation.id}/messages`, {
+        method: 'POST',
+        headers: {
+          origin,
+          cookie: `imbox_session=${alice.token}`,
+          'x-csrf-token': alice.csrfToken,
+          'x-imbox-tenant-id': fixture.tenantId,
+          'idempotency-key': command,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ client_message_id: clientId, body }),
+      });
+      expect(reply.status).toBe(201);
+      return (await reply.json()) as { id: string; body: string };
+    };
+    // No projector of any kind runs while the backlog accumulates.
+    for (let index = 0; index < 40; index++) {
+      saved.push(await post(`worker-crash-message-${index}`, key(), key()));
+    }
+    const pendingBefore = await withTenant(databases.db, fixture.tenantId, (tx) =>
+      sql<{
+        count: string;
+      }>`select count(*)::text as count from outbox where status='pending'`.execute(tx),
+    );
+    expect(Number(pendingBefore.rows[0]!.count)).toBeGreaterThanOrEqual(40);
+    expect(
+      (await sync.events(fixture.bob, conversation.id, { cursor: baseline.cursor })).items,
+    ).toHaveLength(0);
+
+    // Hold the conversation row lock the projector takes, so the real worker leases the
+    // whole backlog and then blocks inside its first projection transaction.
+    let releaseLock!: () => void;
+    let signalLocked!: () => void;
+    const locked = new Promise<void>((resolve) => {
+      signalLocked = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    const holdConversationLock = withTenant(databases.db, fixture.tenantId, async (tx) => {
+      await tx
+        .selectFrom('conversations')
+        .select('id')
+        .where('id', '=', conversation.id)
+        .forUpdate()
+        .executeTakeFirstOrThrow();
+      signalLocked();
+      await gate;
+    });
+    await locked;
+
+    const crashed = forkWorkerProcess(12);
+    await crashed.ready;
+    await expect
+      .poll(
+        async () =>
+          Number(
+            (
+              await withTenant(databases.db, fixture.tenantId, (tx) =>
+                sql<{
+                  count: string;
+                }>`select count(*)::text as count from outbox where status='leased'`.execute(tx),
+              )
+            ).rows[0]!.count,
+          ),
+        { timeout: 30000, interval: 100 },
+      )
+      .toBe(40);
+
+    // Hard-kill the independent process mid-projection: no failure handler runs.
+    const crashedExit = once(crashed.child, 'exit');
+    expect(crashed.child.kill('SIGKILL')).toBe(true);
+    const [crashedCode, crashedSignal] = (await crashedExit) as [
+      number | null,
+      NodeJS.Signals | null,
+    ];
+    expect(crashedCode).toBeNull();
+    expect(crashedSignal).toBe('SIGKILL');
+    releaseLock();
+    await holdConversationLock;
+
+    // Stranded leases stay leased with a live lease, no dead letters and no projector receipts.
+    // Receipts are shared across consumers, so scope to the conversation projector; the
+    // independent notification loop may legitimately consume message events meanwhile.
+    const stranded = await withTenant(databases.db, fixture.tenantId, (tx) =>
+      sql<{
+        leased: string;
+        holders: string;
+        live: boolean;
+        dead: string;
+        receipts: string;
+      }>`select count(distinct o.id) filter (where o.status='leased')::text as leased,
+                count(distinct o.lease_holder) filter (where o.status='leased')::text as holders,
+                bool_and(o.lease_expires_at > clock_timestamp()) filter (where o.status='leased') as live,
+                count(distinct o.id) filter (where o.status='dead')::text as dead,
+                count(distinct cr.event_id)::text as receipts
+         from outbox o
+         join domain_events e on e.id = o.event_id
+         left join consumer_receipts cr on cr.event_id = o.event_id and cr.consumer = 'conversation-projector:v1'
+         where e.aggregate_type = 'message'`.execute(tx),
+    );
+    expect(stranded.rows[0]).toMatchObject({
+      leased: '40',
+      holders: '1',
+      live: true,
+      dead: '0',
+      receipts: '0',
+    });
+    expect(
+      (await sync.events(fixture.bob, conversation.id, { cursor: baseline.cursor })).items,
+    ).toHaveLength(0);
+
+    // A fresh independent worker cannot touch the stranded rows before lease expiry and
+    // then reclaims them exactly once afterwards.
+    const replacement = forkWorkerProcess(12);
+    await replacement.ready;
+    await expect
+      .poll(
+        async () =>
+          Number(
+            (
+              await withTenant(databases.db, fixture.tenantId, (tx) =>
+                sql<{
+                  count: string;
+                }>`select count(*)::text as count from outbox where status in ('pending','leased','dead')`.execute(
+                  tx,
+                ),
+              )
+            ).rows[0]!.count,
+          ),
+        { timeout: 45000, interval: 200 },
+      )
+      .toBe(0);
+    const recovered = await withTenant(databases.db, fixture.tenantId, (tx) =>
+      sql<{
+        status: string;
+        attempts: string;
+        receipts: string;
+      }>`select o.status, o.attempts::text as attempts,
+                (select count(*)::text from consumer_receipts cr where cr.event_id = o.event_id and cr.consumer = 'conversation-projector:v1') as receipts
+         from outbox o join domain_events e on e.id = o.event_id
+         where e.aggregate_type = 'message'`.execute(tx),
+    );
+    expect(recovered.rows).toHaveLength(40);
+    for (const row of recovered.rows) {
+      expect(row).toMatchObject({ status: 'completed', attempts: '2', receipts: '1' });
+    }
+
+    // The receiver resumes from its original cursor and gets every message exactly once.
+    const client = connect(host.address, bob.token);
+    const delivered: string[] = [];
+    client.socket.on('message', (data) => {
+      const frame = JSON.parse(data.toString()) as { payload?: { message?: { id: string } } };
+      if (frame.payload?.message?.id) delivered.push(frame.payload.message.id);
+    });
+    await client.hello();
+    client.socket.send(
+      JSON.stringify({ type: 'subscribe', stream_id: conversation.id, cursor: baseline.cursor }),
+    );
+    await client.next((frame) => frame.type === 'subscribed', 'recovered subscription');
+    for (const message of saved) {
+      const delivery = await client.next(
+        (frame) => frame.payload?.message?.id === message.id,
+        `replayed message ${saved.indexOf(message)}`,
+      );
+      expect(delivery.payload?.message?.body).toBe(message.body);
+      client.socket.send(
+        JSON.stringify({ type: 'ack', stream_id: conversation.id, cursor: delivery.cursor }),
+      );
+    }
+    const live = await post('after-worker-crash-recovery', key(), key());
+    await client.next((frame) => frame.payload?.message?.id === live.id, 'live message');
+    client.socket.send(JSON.stringify({ type: 'ping', nonce: 'worker-crash-barrier' }));
+    await client.next((frame) => frame.type === 'pong', 'recovery barrier');
+    expect(delivered).toHaveLength(41);
+    expect(new Set(delivered)).toEqual(new Set([...saved.map((message) => message.id), live.id]));
+    const stored = await withTenant(databases.db, fixture.tenantId, (tx) =>
+      sql<{
+        count: string;
+      }>`select count(*)::text as count from messages where conversation_id=${conversation.id}`.execute(
+        tx,
+      ),
+    );
+    expect(Number(stored.rows[0]!.count)).toBe(41);
+
+    // The replacement worker still shuts down gracefully through its normal stop path.
+    const replacementExit = once(replacement.child, 'exit');
+    expect(replacement.child.kill('SIGTERM')).toBe(true);
+    const [replacementCode] = (await replacementExit) as [number | null, unknown];
+    expect(replacementCode).toBe(0);
+  }, 90000);
 
   it('delivers persistent events, accepts transport ACK without changing read state, and resumes after disconnection', async () => {
     const conversation = await group();

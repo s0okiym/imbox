@@ -14,7 +14,7 @@
 
 Web 发布 `apps/web/dist`，同源反向代理 `/v1/`（含 WebSocket）到 API，前端资源路由回退到 `index.html`。保留原 Origin、HTTPS 与 HttpOnly Cookie 语义。生产禁止开发登录；PUBLIC_ORIGIN 必须与真实 HTTPS 站点一致。Service Worker 脚本须可更新，认证/API/下载不得被代理缓存。API `/healthz` 只说明进程存活；`/readyz` 检查其配置的数据库就绪条件，不证明整个外部服务生态可用。
 
-Worker 仅处理 `WORKER_TENANT_IDS` 列出的租户。部署时核查完整租户清单，遗漏租户可能保持排队；不默认扫描任意租户。模型 Worker 需显式启用，固定模型名称和摘要，控制并发、内存和成本。托管 Run 的目的地为已配置的本地模型，不能通过表单输入更换任意 URL。
+Worker 仅处理 `WORKER_TENANT_IDS` 列出的租户。部署时核查完整租户清单，遗漏租户可能保持排队；不默认扫描任意租户。模型 Worker 需显式启用，固定模型名称和摘要，控制并发、内存和成本。托管 Run 的目的地为已配置的本地模型，不能通过表单输入更换任意 URL。Outbox 投影领取使用数据库租约；`WORKER_LEASE_SECONDS`（默认 30，1–300）决定崩溃进程搁置的租约何时可被新进程经正常领取路径重认领，调整时须大于最慢单条投影事务时长，不得为加速恢复而手工清除未完成行。
 
 真实用户的首次组织接入使用 [组织与工作区初始化](workspace-provisioning.md)，与开发种子分离；只允许新组织和现有有效人类身份。
 

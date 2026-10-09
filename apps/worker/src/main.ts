@@ -32,10 +32,13 @@ if (
 const intervalMs = Number(process.env.WORKER_POLL_INTERVAL_MS ?? 250);
 if (!Number.isSafeInteger(intervalMs) || intervalMs < 10 || intervalMs > 60_000)
   throw new Error('Invalid WORKER_POLL_INTERVAL_MS');
+const leaseSeconds = Number(process.env.WORKER_LEASE_SECONDS ?? 30);
+if (!Number.isSafeInteger(leaseSeconds) || leaseSeconds < 1 || leaseSeconds > 300)
+  throw new Error('Invalid WORKER_LEASE_SECONDS');
 const db = createDatabase(databaseUrl, { applicationName: 'imbox-outbox-worker' });
 const policyLedger = await configuredPolicyLedger(process.env);
 if (policyLedger) for (const tenant of tenants) await replayPolicyLedger(db, policyLedger, tenant);
-const processor = createOutboxProcessor({ db });
+const processor = createOutboxProcessor({ db, leaseSeconds });
 let stopping = false;
 const modelStop = new AbortController();
 let modelLoop: Promise<void> | undefined;

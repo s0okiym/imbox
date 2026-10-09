@@ -193,9 +193,10 @@
         "docs/testing/provisioning-evidence-2026-10-04.json",
         "docs/testing/cancellation-ack-2026-10-05.md",
         "docs/testing/late-cancellation-ack-2026-10-05.md",
-        "docs/testing/external-process-recovery-2026-10-05.md"
+        "docs/testing/external-process-recovery-2026-10-05.md",
+        "docs/testing/task-cancellation-propagation-2026-10-05.md"
       ],
-      "notes": "平台取消与执行器确认、有效租约/迟到报告通道已分别验证。Linux 独立 SDK 进程经 SIGSTOP、真实 60 秒租约到期、SIGCONT 恢复后，迟到输出拒绝、停止确认成功且 OS 进程正常退出。Task 级取消到相关 Run 取消请求/显示状态的联动尚需补齐；跨主机 TLS/网络分区/重启部署矩阵仍待完成。"
+      "notes": "平台取消与执行器确认、有效租约/迟到报告通道已分别验证。Linux 独立 SDK 进程经 SIGSTOP、真实 60 秒租约到期、SIGCONT 恢复后，迟到输出拒绝、停止确认成功且 OS 进程正常退出。Task 取消/失败已在同事务内向本任务及后代活动 Run 发出取消请求、撤销待执行 Action 与审批，保留 unknown 外部结果与费用；旧输入冲突下状态读取脱敏，浏览器覆盖取消与停止确认。跨主机 TLS/网络分区/重启部署矩阵仍待完成。"
     },
     {
       "id": "AC-15",
@@ -226,9 +227,10 @@
       "evidence": [
         "docs/testing/acceptance-review-2026-10-04.md",
         "docs/testing/provisioning-evidence-2026-10-04.json",
-        "docs/testing/joint-fault-recovery-2026-10-05.md"
+        "docs/testing/joint-fault-recovery-2026-10-05.md",
+        "docs/testing/worker-crash-recovery-2026-10-08.md"
       ],
-      "notes": "已有投影事务重试、模型未知用量与 checkpoint 恢复、离线壳验证。新增同一运行的模型 HTTP 挂起/断开、S3 503、WS 断开与投影积压：60 条 HTTP 消息含 6 次同键重试，恢复后 61 条唯一消息完整送达，原上传票据恢复并核对摘要，未知模型调用不重发。发现并修复重放 ACK 突发被异步控制队列误判的问题。长期积压、独立 Worker 崩溃、数据库/队列联合故障与参考容量仍未完成。"
+      "notes": "已有投影事务重试、模型未知用量与 checkpoint 恢复、离线壳验证。新增同一运行的模型 HTTP 挂起/断开、S3 503、WS 断开与投影积压：60 条 HTTP 消息含 6 次同键重试，恢复后 61 条唯一消息完整送达，原上传票据恢复并核对摘要，未知模型调用不重发。发现并修复重放 ACK 突发被异步控制队列误判的问题。独立 Worker 进程在投影中途被 SIGKILL 后，搁置租约保持存活且零 dead/零回执，新进程经租约到期恰好一次重认领（attempts=2）完成投影，接收端 40+1 条消息无遗漏或重复。长期积压、数据库/队列联合故障与参考容量仍未完成。"
     },
     {
       "id": "AC-17",

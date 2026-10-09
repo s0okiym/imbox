@@ -27,25 +27,25 @@ Playwright 使用独立测试会话与固定种子主体，自动启动本地 AP
 
 ## 回归集合
 
-| 集合        | 文件                                                                                            | 核心断言                                                                                                  |
-| ----------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| DOMAIN      | `packages/domain/tests/*.test.ts`                                                               | 状态转移、负责权交接、全祖先 epoch、过期但尚未接管的租约、unknown 预算、重复结算、依赖无环与性质测试。    |
-| CONTRACT    | `packages/contracts/test/*.test.ts`                                                             | Schema 2020-12、UTC、UUID、int64 字符串、未知字段拒绝、数据大小和结构、生成文件与 OpenAPI。               |
-| DATABASE    | `packages/db/test/postgres.integration.test.ts`                                                 | 强制 RLS、非 owner 应用角色、缺失租户上下文、连接复用、复合外键、提交顺序、bigint 精度、事务回滚。        |
-| IDENTITY    | `packages/auth/test/auth.integration.test.ts`                                                   | 真实 HTTP 测试身份提供方/JWKS、OIDC 校验和重放拒绝、Cookie/摘要、CSRF、撤销、身份角色隔离。               |
-| MESSAGING   | `tests/integration/messaging.test.ts`                                                           | 重复命令与并发发送只落一次、历史范围、当前 ACL、工作区撤权、版本冲突、正文撤回、单调已读。                |
-| HTTP        | `tests/integration/http.test.ts`                                                                | Cookie 会话、Origin/CSRF、响应白名单、强 ETag、异常输入、大小边界、真实写入与查询。                       |
-| SYNC        | `tests/integration/sync.test.ts`                                                                | outbox 重放/乱序/租约、固定快照分页、撤回防泄露、实际 TCP WebSocket、断线补齐、ACK/已读分离、撤权和背压。 |
-| TASK        | `tests/integration/tasks.test.ts`                                                               | 任务独立权限、显式接受、并发交接、委派建子任务、全祖先 fence、依赖成环、固定提交/验收。                   |
-| RUNTIME     | `tests/integration/runtime.test.ts`                                                             | 当前身份与上下文、过期租约、祖先与身份代际、预算抢占、未结用量、容量/步数/生命周期、HTTP 白名单。         |
-| MODEL       | `tests/integration/model-adapter.test.ts`、`model-driver.test.ts`、`tests/model/ollama.test.ts` | 真实 HTTP 故障、模型摘要预检、取消与迟到计费、持久检查点，以及真实本地模型接入。                          |
-| ACTION      | `tests/integration/actions.test.ts`、`action-journal.test.ts`                                   | 人工审批固定指纹/目标、授权撤销、HTTP 已执行但丢响应、unknown 核对、预算及独立日志持久性。                |
-| AGENT       | `tests/integration/agents.test.ts`                                                              | 机器 Token、作用域/撤销/租户 fence、ACK 与接受分离、外部自报、显式 Agent 间交接、SDK 同键重试。           |
-| SCHEDULE    | `packages/scheduling/src/calendar.test.ts`、`tests/integration/scheduling.test.ts`              | 时区/DST、错过触发、去重、修订失效、重叠限制、运行授权与关闭。                                            |
-| MAINTENANCE | `tests/integration/maintenance.test.ts`                                                         | 负责人不可用、执行期限、请求超时、服务身份审计、并发维护、升级负责人离开后的回退。                        |
-| RESOURCE    | `tests/integration/resources.test.ts`                                                           | 真实 S3 上传、类型/大小/摘要、当前 ACL、固定版本、删除与清理；附件与任务证据随实现扩展。                  |
-| WEB         | `apps/web/**/*.test.ts`                                                                         | 请求幂等、视图与代际归并、登录通知来源、同步状态、可见内容与已读边界。                                    |
-| BROWSER     | `tests/e2e/messaging.spec.ts`                                                                   | 双人真实聊天、编辑/撤回、文字内容不执行 HTML、退出清理、已提交但响应丢失、移动布局、断网恢复。            |
+| 集合        | 文件                                                                                            | 核心断言                                                                                                                                             |
+| ----------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DOMAIN      | `packages/domain/tests/*.test.ts`                                                               | 状态转移、负责权交接、全祖先 epoch、过期但尚未接管的租约、unknown 预算、重复结算、依赖无环与性质测试。                                               |
+| CONTRACT    | `packages/contracts/test/*.test.ts`                                                             | Schema 2020-12、UTC、UUID、int64 字符串、未知字段拒绝、数据大小和结构、生成文件与 OpenAPI。                                                          |
+| DATABASE    | `packages/db/test/postgres.integration.test.ts`                                                 | 强制 RLS、非 owner 应用角色、缺失租户上下文、连接复用、复合外键、提交顺序、bigint 精度、事务回滚。                                                   |
+| IDENTITY    | `packages/auth/test/auth.integration.test.ts`                                                   | 真实 HTTP 测试身份提供方/JWKS、OIDC 校验和重放拒绝、Cookie/摘要、CSRF、撤销、身份角色隔离。                                                          |
+| MESSAGING   | `tests/integration/messaging.test.ts`                                                           | 重复命令与并发发送只落一次、历史范围、当前 ACL、工作区撤权、版本冲突、正文撤回、单调已读。                                                           |
+| HTTP        | `tests/integration/http.test.ts`                                                                | Cookie 会话、Origin/CSRF、响应白名单、强 ETag、异常输入、大小边界、真实写入与查询。                                                                  |
+| SYNC        | `tests/integration/sync.test.ts`                                                                | outbox 重放/乱序/租约、固定快照分页、撤回防泄露、实际 TCP WebSocket、断线补齐、ACK/已读分离、撤权和背压、独立 Worker 进程 SIGKILL 后经租约到期恢复。 |
+| TASK        | `tests/integration/tasks.test.ts`                                                               | 任务独立权限、显式接受、并发交接、委派建子任务、全祖先 fence、依赖成环、固定提交/验收。                                                              |
+| RUNTIME     | `tests/integration/runtime.test.ts`                                                             | 当前身份与上下文、过期租约、祖先与身份代际、预算抢占、未结用量、容量/步数/生命周期、HTTP 白名单。                                                    |
+| MODEL       | `tests/integration/model-adapter.test.ts`、`model-driver.test.ts`、`tests/model/ollama.test.ts` | 真实 HTTP 故障、模型摘要预检、取消与迟到计费、持久检查点，以及真实本地模型接入。                                                                     |
+| ACTION      | `tests/integration/actions.test.ts`、`action-journal.test.ts`                                   | 人工审批固定指纹/目标、授权撤销、HTTP 已执行但丢响应、unknown 核对、预算及独立日志持久性。                                                           |
+| AGENT       | `tests/integration/agents.test.ts`                                                              | 机器 Token、作用域/撤销/租户 fence、ACK 与接受分离、外部自报、显式 Agent 间交接、SDK 同键重试。                                                      |
+| SCHEDULE    | `packages/scheduling/src/calendar.test.ts`、`tests/integration/scheduling.test.ts`              | 时区/DST、错过触发、去重、修订失效、重叠限制、运行授权与关闭。                                                                                       |
+| MAINTENANCE | `tests/integration/maintenance.test.ts`                                                         | 负责人不可用、执行期限、请求超时、服务身份审计、并发维护、升级负责人离开后的回退。                                                                   |
+| RESOURCE    | `tests/integration/resources.test.ts`                                                           | 真实 S3 上传、类型/大小/摘要、当前 ACL、固定版本、删除与清理；附件与任务证据随实现扩展。                                                             |
+| WEB         | `apps/web/**/*.test.ts`                                                                         | 请求幂等、视图与代际归并、登录通知来源、同步状态、可见内容与已读边界。                                                                               |
+| BROWSER     | `tests/e2e/messaging.spec.ts`                                                                   | 双人真实聊天、编辑/撤回、文字内容不执行 HTML、退出清理、已提交但响应丢失、移动布局、断网恢复。                                                       |
 
 浏览器任务用例为 `tests/e2e/tasks.spec.ts`，运行/审批/只读核对用例为 `tests/e2e/runtime-actions.spec.ts`。后者将请求转发到独立真实 API 与 PostgreSQL，并使用真实 HTTP 工具制造响应丢失；不伪造业务成功响应。
 
@@ -113,9 +113,10 @@ Web Push 故障注入夹具把 Node ECDH 导出的私钥左侧补零到 32 字�
 
 容器发布回归：先 `pnpm build:images`，再 `pnpm test:deployment`。使用真实 Docker API/Worker/Caddy，验证 TLS、WSS、会话/CSRF、消息投影及重启；配置前提与证明边界见 [容器部署](../operations/container-deployment.md)。
 
-
 历史前端兼容性使用 `pnpm test:compatibility`，固定源码提交、独立历史锁文件构建，并验证产物哈希后接入当前 API/WebSocket。默认基线为 `2f751069fc11062f48cfd5d377db2970e9088268`；可用 `IMBOX_COMPAT_CLIENT_COMMIT` 指定本地 Git 中已有的完整 SHA。脚本只执行离线依赖安装，缺少缓存会明确失败；不自动切换到当前客户端。边界与结果见 [历史制品验证](historical-client-2026-10-05.md)。
 
 该兼容性命令现同时构建历史 API 及依赖，并校验入口摘要后在独立 4111 端口启动。新增保持浏览器会话的旧 API→当前 API→旧 API 切换回归，详见 [切换证据](rolling-api-2026-10-05.md)。4110/4111/4173 需空闲；代理控制接口只属于本机测试工具，不进入产品 API。
+
+独立 Worker 进程崩溃回归位于 `tests/integration/sync.test.ts`：真实 Worker 入口作为独立 OS 进程启动并在投影中途被 SIGKILL，验证搁置租约不被窃取、经到期恰好一次重认领完成投影且接收端无遗漏或重复。Worker 租约时长经 `WORKER_LEASE_SECONDS` 配置（默认 30）；证据与边界见 [崩溃恢复证据](worker-crash-recovery-2026-10-08.md)。
 
 历史兼容性集合还加载固定提交编译的 Action 服务/runner，验证旧授权写入受数据库约束拒绝、当前授权不被旧执行器使用及当前执行一次的对照。该四项属于真实数据库/HTTP 集成，虽由 Playwright 编排但不使用浏览器；不能把六项兼容测试全部统计为浏览器用例。构建身份与限制见 [历史执行证据](historical-action-writer-2026-10-05.md)。
